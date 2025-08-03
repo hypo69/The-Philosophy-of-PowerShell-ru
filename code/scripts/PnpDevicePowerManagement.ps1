@@ -18,8 +18,7 @@ if ($device) {
     $exactDeviceName = $device.FriendlyName
     Write-Host "Найдено устройство: '$exactDeviceName'" -ForegroundColor Green
     
-    # ------------------ НАЧАЛО ИСПРАВЛЕНИЯ ------------------
-    # Вместо несуществующего командлета используем CIM для доступа к настройкам
+    # используем CIM для доступа к настройкам
     try {
         # Ищем настройки управления питанием именно для этого устройства
         $powerSettings = Get-CimInstance -Namespace 'Root\StandardCimv2' -ClassName MSFT_NetAdapterPowerManagementSettingData -Filter "Name = '$exactDeviceName'" -ErrorAction Stop
@@ -52,7 +51,7 @@ if ($device) {
         Write-Host " - Устройство не поддерживает управление питанием через WMI/CIM." -ForegroundColor Red
         Write-Host " - Отсутствуют права администратора." -ForegroundColor Red
     }
-    # ------------------- КОНЕЦ ИСПРАВЛЕНИЯ ------------------
+
 
 } else {
     Write-Host "Устройство с именем, содержащим '$targetDeviceName', не найдено." -ForegroundColor Red
