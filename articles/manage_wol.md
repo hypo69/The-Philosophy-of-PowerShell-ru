@@ -18,11 +18,13 @@ Get-PnpDevice | Where-Object { $_.FriendlyName -like "*Realtek*" } | Select-Obje
 4.  **`|` (Конвейер)**: Передает отфильтрованный список.
 5.  **`Select-Object ...`**: Форматирует вывод, показывая только нужные свойства.
 
-Теперь, когда мы нашли устройство, сохраним его данные в переменные для дальнейшей работы.```powershell
 *Находим нужное устройство и берем первое из списка*
+
+```powershell
 $device = Get-PnpDevice | Where-Object { $_.FriendlyName -like "*Realtek*" } | Select-Object -First 1
 
 *Записываем его свойства в переменные*
+
 $DeviceName = $device.FriendlyName
 $InstanceId = $device.InstanceId
 $pmKey = "HKLM:\SYSTEM\CurrentControlSet\Enum\$InstanceId\Device Parameters"
