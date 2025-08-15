@@ -264,8 +264,8 @@ if ($installedPrograms) {
 Это самый мощный прием. Выход одной интерактивной сессии становится входом для другой. **Задача:** Выбрать одну из ваших папок с проектами, а затем выбрать из нее определенные файлы для создания ZIP-архива.
 
 ```powershell
-# --- ШАГ 1: Укажите папку, где лежат ваши проекты или документы ---
-$SearchPath = "$env:USERPROFILE\Documents"
+# --- ШАГ 1: Универсально находим папку "Документы" ---
+$SearchPath = [System.Environment]::GetFolderPath('MyDocuments')
 
 # --- ШАГ 2: Интерактивно выбираем одну папку из указанного места ---
 $selectedFolder = Get-ChildItem -Path $SearchPath -Directory | 
@@ -277,13 +277,17 @@ if ($selectedFolder) {
         Out-ConsoleGridView -OutputMode Multiple -Title "Выберите файлы для архива из '$($selectedFolder.Name)'"
 
     if ($filesToArchive) {
-        # --- ШАГ 4: Выполняем действие ---
+        # --- ШАГ 4: Выполняем действие с универсальными путями ---
         $archiveName = "Archive-$($selectedFolder.Name)-$(Get-Date -Format 'yyyy-MM-dd').zip"
-        $destinationPath = Join-Path -Path $env:USERPROFILE -ChildPath "Desktop\$archiveName"
         
+        # УНИВЕРСАЛЬНЫЙ СПОСОБ ПОЛУЧИТЬ ПУТЬ К РАБОЧЕМУ СТОЛУ
+        $desktopPath = [System.Environment]::GetFolderPath('Desktop')
+        $destinationPath = Join-Path -Path $desktopPath -ChildPath $archiveName
+        
+        # Создаем архив
         Compress-Archive -Path $filesToArchive.FullName -DestinationPath $destinationPath -WhatIf
         
-        Write-Host "Архив '$archiveName' будет создан на вашем рабочем столе." -ForegroundColor Green
+        Write-Host "Архив '$archiveName' будет создан на вашем рабочем столе по пути '$destinationPath'." -ForegroundColor Green
     }
 }
 ```
