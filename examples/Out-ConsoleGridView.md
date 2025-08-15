@@ -36,7 +36,7 @@ if ($procsToStop) {
 <video width="600" controls>
   <source src="https://github.com/user-attachments/assets/9d17f7d3-6efb-4069-a5f4-829e7e63b63f" type="video/mp4">
   Your browser does not support the video tag.
-</video
+</video>
 
 1.  `Get-Process` получает все запущенные процессы.
 2.  `Sort-Object` упорядочивает их по загрузке CPU, чтобы самые "прожорливые" были наверху.
@@ -55,6 +55,12 @@ if ($services) {
 }
 ```
 
+[1](https://github.com/user-attachments/assets/37986608-21d6-4013-b421-16072d1cf128)
+
+<video width="600" controls>
+  <source src="https://github.com/user-attachments/assets/37986608-21d6-4013-b421-16072d1cf128" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 1.  Вы получаете список всех служб.
 2.  Внутри `Out-ConsoleGridView` вы вводите в фильтр `sql` и сразу видите все службы, относящиеся к SQL Server.
