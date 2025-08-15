@@ -31,6 +31,13 @@ if ($procsToStop) {
 ```
 
 
+[1](https://github.com/user-attachments/assets/9d17f7d3-6efb-4069-a5f4-829e7e63b63f)
+
+<video width="600" controls>
+  <source src="https://github.com/user-attachments/assets/9d17f7d3-6efb-4069-a5f4-829e7e63b63f" type="video/mp4">
+  Your browser does not support the video tag.
+</video
+
 1.  `Get-Process` получает все запущенные процессы.
 2.  `Sort-Object` упорядочивает их по загрузке CPU, чтобы самые "прожорливые" были наверху.
 3.  `Out-ConsoleGridView` отображает таблицу. Вы можете ввести `chrome` или `notepad`, чтобы мгновенно отфильтровать список, и выбрать нужные процессы клавишей `Space`.
