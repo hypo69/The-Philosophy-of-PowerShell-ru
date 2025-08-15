@@ -203,19 +203,56 @@ if ($installEvents) {
 *   Вы можете отсортировать по `Id`, чтобы найти неудачные установки (`11708`).
 
 
+---
+
+
+
 #### Пример 7: Интерактивное удаление программ
 
 ```powershell
-$programs = Get-Package | Sort-Object Name
+# Пути в реестре, где хранится информация об установленных программах
+$registryPaths = @(
+    'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+    'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+)
 
-$programsToUninstall = $programs | Out-ConsoleGridView -OutputMode Multiple
+# Собираем данные из реестра, убирая системные компоненты, у которых нет имени
+$installedPrograms = Get-ItemProperty $registryPaths | 
+    Where-Object { $_.DisplayName -and $_.UninstallString } |
+    Select-Object DisplayName, DisplayVersion, Publisher, InstallDate |
+    Sort-Object DisplayName
 
-if ($programsToUninstall) {
-    $programsToUninstall | Uninstall-Package -WhatIf
+# Если программы найдены, выводим в интерактивную таблицу
+if ($installedPrograms) {
+    $programsToUninstall = $installedPrograms | Out-ConsoleGridView -OutputMode Multiple -Title "Выберите программы для удаления"
+    
+    if ($programsToUninstall) {
+        Write-Host "Следующие программы будут удалены:" -ForegroundColor Yellow
+        $programsToUninstall | Format-Table -AutoSize
+        
+        # Этот блок сложнее, так как Uninstall-Package здесь не сработает.
+        # Мы запускаем команду деинсталляции из реестра.
+        foreach ($program in $programsToUninstall) {
+            # Находим оригинальный объект программы со строкой деинсталляции
+            $fullProgramInfo = Get-ItemProperty $registryPaths | Where-Object { $_.DisplayName -eq $program.DisplayName }
+            
+            if ($fullProgramInfo.UninstallString) {
+                Write-Host "Запуск деинсталлятора для '$($program.DisplayName)'..."
+                # ВНИМАНИЕ: Это запустит стандартный GUI-деинсталлятор программы.
+                # WhatIf здесь не сработает, будьте осторожны.
+                # cmd.exe /c $fullProgramInfo.UninstallString
+            }
+        }
+        Write-Warning "Чтобы реально удалить программы, раскомментируйте строку 'cmd.exe /c ...' в скрипте."
+    }
+} else {
+    Write-Warning "Не удалось найти установленные программы в реестре."
 }
 ```
 
-Вы получаете список всего установленного ПО. В интерфейсе вы можете легко найти и выбрать несколько программ для удаления.
+---
+
+
 
 #### Пример 8: Связывание (Chaining) `Out-ConsoleGridView`
 
