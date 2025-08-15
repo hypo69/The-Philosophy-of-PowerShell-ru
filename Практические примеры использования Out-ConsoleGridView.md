@@ -71,16 +71,46 @@ if ($services) {
 Со временем папка "Загрузки" забивается ненужными файлами. Найдем и удалим самые большие из них.
 
 ```powershell
-$path = "$env:USERPROFILE\Downloads"
-$filesToDelete = Get-ChildItem -Path $path -File -Recurse | 
-    Sort-Object -Property Length -Descending |
-    Select-Object FullName, @{Name="SizeMB"; Expression={[math]::Round($_.Length / 1MB, 2)}}, LastWriteTime |
-    Out-ConsoleGridView -OutputMode Multiple
+$DownloadsPath = "E:\Users\user\Downloads" # <--- ИЗМЕНИТЕ ЭТУ СТРОКУ
 
-if ($filesToDelete) {
-    $filesToDelete.FullName | Remove-Item -WhatIf
+# =============================================================================
+# ===                      ОСНОВНАЯ ЛОГИКА СКРИПТА                        ===
+# =============================================================================
+
+# Финальная проверка: если путь не указан или папка не существует - выходим.
+if ([string]::IsNullOrEmpty($DownloadsPath) -or (-not (Test-Path -Path $DownloadsPath))) {
+    Write-Error "Папка 'Загрузки' не найдена по указанному пути: '$DownloadsPath'. Пожалуйста, проверьте путь в блоке НАСТРОЙКА в начале скрипта."
+    return
+}
+
+# --- ШАГ 2: Информирование пользователя и сбор данных ---
+Write-Host "Начинаю сканирование папки '$DownloadsPath'. Это может занять некоторое время..." -ForegroundColor Cyan
+
+$files = Get-ChildItem -Path $DownloadsPath -File -Recurse -ErrorAction SilentlyContinue | 
+    Sort-Object -Property Length -Descending
+
+# --- ШАГ 3: Проверка наличия файлов и вызов интерактивного окна ---
+if ($files) {
+    Write-Host "Сканирование завершено. Найдено $($files.Count) файлов. Открытие окна выбора..." -ForegroundColor Green
+    
+    $filesToShow = $files | Select-Object FullName, @{Name="SizeMB"; Expression={[math]::Round($_.Length / 1MB, 2)}}, LastWriteTime
+    
+    $filesToDelete = $filesToShow | Out-ConsoleGridView -OutputMode Multiple -Title "Выберите файлы для удаления из '$DownloadsPath'"
+
+    # --- ШАГ 4: Обработка выбора пользователя ---
+    if ($filesToDelete) {
+        Write-Host "Следующие файлы будут удалены:" -ForegroundColor Yellow
+        $filesToDelete | Format-Table -AutoSize
+        
+        $filesToDelete.FullName | Remove-Item -WhatIf -Verbose
+    } else {
+        Write-Host "Операция отменена. Не выбрано ни одного файла." -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "В папке '$DownloadsPath' не найдено файлов." -ForegroundColor Yellow
 }
 ```
+[]
 
 1.  Мы получаем все файлы, сортируем их по размеру и с помощью `Select-Object` создаем удобную колонку `SizeMB`.
 2.  В `Out-ConsoleGridView` вы видите отсортированный список, где легко выбрать старые и большие `.iso` или `.zip` файлы.
