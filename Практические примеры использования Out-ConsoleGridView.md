@@ -71,13 +71,12 @@ if ($services) {
 Со временем папка "Загрузки" забивается ненужными файлами. Найдем и удалим самые большие из них.
 
 ```powershell
-$DownloadsPath = "E:\Users\user\Downloads" # <--- ИЗМЕНИТЕ ЭТУ СТРОКУ
 
-# =============================================================================
-# ===                      ОСНОВНАЯ ЛОГИКА СКРИПТА                        ===
-# =============================================================================
+# --- ШАГ 1: Настройка пути к директории 'Downloads'
+$DownloadsPath = "E:\Users\user\Downloads" # <--- ИЗМЕНИТЕ ЭТУ СТРОКУ НА ВАШ ПУТЬ
+===========================================================================
 
-# Финальная проверка: если путь не указан или папка не существует - выходим.
+# Проверка: если путь не указан или папка не существует - выходим.
 if ([string]::IsNullOrEmpty($DownloadsPath) -or (-not (Test-Path -Path $DownloadsPath))) {
     Write-Error "Папка 'Загрузки' не найдена по указанному пути: '$DownloadsPath'. Пожалуйста, проверьте путь в блоке НАСТРОЙКА в начале скрипта."
     return
@@ -110,7 +109,15 @@ if ($files) {
     Write-Host "В папке '$DownloadsPath' не найдено файлов." -ForegroundColor Yellow
 }
 ```
-[]
+[Clear-DownloadsFolder.ps1](https://github.com/hypo69/The-Philosophy-of-PowerShell-ru/blob/master/code/scripts/Clear-DownloadsFolder.ps1)
+
+[Содержимое Downloads](https://github.com/user-attachments/assets/e7402188-5ffe-4e11-92ca-6f7eb4da709a)
+
+<video width="600" controls>
+  <source src="https://github.com/user-attachments/assets/e7402188-5ffe-4e11-92ca-6f7eb4da709a" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
 
 1.  Мы получаем все файлы, сортируем их по размеру и с помощью `Select-Object` создаем удобную колонку `SizeMB`.
 2.  В `Out-ConsoleGridView` вы видите отсортированный список, где легко выбрать старые и большие `.iso` или `.zip` файлы.
