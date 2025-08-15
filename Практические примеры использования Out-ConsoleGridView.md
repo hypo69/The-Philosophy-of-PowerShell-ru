@@ -253,33 +253,49 @@ if ($installedPrograms) {
 ---
 
 
+Вы абсолютно правы. Пример с Active Directory не подходит для обычного пользователя и требует специальной среды.
+
+Давайте заменим его на гораздо более универсальный и понятный сценарий, который идеально демонстрирует мощь связывания `Out-ConsoleGridView` и будет полезен любому пользователю.
+
+---
 
 #### Пример 8: Связывание (Chaining) `Out-ConsoleGridView`
 
-Это самый мощный прием. Выход одной интерактивной сессии становится входом для другой. **Задача:** Выбрать пользователя AD, а затем выбрать, из какой группы его удалить.
+Это самый мощный прием. Выход одной интерактивной сессии становится входом для другой. **Задача:** Выбрать одну из ваших папок с проектами, а затем выбрать из нее определенные файлы для создания ZIP-архива.
 
 ```powershell
-# --- ШАГ 1: Выбираем пользователя ---
-$user = Get-ADUser -Filter * | Select-Object Name, SamAccountName | 
-    Out-ConsoleGridView -Title "Выберите пользователя"
+# --- ШАГ 1: Укажите папку, где лежат ваши проекты или документы ---
+$SearchPath = "$env:USERPROFILE\Documents"
 
-if ($user) {
-    # --- ШАГ 2: Если пользователь выбран, получаем его группы и выбираем, какие удалить ---
-    $groups = Get-ADPrincipalGroupMembership -Identity $user.SamAccountName | 
-        Out-ConsoleGridView -OutputMode Multiple -Title "Выберите группы, из которых нужно удалить $($user.Name)"
+# --- ШАГ 2: Интерактивно выбираем одну папку из указанного места ---
+$selectedFolder = Get-ChildItem -Path $SearchPath -Directory | 
+    Out-ConsoleGridView -Title "Выберите папку для архивации"
 
-    if ($groups) {
-        # --- ШАГ 3: Выполняем действие ---
-        foreach ($group in $groups) {
-            Remove-ADGroupMember -Identity $group.Name -Members $user.SamAccountName -WhatIf
-        }
+if ($selectedFolder) {
+    # --- ШАГ 3: Если папка выбрана, получаем ее файлы и выбираем, какие из них архивировать ---
+    $filesToArchive = Get-ChildItem -Path $selectedFolder.FullName -File | 
+        Out-ConsoleGridView -OutputMode Multiple -Title "Выберите файлы для архива из '$($selectedFolder.Name)'"
+
+    if ($filesToArchive) {
+        # --- ШАГ 4: Выполняем действие ---
+        $archiveName = "Archive-$($selectedFolder.Name)-$(Get-Date -Format 'yyyy-MM-dd').zip"
+        $destinationPath = Join-Path -Path $env:USERPROFILE -ChildPath "Desktop\$archiveName"
+        
+        Compress-Archive -Path $filesToArchive.FullName -DestinationPath $destinationPath -WhatIf
+        
+        Write-Host "Архив '$archiveName' будет создан на вашем рабочем столе." -ForegroundColor Green
     }
 }
 ```
 
-1.  Первый `Out-ConsoleGridView` позволяет вам выбрать **одного** пользователя.
-2.  Если пользователь выбран, скрипт получает список групп, в которых он состоит, и открывает **второй** `Out-ConsoleGridView` уже с этим списком.
-3.  Вы выбираете одну или несколько групп, и скрипт удаляет из них пользователя. Это превращает сложную многошаговую задачу в интуитивно понятный интерактивный процесс.
+
+1.  Первый `Out-ConsoleGridView` показывает вам список папок внутри ваших "Документов". Вы можете быстро найти нужную, введя часть ее имени, и выбрать **одну** папку.
+2.  Если папка была выбрана, скрипт немедленно открывает **второй** `Out-ConsoleGridView`, который показывает уже **файлы внутри** этой папки.
+3.  Вы выбираете **один или несколько** файлов клавишей `Space` и нажимаете `Enter`.
+4.  Скрипт берет выбранные файлы и создает из них ZIP-архив на вашем рабочем столе.
+
+Это превращает сложную многошаговую задачу (найти папку, найти в ней файлы, скопировать их пути, запустить команду архивации) в интуитивно понятный интерактивный процесс из двух шагов.
+
 
 #### Пример 9: Управление опциональными компонентами Windows
 
