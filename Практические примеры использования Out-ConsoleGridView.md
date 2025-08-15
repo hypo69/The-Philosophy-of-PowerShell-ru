@@ -304,6 +304,8 @@ if ($selectedFolder) {
 #### Пример 9: Управление опциональными компонентами Windows
 
 ```powershell
+# --- Пример 9 : Управление опциональными компонентами Windows ---
+
 # Получаем только включенные компоненты
 $features = Get-WindowsOptionalFeature -Online | Where-Object { $_.State -eq 'Enabled' }
 
@@ -311,8 +313,22 @@ $featuresToDisable = $features | Select-Object FeatureName, DisplayName |
     Out-ConsoleGridView -OutputMode Multiple -Title "Выберите компоненты для отключения"
 
 if ($featuresToDisable) {
-    foreach($feature in $featuresToDisable){
-        Disable-WindowsOptionalFeature -Online -FeatureName $feature.FeatureName -WhatIf
+    # ПРЕДУПРЕЖДАЕМ ПОЛЬЗОВАТЕЛЯ О НЕОБРАТИМОСТИ
+    Write-Host "ВНИМАНИЕ! Следующие компоненты будут немедленно отключены." -ForegroundColor Red
+    Write-Host "Эта операция не поддерживает безопасный режим -WhatIf."
+    $featuresToDisable | Select-Object DisplayName
+
+    # Запрашиваем подтверждение вручную
+    $confirmation = Read-Host "Продолжить? (y/n)"
+    
+    if ($confirmation -eq 'y') {
+        foreach($feature in $featuresToDisable){
+            Write-Host "Отключение компонента '$($feature.DisplayName)'..." -ForegroundColor Yellow
+            Disable-WindowsOptionalFeature -Online -FeatureName $feature.FeatureName
+        }
+        Write-Host "Операция завершена. Может потребоваться перезагрузка." -ForegroundColor Green
+    } else {
+        Write-Host "Операция отменена."
     }
 }
 ```
