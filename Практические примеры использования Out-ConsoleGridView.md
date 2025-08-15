@@ -166,7 +166,7 @@ $connections | Out-ConsoleGridView -Title "Активные интернет-п�
 2.  С помощью `Select-Object` мы формируем удобный отчет: добавляем имя процесса (`ProcessName`) к его ID (`OwningProcess`), чтобы было понятно, какая программа установила соединение.
 3.  `Out-ConsoleGridView` показывает вам живую картину сетевой активности.
 
-[Net]https://github.com/user-attachments/assets/1ba78f04-bad8-4717-853b-27317cac72ec)
+[Net](https://github.com/user-attachments/assets/1ba78f04-bad8-4717-853b-27317cac72ec)
 
 <video width="600" controls>
   <source src="https://github.com/user-attachments/assets/1ba78f04-bad8-4717-853b-27317cac72ec" type="video/mp4">
