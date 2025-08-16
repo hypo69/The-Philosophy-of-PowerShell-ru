@@ -207,15 +207,41 @@ $photoFolder = "D:\Photos"
 Полезно, если вы хотите построить карту по вашим фото.
 
 ```powershell
-$photoPath = "D:\Photos\IMG_1234.JPG"
-$gpsData = & $exifToolPath -json -GPSLatitude -GPSLongitude -GPSAltitude $photoPath | ConvertFrom-Json
+# 1. Укажите путь к папке с вашими фотографиями
+$photoFolder = "E:\DCIM\Camera"
 
-if ($gpsData.GPSLatitude -and $gpsData.GPSLongitude) {
-    Write-Host "Широта: $($gpsData.GPSLatitude)"
-    Write-Host "Долгота: $($gpsData.GPSLongitude)"
-    Write-Host "Высота: $($gpsData.GPSAltitude) м"
+# 2. Перечисляем теги, которые нам нужны: имя файла и три GPS-тега.
+#    Это делает запрос намного быстрее, чем если бы мы забирали все теги.
+$tagsToExtract = @(
+    "-SourceFile", # SourceFile лучше, чем FileName, так как обычно содержит полный путь
+    "-GPSLatitude",
+    "-GPSLongitude",
+    "-GPSAltitude"
+)
+
+# 3. Вызываем exiftool.exe напрямую (т.к. он в PATH).
+#    Ключ -r ищет файлы во всех подпапках.
+#    Результат сразу конвертируем из JSON.
+$allExifData = exiftool.exe -r -json $tagsToExtract $photoFolder | ConvertFrom-Json
+
+# 4. Фильтруем результаты: оставляем ТОЛЬКО те объекты, у которых есть широта и долгота.
+$filesWithGps = $allExifData | Where-Object { $_.GPSLatitude -and $_.GPSLongitude }
+
+# 5. Проверяем, нашлись ли вообще файлы с GPS-данными
+if ($filesWithGps) {
+    # 6. Создаем красивый отчет из отфильтрованных данных.
+    #    Используем Select-Object для переименования колонок и форматирования.
+    $report = $filesWithGps | Select-Object @{Name="Имя файла"; Expression={Split-Path $_.SourceFile -Leaf}},
+                                             @{Name="Широта"; Expression={$_.GPSLatitude}},
+                                             @{Name="Долгота"; Expression={$_.GPSLongitude}},
+                                             @{Name="Высота"; Expression={if ($_.GPSAltitude) { "$($_.GPSAltitude) м" } else { "N/A" }}}
+    
+    # 7. Выводим итоговый отчет в интерактивную консольную таблицу.
+    $report | Out-ConsoleGridView -Title "Файлы с GPS-данными в папке: $photoFolder"
+
 } else {
-    Write-Host "GPS-данные отсутствуют"
+    # Если ничего не найдено, вежливо сообщаем об этом.
+    Write-Host "Файлы с GPS-данными в папке '$photoFolder' не найдены." -ForegroundColor Yellow
 }
 ```
 
