@@ -6,7 +6,7 @@
 # PowerShell >= 5.1
 # Требует запуска от имени Администратора!
 # Автор: hypo69
-# Версия: 1.1 (адаптировано Gemini)
+# Версия: 1.2 (интерактивный ввод)
 # Дата создания: 07/08/2025
 # =================================================================================
 
@@ -18,40 +18,51 @@
     Добавляет указанную директорию в СИСТЕМНУЮ переменную среды PATH.
 
 .DESCRIPTION
-    Скрипт безопасно добавляет путь к директории в системную переменную PATH (для всех пользователей).
-    Он требует прав Администратора.
+    Скрипт в интерактивном режиме запрашивает путь к директории и безопасно добавляет его
+    в системную переменную PATH (для всех пользователей). Требует прав Администратора.
     Проверяет существование директории и создает ее при необходимости. 
     Затем проверяет наличие пути в PATH, чтобы избежать дублирования.
 
-.PARAMETER Path
-    Полный путь к директории для добавления в системный PATH.
-    По умолчанию: 'C:\Program Files\Scripts'.
-
 .EXAMPLE
-    PS C:\> .\Add-SystemPath.ps1 -Path "C:\Tools"
-    Добавит 'C:\Tools' в системный PATH.
+    PS C:\> .\Add-SystemPath.ps1
+    (Скрипт запросит путь для добавления)
 
 .NOTES
     Автор: hypo69
     Изменения требуют перезапуска консоли для вступления в силу в новых сессиях.
 #>
-[CmdletBinding()]
-param(
-    [Parameter(Mandatory=$false)]
-    [string]$Path = "C:\Program Files\Scripts"
-)
+
+# --- НАЧАЛО: Интерактивный запрос и проверка пути ---
+
+# Запрашиваем у пользователя путь. Результат сохранится в переменную $Path
+$Path = Read-Host "Введите полный путь к папке для добавления в системный PATH (например, C:\Tools)"
+
+# Проверяем, ввел ли пользователь хоть что-нибудь
+if ([string]::IsNullOrWhiteSpace($Path)) {
+    Write-Warning "Путь не может быть пустым. Операция отменена."
+    # Даем пользователю время прочитать сообщение перед выходом
+    Read-Host "Нажмите Enter для выхода..."
+    # Прерываем выполнение скрипта
+    return
+}
 
 Write-Verbose "Начало выполнения скрипта для добавления '$Path' в системный PATH."
+
+# --- КОНЕЦ: Интерактивный запрос и проверка пути ---
+
+
+# --- ОСНОВНАЯ ЛОГИКА (осталась без изменений) ---
 
 # 1. Проверяем и создаем папку, если необходимо
 if (-not (Test-Path -Path $Path)) {
     Write-Host "Папка '$Path' не найдена. Создаю ее..." -ForegroundColor Yellow
+    # Создаем папку. Out-Null скрывает вывод команды New-Item.
     New-Item -Path $Path -ItemType Directory -Force | Out-Null
     Write-Host "✅ Папка '$Path' успешно создана." -ForegroundColor Green
 }
 
 # 2. Получаем СИСТЕМНЫЙ PATH
-$scope = [System.EnvironmentVariableTarget]::Machine # <--- ИЗМЕНЕНО
+$scope = [System.EnvironmentVariableTarget]::Machine
 $currentPath = [System.Environment]::GetEnvironmentVariable('Path', $scope)
 
 # 3. Проверяем наличие пути в PATH
@@ -61,7 +72,7 @@ if ($pathEntries -contains $Path) {
 } else {
     # 4. Добавляем новый путь
     $newPath = "$currentPath;$Path"
-    [System.Environment]::SetEnvironmentVariable('Path', $newPath, $scope) # <--- ИЗМЕНЕНО
+    [System.Environment]::SetEnvironmentVariable('Path', $newPath, $scope)
     Write-Host "✅ Путь '$Path' успешно добавлен в СИСТЕМНУЮ переменную PATH." -ForegroundColor Green
     
     # Обновляем PATH для текущей сессии
@@ -70,3 +81,4 @@ if ($pathEntries -contains $Path) {
 }
 
 Write-Verbose "Выполнение скрипта завершено."
+Read-Host "Нажмите Enter для завершения."
