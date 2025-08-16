@@ -108,12 +108,15 @@ $reportData | Format-Table -AutoSize | Out-String | Out-Clipboard
 Часто вам не нужен весь отчет, а лишь одно или два значения. Поскольку `$exifObject` — это обычный объект PowerShell, вы можете легко обращаться к его свойствам.
 
 ```powershell
-# Получаем данные, как и раньше
-$exifToolPath = "C:\Tools\exiftool.exe"
+# Указываем путь только к файлу, с которым работаем.
+# Переменная для пути к exiftool.exe больше не нужна.
 $photoPath = "D:\Photos\IMG_1234.JPG"
-$exifObject = & $exifToolPath -json $photoPath | ConvertFrom-Json
 
-# Извлекаем конкретные свойства
+# Вызываем exiftool.exe напрямую по имени.
+# PowerShell автоматически найдет его в одной из папок, перечисленных в PATH.
+$exifObject = exiftool.exe -json $photoPath | ConvertFrom-Json
+
+# Извлекаем конкретные свойства. Эта часть остается без изменений.
 $cameraModel = $exifObject.Model
 $dateTime = $exifObject.DateTimeOriginal
 $iso = $exifObject.ISO
