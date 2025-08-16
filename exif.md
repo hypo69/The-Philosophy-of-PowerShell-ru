@@ -145,12 +145,24 @@ $allExif = exiftool.exe -json "$photoFolder\*.jpg" | ConvertFrom-Json
 # Превращаем в удобный вид 
 $report = foreach ($photo in $allExif) {
     [PSCustomObject]@{
+        # --- Основные данные о файле и камере ---
         FileName       = $photo.FileName
         DateTime       = $photo.DateTimeOriginal
-        CameraModel    = $photo.Model
+        CameraMake     = $photo.Make                 # Производитель (например, "Canon", "SONY")
+        CameraModel    = $photo.Model                 # Модель камеры (например, "EOS R5")
+        LensModel      = $photo.LensID                # Полное название модели объектива
+        
+        # --- Параметры съемки (экспозиция) ---
         ISO            = $photo.ISO
         ShutterSpeed   = $photo.ShutterSpeed
         Aperture       = $photo.Aperture
+        FocalLength    = $photo.FocalLength           # Фокусное расстояние (например, "50.0 mm")
+        ExposureMode   = $photo.ExposureProgram       # Режим съемки (например, "Manual", "Aperture Priority")
+        Flash          = $photo.Flash                 # Информация о том, сработала ли вспышка
+        
+        # --- GPS и данные изображения ---
+        GPSPosition    = $photo.GPSPosition           # Координаты GPS в виде одной строки (если есть)
+        Dimensions     = "$($photo.ImageWidth)x$($photo.ImageHeight)" # Размеры изображения в пикселях
     }
 }
 
