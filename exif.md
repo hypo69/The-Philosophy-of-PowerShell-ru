@@ -116,15 +116,18 @@ $photoPath = "D:\Photos\IMG_1234.JPG"
 # PowerShell автоматически найдет его в одной из папок, перечисленных в PATH.
 $exifObject = exiftool.exe -json $photoPath | ConvertFrom-Json
 
-# Извлекаем конкретные свойства. Эта часть остается без изменений.
-$cameraModel = $exifObject.Model
-$dateTime = $exifObject.DateTimeOriginal
-$iso = $exifObject.ISO
+# 1. Создаем один PowerShell-объект с понятными именами свойств.
+#    Это похоже на создание структурированной записи.
+$reportObject = [PSCustomObject]@{
+    "Камера"           = $exifObject.Model
+    "Дата съемки"      = $exifObject.DateTimeOriginal
+    "Чувствительность" = $exifObject.ISO
+    "Имя файла"        = $exifObject.FileName # Добавим имя файла для контекста
+}
 
-# Используем их в скрипте
-Write-Host "Фотография была сделана на камеру $cameraModel"
-Write-Host "Дата съемки: $dateTime"
-Write-Host "Чувствительность ISO: $iso"
+# 2. Выводим этот объект в интерактивное окно.
+#    Out-GridView автоматически создаст колонки из имен свойств.
+$reportObject | Out-GridView -Title "Метаданные файла: $(Split-Path $photoPath -Leaf)"
 ```
 
 Этот подход является основой для любой серьезной автоматизации, такой как переименование файлов на основе даты съемки, сортировка фотографий по модели камеры или добавление водяных знаков с информацией о выдержке.
