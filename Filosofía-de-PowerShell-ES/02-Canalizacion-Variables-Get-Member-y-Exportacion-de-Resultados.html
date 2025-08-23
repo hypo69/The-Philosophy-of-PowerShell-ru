@@ -1,0 +1,433 @@
+<h1>Filosofía de PowerShell.</h1>
+<h2>Parte 2: La canalización, las variables, Get-Member, los archivos *.ps1* y la exportación de resultados</h2>
+<p><strong>❗ Importante:</strong>
+Estoy escribiendo sobre PS7 (PowerShell 7). Es diferente de PS5 (PowerShell 5). A partir de la versión 7, PS se convirtió en multiplataforma. Debido a esto, el comportamiento de algunos comandos ha cambiado.</p>
+<p>En la primera parte, establecimos un principio clave: PowerShell funciona con <strong>objetos</strong>, no con texto. Esta publicación está dedicada a algunas herramientas importantes de PowerShell: aprenderemos a pasar objetos a través de la <strong>canalización</strong>, a analizarlos con <strong><code>Get-Member</code></strong>, a guardar los resultados en <strong>variables</strong> y a automatizar todo esto en <strong>archivos de script (<code>.ps1</code>)</strong> con la <strong>exportación</strong> de resultados a formatos convenientes.</p>
+<h3>1. ¿Qué es la canalización (<code>|</code>)?</h3>
+<p>La canalización en PowerShell es un mecanismo para pasar objetos .NET completos (no solo texto) de un comando a otro, donde cada cmdlet posterior recibe objetos estructurados con todas sus propiedades y métodos.</p>
+<p>El símbolo <code>|</code> (barra vertical) es el operador de canalización. Su trabajo es tomar el resultado (salida) del comando a su izquierda и pasarlo como entrada al comando a su derecha.</p>
+<p><code>Comando 1 (crea objetos)</code> → <code>|</code> → <code>Comando 2 (recibe y procesa objetos)</code> → <code>|</code> → <code>Comando 3 (recibe objetos procesados)</code> → | ...</p>
+<h4>La canalización clásica de UNIX: un flujo de texto</h4>
+<p>En <code>bash</code>, se pasa un <strong>flujo de bytes</strong> a través de la canalización, que generalmente se interpreta como texto.</p>
+<pre class="line-numbers"><code class="language-bash"># Encontrar todos los procesos 'nginx' y contarlos
+ps -ef | grep 'nginx' | wc -l
+</code></pre>
+<p>Aquí, <code>ps</code> genera texto, <code>grep</code> filtra este texto y <code>wc</code> cuenta las líneas. Cada utilidad no sabe nada sobre los "procesos"; solo funciona con cadenas.</p>
+<h4>La canalización de PowerShell: un flujo de objetos</h4>
+<p><strong>Ejemplo:</strong> Obtengamos todos los procesos, ordenémoslos por uso de CPU y seleccionemos los 5 más "hambrientos".</p>
+<pre class="line-numbers"><code class="language-powershell">Get-Process | Sort-Object -Property CPU -Descending | Select-Object -First 5
+</code></pre>
+<p><img src="assets/02/1.png" alt="1"></p>
+<p>Aquí, <code>Get-Process</code> crea <strong>objetos</strong> de proceso. <code>Sort-Object</code> recibe estos <strong>objetos</strong> y los ordena por la propiedad <code>CPU</code>. <code>Select-Object</code> recibe los <strong>objetos</strong> ordenados y selecciona los primeros 5.</p>
+<p>Probablemente haya notado palabras en el comando que comienzan con un guión (-): -Property, -Descending, -First. Estos son parámetros.
+Los parámetros son configuraciones, modificadores e instrucciones para un cmdlet. Le permiten controlar <strong>CÓMO</strong> un comando hará su trabajo. Sin parámetros, un comando funciona en su modo predeterminado, pero con parámetros, le da instrucciones específicas.</p>
+<p>Tipos principales de parámetros:</p>
+<ul>
+<li>
+<p>Parámetro con un valor: requiere información adicional.</p>
+<p><code>-Property CPU</code>: le estamos diciendo a Sort-Object por qué propiedad ordenar. CPU es el valor del parámetro.</p>
+<p><code>-First 5</code>: le estamos diciendo a Select-Object cuántos objetos seleccionar. 5 es el valor del parámetro.</p>
+</li>
+<li>
+<p>Parámetro de modificador (bandera): no requiere un valor. Su mera presencia en el comando habilita o deshabilita un determinado comportamiento.</p>
+<p><code>-Descending</code>: esta bandera le dice a Sort-Object que invierta el orden de clasificación (de mayor a menor). No necesita un valor adicional, es una instrucción en sí misma.</p>
+</li>
+</ul>
+<pre class="line-numbers"><code class="language-powershell">Get-Process -Name 'svchost' | Measure-Object
+</code></pre>
+<p><img src="assets/02/2.png" alt="1"></p>
+<p>Este comando responde a una pregunta muy simple:
+<strong>"¿Cuántos procesos llamados <code>svchost.exe</code> se están ejecutando actualmente en mi sistema?"</strong></p>
+<h4>Desglose paso a paso</h4>
+<h5><strong>Paso 1: <code>Get-Process -Name 'svchost'</code></strong></h5>
+<p>Esta parte del comando consulta al sistema operativo y le pide que encuentre <strong>todos</strong> los procesos en ejecución cuyo nombre de archivo ejecutable sea <code>svchost.exe</code>.
+A diferencia de los procesos como <code>notepad</code> (de los cuales suele haber uno o dos), siempre hay <strong>muchos</strong> procesos <code>svchost</code> en el sistema. El comando devolverá una <strong>matriz (colección) de objetos</strong>, donde cada objeto es un proceso <code>svchost</code> separado y completo con su propia ID única, uso de memoria, etc.
+PowerShell ha encontrado, por ejemplo, 90 procesos <code>svchost</code> en el sistema y ahora tiene una colección de 90 objetos.</p>
+<h5><strong>Paso 2: <code>|</code> (operador de canalización)</strong></h5>
+<p>Este símbolo toma la colección de 90 objetos <code>svchost</code> obtenidos en el primer paso y comienza a pasarlos <strong>uno por uno</strong> a la entrada del siguiente comando.</p>
+<h5><strong>Paso 3: <code>Measure-Object</code></strong></h5>
+<p>Como llamamos a <code>Measure-Object</code> sin parámetros (como <code>-Property</code>, <code>-Sum</code>, etc.), realiza su operación <strong>predeterminada</strong>: simplemente cuenta el número de "elementos" que se le pasaron.
+Uno, dos, tres... Después de que se hayan contado todos los objetos, <code>Measure-Object</code> crea su <strong>propio objeto de resultado</strong>, que tiene una propiedad <code>Count</code> igual al número final.</p>
+<p><strong><code>Count: 90</code></strong> — esta es la respuesta a nuestra pregunta. Hay 90 procesos <code>svchost</code> en ejecución.
+Los otros campos están vacíos porque no le pedimos a <code>Measure-Object</code> que realizara cálculos más complejos.</p>
+<h4>Ejemplo con <code>svchost</code> y parámetros</h4>
+<p>Cambiemos nuestra tarea. Ahora no solo queremos contar los procesos de <code>svchost</code>, sino también averiguar <strong>cuánta RAM total (en megabytes) consumen en conjunto</strong>.</p>
+<p>Para hacer esto, necesitaremos parámetros:</p>
+<ul>
+<li><code>-Property WorkingSet64</code>: esta instrucción le dice a <code>Measure-Object</code>: "De cada objeto <code>svchost</code> que te llegue, toma el valor numérico de la propiedad <code>WorkingSet64</code> (este es el uso de la memoria en bytes)".</li>
+<li><code>-Sum</code>: esta instrucción de bandera dice: "Suma todos estos valores que tomaste de la propiedad <code>WorkingSet64</code>".</li>
+</ul>
+<p>Nuestro nuevo comando se verá así:</p>
+<pre class="line-numbers"><code class="language-powershell">Get-Process -Name 'svchost' | Measure-Object -Property WorkingSet64 -Sum
+</code></pre>
+<p><img src="assets/02/3.png" alt="3"></p>
+<ol>
+<li><code>Get-Process</code> encontrará el número de objetos <code>svchost</code>.</li>
+<li>La canalización <code>|</code> los pasará a <code>Measure-Object</code>.</li>
+<li>Pero ahora <code>Measure-Object</code> funciona de manera diferente:
+<ul>
+<li>Toma el primer objeto <code>svchost</code>, mira su propiedad <code>.WorkingSet64</code> (por ejemplo, <code>25000000</code> bytes) y recuerda este número.</li>
+<li>Toma el segundo objeto, mira su <code>.WorkingSet64</code> (por ejemplo, <code>15000000</code> bytes) y lo suma al anterior.</li>
+<li>...y así sucesivamente para todos los objetos.</li>
+</ul>
+</li>
+<li>Como resultado, <code>Measure-Object</code> creará un objeto de resultado, pero ahora será diferente.</li>
+</ol>
+<ul>
+<li><strong><code>Count: 92</code></strong>: el número de objetos.</li>
+<li><strong><code>Sum: 1661890560</code></strong>: esta es la suma total de todos los valores de <code>WorkingSet64</code> en bytes.</li>
+<li><strong><code>Property: WorkingSet64</code></strong>: este campo ahora también está lleno; nos informa qué propiedad se utilizó para los cálculos.</li>
+</ul>
+<h3>2. Variables (regulares y la especial <code>$_</code>)</h3>
+<p>Una variable es un almacenamiento con nombre en la memoria que contiene algún valor.</p>
+<p>Este valor puede ser cualquier cosa: texto, un número, una fecha o, lo que es más importante para PowerShell, un objeto completo o incluso una colección de objetos. Un nombre de variable en PowerShell siempre comienza con un signo de dólar ($).
+Ejemplos: $name, $counter, $processList.</p>
+<p>¿La variable especial $_?</p>
+<p>$_ es la abreviatura de "el objeto actual" o "esta cosa de aquí".
+Imagine una cinta transportadora en una fábrica. Diferentes partes (objetos) se mueven a lo largo de ella.</p>
+<p>$_ es la parte misma que está justo frente a usted (o frente al robot de procesamiento).</p>
+<p>La fuente (Get-Process) vierte una caja entera de partes (todos los procesos) en la cinta transportadora.</p>
+<p>La canalización (|) hace que estas partes se muevan a lo largo de la cinta una por una.</p>
+<p>El controlador (Where-Object o ForEach-Object) es un robot que mira cada parte.</p>
+<p>La variable $_ es la parte misma que se encuentra actualmente en las "manos" del robot.</p>
+<p>Cuando el robot termina con una parte, la cinta transportadora le alimenta la siguiente, y $_ ahora apuntará a ella.</p>
+<p>Calculemos cuánta memoria total usan los procesos de <code>svchost</code> y mostremos el resultado en el monitor.</p>
+<pre class="line-numbers"><code class="language-powershell"># 1. Ejecute el comando y guarde su objeto de resultado complejo en la variable $svchostMemory
+$svchostMemory = Get-Process -Name svchost | Measure-Object -Property WorkingSet64 -Sum
+
+# 2. Ahora podemos trabajar con el objeto guardado. Obtengamos la propiedad Sum de él
+$memoryInMB = $svchostMemory.Sum / 1MB
+
+# 3. Muestre el resultado en la pantalla usando la nueva variable
+Write-Host "Todos los procesos de svchost están usando $memoryInMB MB de memoria."
+</code></pre>
+<p><img src="assets/02/4.png" alt="3"></p>
+<ul>
+<li>
+<p><code>Write-Host</code> es un cmdlet especializado cuyo único propósito es <strong>mostrar texto directamente al usuario en la consola</strong>.</p>
+</li>
+<li>
+<p>Una cadena entre comillas dobles: <code>"..."</code> es una cadena de texto que pasamos al cmdlet <code>Write-Host</code> como argumento. ¿Por qué comillas dobles y no comillas simples?</p>
+<p>En PowerShell, hay dos tipos de comillas:</p>
+<ul>
+<li><strong>Simples (<code>'...'</code>)</strong>: crean una <strong>cadena literal</strong>. Todo lo que está dentro de ellas se trata como texto sin formato, sin excepciones.</li>
+<li><strong>Dobles (<code>"..."</code>)</strong>: crean una <strong>cadena expandible (o sustituible)</strong>. PowerShell "escanea" dicha cadena en busca de variables (que comienzan con <code>$</code>) y sustituye sus valores en su lugar.</li>
+</ul>
+</li>
+<li>
+<p><code>$memoryInMB</code>. Esta es la variable en la que <strong>en el paso anterior</strong> de nuestro script pusimos el resultado de los cálculos. Cuando <code>Write-Host</code> recibe una cadena entre comillas dobles, se produce un proceso llamado <strong>"Expansión de cadena"</strong>:</p>
+<ol>
+<li>PowerShell ve el texto <code>"Todos los procesos de svchost están usando "</code>.</li>
+<li>Luego encuentra la construcción <code>$memoryInMB</code>. Entiende que esto no es solo texto, sino una variable.</li>
+<li>Busca en la memoria, encuentra el valor almacenado en <code>$memoryInMB</code> (por ejemplo, <code>1585.52</code>).</li>
+<li><strong>Sustituye este valor</strong> directamente en la cadena.</li>
+<li>Luego agrega el resto del texto: <code>" MB de memoria."</code>.</li>
+<li>Como resultado, la cadena ya ensamblada se pasa a <code>Write-Host</code>: <code>"Todos los procesos de svchost están usando 1585.52 MB de memoria."</code>.</li>
+</ol>
+</li>
+</ul>
+<p>Inicie el Bloc de notas:</p>
+<ol>
+<li>Busque el proceso del Bloc de notas y guárdelo en la variable $notepadProcess</li>
+</ol>
+<pre class="line-numbers"><code class="language-powershell">$notepadProcess = Get-Process -Name notepad
+</code></pre>
+<ol start="2">
+<li>Acceda a la propiedad 'Id' de este objeto a través del punto y muéstrela</li>
+</ol>
+<pre class="line-numbers"><code class="language-powershell">Write-Host "El ID del proceso 'Bloc de notas' es: $($notepadProcess.Id)"
+</code></pre>
+<p><img src="assets/02/5.png" alt="5"></p>
+<p><strong>❗ Importante:</strong>
+    Write-Host "rompe" la canalización. El texto que genera no se puede pasar más adelante en la canalización para su procesamiento. Solo está destinado a la visualización.</p>
+<h3>3. Get-Member (el inspector de objetos)</h3>
+<p>Sabemos que los objetos "fluyen" a través de la canalización. Pero, ¿cómo sabemos de qué están hechos? ¿Qué propiedades tienen y qué acciones (métodos) se pueden realizar en ellos?</p>
+<p>El cmdlet <strong><code>Get-Member</code></strong> (alias: <code>gm</code>) es la principal herramienta de investigación.
+Antes de trabajar con un objeto, páselo por <code>Get-Member</code> para ver todas sus capacidades.</p>
+<p>Analicemos los objetos que crea <code>Get-Process</code>:</p>
+<pre class="line-numbers"><code class="language-powershell">Get-Process | Get-Member
+</code></pre>
+<p><img src="assets/02/6.png" alt="6"></p>
+<p><em>Analicemos cada parte de la salida de Get-Member.</em></p>
+<p><code>TypeName: System.Diagnostics.Process</code>: este es el "nombre de tipo" completo y oficial del objeto de la biblioteca .NET. Este es su "pasaporte".
+Esta línea le indica que todos los objetos devueltos por Get-Process son objetos de tipo System.Diagnostics.Process.
+Esto garantiza que todos tendrán el mismo conjunto de propiedades y métodos.
+Puede <a href="https://www.google.com/search?q=System.Diagnostics.Process+site%3Amicrosoft.com">buscar en Google</a> "System.Diagnostics.Process" para encontrar la documentación oficial de Microsoft con información aún más detallada.</p>
+<ul>
+<li>
+<p>Columna 1: <code>Name</code></p>
+<p>Este es un <strong>nombre</strong> simple y legible por humanos de una propiedad, método u otro "miembro" de un objeto. Este es el nombre que usará en su código para acceder a los datos o realizar acciones.</p>
+</li>
+<li>
+<p>Columna 2: <code>MemberType</code> (tipo de miembro)</p>
+<p>Esta es la columna más importante de entender. Clasifica <strong>qué</strong> es cada miembro. Este es su "título de trabajo" que le dice <strong>CÓMO</strong> usarlo.</p>
+<ul>
+<li>
+<p><strong><code>Property</code> (propiedad):</strong> una <strong>característica</strong> o <strong>porción de datos</strong> almacenada dentro de un objeto. Puede "leer" su valor.</p>
+<ul>
+<li><em>Ejemplos de la captura de pantalla:</em> <code>BasePriority</code>, <code>HandleCount</code>, <code>ExitCode</code>. Estos son solo datos que se pueden ver.</li>
+</ul>
+</li>
+<li>
+<p><strong><code>Method</code> (método):</strong> una <strong>ACCIÓN</strong> que se puede realizar en un objeto. Los métodos siempre se llaman con paréntesis <code>()</code>.</p>
+<ul>
+<li><em>Ejemplos de la captura de pantalla:</em> <code>Kill</code>, <code>Refresh</code>, <code>WaitForExit</code>. Escribiría <code>$process.Kill()</code> o <code>$process.Refresh()</code>.</li>
+</ul>
+</li>
+<li>
+<p><strong><code>AliasProperty</code> (propiedad de alias):</strong> un <strong>alias amigable</strong> para otra propiedad más larga. PowerShell los agrega por conveniencia y brevedad.</p>
+<ul>
+<li><em>Ejemplos de la captura de pantalla:</em> <code>WS</code> es un alias corto para <code>WorkingSet64</code>. <code>Name</code> es para <code>ProcessName</code>. <code>VM</code> es para <code>VirtualMemorySize64</code>.</li>
+</ul>
+</li>
+<li>
+<p><strong><code>Event</code> (evento):</strong> una <strong>NOTIFICACIÓN</strong> de que algo ha sucedido, a la que puede "suscribirse".</p>
+<ul>
+<li><em>Ejemplo de la captura de pantalla:</em> <code>Exited</code>. Su script puede "escuchar" este evento para realizar alguna acción inmediatamente después de que finalice el proceso.</li>
+</ul>
+</li>
+<li><strong><code>CodeProperty</code> y <code>NoteProperty</code>:</strong> tipos especiales de propiedades, a menudo agregados por el propio PowerShell por conveniencia. Una <code>CodeProperty</code> calcula su valor "sobre la marcha", y una <code>NoteProperty</code> es una propiedad de nota simple agregada a un objeto.</li>
+</ul>
+</li>
+<li>
+<p>Columna 3: <code>Definition</code> (definición)</p>
+<p>Esta es la <strong>definición técnica</strong> o "firma" del miembro. Le da los detalles exactos para su uso. Su contenido depende del <code>MemberType</code>:</p>
+<ul>
+<li>
+<p><strong>Para <code>AliasProperty</code>:</strong> muestra <strong>a qué es igual el alias</strong>. ¡Esto es increíblemente útil!</p>
+<ul>
+<li><em>Ejemplo de la captura de pantalla:</em> <code>WS = WorkingSet64</code>. Puede ver de inmediato que <code>WS</code> es solo una notación corta para <code>WorkingSet64</code>.</li>
+</ul>
+</li>
+<li>
+<p><strong>Para <code>Property</code>:</strong> muestra el <strong>tipo de datos</strong> almacenado в la propiedad (p. ej., <code>int</code> para un entero, <code>string</code> para texto, <code>datetime</code> para una fecha y hora), y qué puede hacer con él (<code>{get;}</code> - solo lectura, <code>{get;set;}</code> - lectura y escritura).</p>
+<ul>
+<li><em>Ejemplo de la captura de pantalla:</em> <code>int BasePriority {get;}</code>. Esta es una propiedad de entero que solo se puede leer.</li>
+</ul>
+</li>
+<li>
+<p><strong>Para <code>Method</code>:</strong> muestra lo que devuelve el método (p. ej., <code>void</code> - nada, <code>bool</code> - verdadero/falso) y qué <strong>parámetros</strong> (datos de entrada) acepta entre paréntesis.</p>
+<ul>
+<li><em>Ejemplo de la captura de pantalla:</em> <code>void Kill()</code>. Esto significa que el método <code>Kill</code> no devuelve nada y se puede llamar sin parámetros. También hay una segunda versión <code>void Kill(bool entireProcessTree)</code> que acepta un valor booleano (verdadero/falso).</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4>En forma de tabla</h4>
+<table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>¿Qué es?</th>
+<th>Ejemplo de la captura de pantalla</th>
+<th>¿Para qué?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>El nombre que usa en su código.</td>
+<td><code>Kill</code>, <code>WS</code>, <code>Name</code></td>
+<td>para acceder a una propiedad o método (<code>$process.WS</code>, <code>$process.Kill()</code>).</td>
+</tr>
+<tr>
+<td><strong>MemberType</strong></td>
+<td>El tipo de miembro (datos, acción, etc.).</td>
+<td><code>Method</code>, <code>Property</code>, <code>AliasProperty</code></td>
+<td><strong>cómo</strong> usarlo (leer un valor o llamar con <code>()</code>).</td>
+</tr>
+<tr>
+<td><strong>Definition</strong></td>
+<td>Detalles técnicos.</td>
+<td><code>WS = WorkingSet64</code>, <code>void Kill()</code></td>
+<td>qué se esconde detrás de un alias y qué parámetros necesita un método.</td>
+</tr>
+</tbody>
+</table>
+<h4>Ejemplo: Trabajar con ventanas de procesos</h4>
+<h5>1. El problema:</h5>
+<p>"He abierto muchas ventanas del Bloc de notas. ¿Cómo puedo minimizar mediante programación todas menos la principal y luego cerrar solo la que tiene la palabra 'Sin título' en su título?"</p>
+<h5>2. Investigación con <code>Get-Member</code>:</h5>
+<p>Necesitamos encontrar propiedades relacionadas con la ventana y su título.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-Process -Name notepad | Get-Member
+</code></pre>
+<p><strong>Análisis del resultado de <code>Get-Member</code>:</strong></p>
+<ul>
+<li>Al desplazarse por las propiedades, encontramos <code>MainWindowTitle</code>. El tipo es <code>string</code>. ¡Genial, este es el título de la ventana principal!</li>
+<li>En los métodos, vemos <code>CloseMainWindow()</code>. Esta es una forma más "suave" de cerrar una ventana que <code>Kill()</code>.</li>
+<li>También en los métodos, está <code>WaitForInputIdle()</code>. Suena interesante; quizás ayude a esperar hasta que el proceso esté listo para la interacción.</li>
+</ul>
+<p><img src="assets/02/7.png" alt="7"></p>
+<p><code>Get-Member</code> nos mostró la propiedad <code>MainWindowTitle</code>, que es la clave para resolver el problema y nos permite interactuar con los procesos en función del estado de sus ventanas, y no solo por su nombre.</p>
+<h5>3. La solución:</h5>
+<p>Ahora podemos construir una lógica basada en el título de la ventana.</p>
+<pre class="line-numbers"><code class="language-powershell"># 1. Encontrar todos los procesos del Bloc de notas
+$notepads = Get-Process -Name notepad
+
+# 2. Recorrer cada uno y verificar el título
+foreach ($pad in $notepads) {
+    # Para cada proceso ($pad), verifique su propiedad MainWindowTitle
+    if ($pad.MainWindowTitle -like '*Untitled*') {
+        Write-Host "Se encontró un Bloc de notas sin guardar (ID: $($pad.Id)). Cerrando su ventana..."
+        # $pad.CloseMainWindow() # Descomente para cerrar realmente
+        Write-Host "La ventana '$($pad.MainWindowTitle)' se habría cerrado." -ForegroundColor Yellow
+    } else {
+        Write-Host "Omitiendo el Bloc de notas con el título: $($pad.MainWindowTitle)"
+    }
+}
+</code></pre>
+<p><img src="assets/02/8.png" alt="8"></p>
+<p><img src="assets/02/9.png" alt="9"></p>
+<hr>
+<h4>Ejemplo: Encontrar el proceso principal</h4>
+<h5>1. El problema:</h5>
+<p>"A veces veo muchos procesos secundarios <code>chrome.exe</code> en el sistema. ¿Cómo puedo saber cuál es el proceso principal, el proceso "padre" que los inició a todos?"</p>
+<h5>2. Investigación con <code>Get-Member</code>:</h5>
+<p>Necesitamos encontrar algo que vincule un proceso con otro.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-Process -Name chrome | Select-Object -First 1 | Get-Member
+</code></pre>
+<p><img src="assets/02/10.png" alt="10"></p>
+<p><strong>Análisis del resultado de <code>Get-Member</code>:</strong></p>
+<ul>
+<li>Al examinar cuidadosamente la lista, encontramos una propiedad de tipo <code>CodeProperty</code> llamada <code>Parent</code>.</li>
+<li>Su <code>Definition</code> es <code>System.Diagnostics.Process Parent{get=GetParentProcess;}</code>.
+Esta es una propiedad calculada que, cuando se accede a ella, devuelve el <strong>objeto del proceso principal</strong>.</li>
+</ul>
+<h5>3. La solución:</h5>
+<p>Ahora podemos escribir un script que, para cada proceso de <code>chrome</code>, mostrará información sobre su padre.</p>
+<pre class="line-numbers"><code class="language-powershell"># 1. Obtener todos los procesos de chrome
+$chromeProcesses = Get-Process -Name chrome
+
+# 2. Para cada uno de ellos, mostrar información sobre él y su padre
+$chromeProcesses | Select-Object -First 5 | ForEach-Object {
+    # Obtener el proceso principal
+    $parent = $_.Parent
+    
+    # Formatear una salida agradable
+    Write-Host "Proceso:" -ForegroundColor Green
+    Write-Host "  - Nombre: $($_.ProcessName), ID: $($_.Id)"
+    Write-Host "Su padre:" -ForegroundColor Yellow
+    Write-Host "  - Nombre: $($parent.ProcessName), ID: $($parent.Id)"
+    Write-Host "-----------------------------"
+}
+</code></pre>
+<p><img src="assets/02/11.png" alt="11"></p>
+<p><img src="assets/02/12.png" alt="12"></p>
+<p>Podemos ver de inmediato que los procesos con los ID 4756, 7936, 8268 y 9752 fueron iniciados por el proceso con el ID 14908. También podemos notar un caso interesante con el ID de proceso: 7252, cuyo proceso principal no se determinó (quizás el padre ya había finalizado en el momento de la verificación). La modificación del script con una verificación if ($parent) maneja este caso de forma ordenada sin causar un error.
+Get-Member nos ayudó a descubrir la propiedad "oculta" Parent, que proporciona potentes capacidades para analizar la jerarquía de procesos.</p>
+<h4>4. El archivo *.ps1* (creación de scripts)</h4>
+<p>Cuando su cadena de comandos se vuelve útil, querrá guardarla para un uso repetido. Para eso están los <strong>scripts</strong>: archivos de texto con la extensión <strong><code>.ps1</code></strong>.</p>
+<h5>Permiso para ejecutar scripts</h5>
+<p>De forma predeterminada, Windows prohíbe la ejecución de scripts locales. Para solucionar esto <strong>para el usuario actual</strong>, ejecute lo siguiente una vez en PowerShell <strong>como administrador</strong>:</p>
+<pre class="line-numbers"><code class="language-powershell">Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+</code></pre>
+<p>Esta es una configuración segura que le permite ejecutar sus propios scripts y scripts firmados por un editor de confianza.</p>
+<h5>Script de ejemplo <code>system_monitor.ps1</code></h5>
+<p>Cree un archivo con este nombre y pegue el código a continuación. Este script recopila información del sistema y genera informes.</p>
+<pre class="line-numbers"><code class="language-powershell"># system_monitor.ps1
+#requires -Version 5.1
+
+&lt;#
+.SYNOPSIS
+    Un script para crear un informe de estado del sistema.
+.DESCRIPTION
+    Recopila información sobre procesos, servicios y espacio en disco y genera informes.
+.PARAMETER OutputPath
+    La ruta para guardar los informes. El valor predeterminado es 'C:\Temp'.
+.EXAMPLE
+    .\system_monitor.ps1 -OutputPath "C:\Reports"
+#&gt;
+param(
+    [Parameter(Mandatory=$false)]
+    [string]$OutputPath = "C:\Temp"
+)
+
+# --- Bloque 1: Preparación ---
+Write-Host "Preparando la creación del informe..." -ForegroundColor Cyan
+if (!(Test-Path $OutputPath)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
+
+# --- Bloque 2: Recopilación de datos ---
+Write-Host "Recopilando información..." -ForegroundColor Green
+$processes = Get-Process | Sort-Object CPU -Descending
+$services = Get-Service | Group-Object Status | Select-Object Name, Count
+
+# --- Bloque 3: Llamar a la función de exportación (ver la siguiente sección) ---
+Export-Results -Processes $processes -Services $services -OutputPath $OutputPath
+
+Write-Host "Informes guardados correctamente en la carpeta $OutputPath" -ForegroundColor Magenta
+</code></pre>
+<p><em>Nota: La función <code>Export-Results</code> se definirá en la siguiente sección como un ejemplo de buena práctica.</em></p>
+<h4>5. Exportar resultados</h4>
+<p>Los datos sin procesar son buenos, pero a menudo deben presentarse en una forma que sea conveniente para una persona u otro programa. PowerShell ofrece muchos cmdlets para exportar.</p>
+<table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Comando</th>
+<th>Descripción</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Texto sin formato</strong></td>
+<td><code>... \| Out-File C:\Temp\data.txt</code></td>
+<td>Redirige la representación de texto a un archivo.</td>
+</tr>
+<tr>
+<td><strong>CSV (para Excel)</strong></td>
+<td><code>... \| Export-Csv C:\Temp\data.csv -NoTypeInfo</code></td>
+<td>Exporta objetos a CSV. <code>-NoTypeInfo</code> elimina la primera línea de servicio.</td>
+</tr>
+<tr>
+<td><strong>Informe HTML</strong></td>
+<td><code>... \| ConvertTo-Html -Title "Informe"</code></td>
+<td>Crea código HTML a partir de objetos.</td>
+</tr>
+<tr>
+<td><strong>JSON (para API, web)</strong></td>
+<td><code>... \| ConvertTo-Json</code></td>
+<td>Convierte objetos a formato JSON.</td>
+</tr>
+<tr>
+<td><strong>XML (formato nativo de PowerShell)</strong></td>
+<td><code>... \| Export-Clixml C:\Temp\data.xml</code></td>
+<td>Guarda objetos con todos los tipos de datos. Se pueden restaurar perfectamente a través de <code>Import-Clixml</code>.</td>
+</tr>
+</tbody>
+</table>
+<h5>Adición al script: función de exportación</h5>
+<p>Agreguemos una función a nuestro script <code>system_monitor.ps1</code> que se encargará de la exportación. Coloque este código <strong>antes</strong> de la llamada a <code>Export-Results</code>.</p>
+<pre class="line-numbers"><code class="language-powershell">function Export-Results {
+    param(
+        $Processes,
+        $Services,
+        $OutputPath
+    )
+
+    $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm"
+
+    # Exportar a CSV
+    $Processes | Select-Object -First 20 | Export-Csv (Join-Path $OutputPath "processes_$timestamp.csv") -NoTypeInformation
+    $Services | Export-Csv (Join-Path $OutputPath "services_$timestamp.csv") -NoTypeInformation
+
+    # Crear un bonito informe HTML
+    $htmlReportPath = Join-Path $OutputPath "report_$timestamp.html"
+    $processesHtml = $Processes | Select-Object -First 10 Name, Id, CPU | ConvertTo-Html -Fragment -PreContent "&lt;h2&gt;Los 10 procesos principales por CPU&lt;/h2&gt;"
+    $servicesHtml = $Services | ConvertTo-Html -Fragment -PreContent "&lt;h2&gt;Estadísticas de servicio&lt;/h2&gt;"
+
+    ConvertTo-Html -Head "&lt;title&gt;Informe del sistema&lt;/title&gt;" -Body "&lt;h1&gt;Informe del sistema de $(Get-Date)&lt;/h1&gt; $($processesHtml) $($servicesHtml)" | Out-File $htmlReportPath
+}
+</code></pre>
+<p>Ahora nuestro script no solo recopila datos, sino que también los guarda ordenadamente en dos formatos: CSV para análisis y HTML para una visualización rápida.</p>
+<h4>Conclusión</h4>
+<ol>
+<li><strong>La canalización (<code>|</code>)</strong> es la herramienta principal para combinar comandos y procesar objetos.</li>
+<li><strong><code>Get-Member</code></strong> es un analizador de objetos que muestra de qué están hechos.</li>
+<li><strong>Las variables (<code>$var</code>, <code>$_</code>)</strong> le permiten guardar datos y hacer referencia al objeto actual en la canalización.</li>
+<li><strong>Los archivos <code>.ps1</code></strong> convierten los comandos en herramientas de automatización reutilizables.</li>
+<li><strong>Los cmdlets de exportación</strong> (<code>Export-Csv</code>, <code>ConvertTo-Html</code>) exportan datos en el formato apropiado.</li>
+</ol>
+<p><strong>En la siguiente parte, aplicaremos este conocimiento para navegar y administrar el sistema de archivos, explorando los objetos <code>System.IO.DirectoryInfo</code> y <code>System.IO.FileInfo</code>.</strong></p>

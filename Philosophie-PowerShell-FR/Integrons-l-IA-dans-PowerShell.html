@@ -1,0 +1,98 @@
+<h1>Intégrons l'IA dans PowerShell</h1>
+<h4><strong>Qu'est-ce que Gemini CLI ?</strong></h4>
+<p>J'ai déjà parlé en détail de <strong>Gemini CLI</strong> dans <a href="https://pikabu.ru/series/geminicli_48168">Gemini CLI : Introduction et premiers pas</a>. Mais si vous l'avez manqué, voici une brève introduction.</p>
+<p>En bref, <strong>Gemini CLI</strong> est une interface de ligne de commande pour interagir avec les modèles d'IA de Google. Vous le lancez dans votre terminal, et il se transforme en un chat qui, contrairement aux versions web, a accès à votre système de fichiers.</p>
+<p><strong>Fonctionnalités clés :</strong></p>
+<ul>
+<li><strong>Comprend le code :</strong> Il peut analyser vos scripts, y trouver des erreurs et suggérer des corrections.</li>
+<li><strong>Génère du code :</strong> Vous pouvez lui demander d'écrire un script PowerShell pour résoudre votre problème, et il le fera.</li>
+<li><strong>Fonctionne avec les fichiers :</strong> Peut lire des fichiers, en créer de nouveaux et apporter des modifications aux fichiers existants.</li>
+<li><strong>Exécute des commandes :</strong> Peut exécuter des commandes shell, telles que <code>git</code> ou <code>npm</code>.</li>
+</ul>
+<p>Pour nos besoins, le plus important est que Gemini CLI peut fonctionner en <strong>mode non interactif</strong>. C'est-à-dire que nous pouvons lui transmettre une invite en tant qu'argument de ligne de commande, et il nous renverra simplement une réponse, sans lancer son chat interactif. C'est précisément cette capacité que nous utiliserons.</p>
+<h4><strong>Installation et configuration</strong></h4>
+<p>Pour commencer, nous devons préparer notre environnement. Cela ne se fait qu'une seule fois.</p>
+<p><strong>Étape 1 : Installation de Node.js</strong>
+Gemini CLI est une application écrite en Node.js (un environnement populaire pour JavaScript). Nous devons donc d'abord installer Node.js lui-même.</p>
+<ol>
+<li>Rendez-vous sur le site officiel : <a href="https://nodejs.org/">https://nodejs.org/</a></li>
+<li>Téléchargez et installez la version <strong>LTS</strong>. C'est l'option la plus stable et la plus recommandée. Suivez simplement les instructions de l'installateur.</li>
+<li>Après l'installation, ouvrez une nouvelle fenêtre PowerShell et vérifiez que tout fonctionne :
+<pre class="line-numbers"><code class="language-powershell">node -v
+npm -v
+</code></pre>
+<p>Vous devriez voir des versions, par exemple, <code>v20.12.2</code> et <code>10.5.0</code>.</p>
+</li>
+</ol>
+<p><strong>Étape 2 : Installation de Gemini CLI lui-même</strong>
+Maintenant que nous avons <code>npm</code> (le gestionnaire de paquets pour Node.js), l'installation de Gemini CLI se résume à une seule commande. Exécutez-la dans PowerShell:</p>
+<pre class="line-numbers"><code class="language-powershell">npm install -g @google/gemini-cli
+</code></pre>
+<p>Le drapeau <code>-g</code> signifie "installation globale", ce qui rendra la commande <code>gemini</code> accessible depuis n'importe quel endroit de votre système.</p>
+<p><strong>Étape 3 : Authentification</strong>
+La première fois que vous lancerez Gemini CLI, il vous demandera de vous connecter à votre compte Google. C'est nécessaire pour qu'il puisse utiliser votre quota gratuit.</p>
+<ol>
+<li>Saisissez simplement la commande dans PowerShell:
+<pre class="line-numbers"><code class="language-powershell">gemini
+</code></pre>
+</li>
+<li>Il vous posera une question sur la connexion. Sélectionnez "Se connecter avec Google".</li>
+<li>Votre navigateur ouvrira une fenêtre de connexion Google standard. Connectez-vous à votre compte et accordez les autorisations nécessaires.</li>
+<li>Après cela, vous verrez un message de bienvenue de Gemini dans la console. Félicitations, vous êtes prêt à travailler ! Vous pouvez taper <code>/quit</code> pour quitter son chat.</li>
+</ol>
+<h4><strong>Philosophie PowerShell : Le terrible <code>Invoke-Expression</code></strong></h4>
+<p>Avant de tout assembler, familiarisons-nous avec l'un des cmdlets les plus dangereux de PowerShell — <code>Invoke-Expression</code>, ou son alias court <code>iex</code>.</p>
+<p><code>Invoke-Expression</code> prend une chaîne de texte et l'exécute comme si c'était une commande tapée dans la console.</p>
+<p><strong>Exemple :</strong></p>
+<pre class="line-numbers"><code class="language-powershell">$commandString = "Get-Process -Name 'chrome'"
+Invoke-Expression -InputObject $commandString
+</code></pre>
+<p>Cette commande fera la même chose qu'un simple appel à <code>Get-Process -Name 'chrome'</code>.</p>
+<p><strong>Pourquoi est-il dangereux ?</strong> Parce que l'exécution d'une chaîne que vous ne contrôlez pas (par exemple, obtenue sur Internet ou à partir d'une IA) est une énorme faille de sécurité. Si l'IA renvoie par erreur ou par malveillance la commande <code>Remove-Item -Path C:\ -Recurse -Force</code>, <code>iex</code> l'exécutera sans hésitation.</p>
+<p>Pour notre tâche — créer un pont géré et contrôlé entre une requête en langage naturel et son exécution — il est parfaitement adapté. Nous l'utiliserons avec prudence, en étant pleinement conscients des risques.</p>
+<h4><strong>Assemblons le tout : Le cmdlet <code>Invoke-Gemini</code></strong></h4>
+<p>Écrivons une simple fonction PowerShell qui nous permettra d'envoyer des invites avec une seule commande.</p>
+<p>Copiez ce code et collez-le dans votre fenêtre PowerShell afin qu'il devienne disponible dans la session actuelle.</p>
+<pre class="line-numbers"><code class="language-powershell">function Invoke-Gemini {
+    &lt;#
+    .SYNOPSIS
+        Envoie une invite de texte à Gemini CLI et renvoie sa réponse.
+    #&gt;
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]
+        [string]$Prompt
+    )
+
+    process {
+        try {
+            # Vérifier si la commande gemini est disponible
+            $geminiCommand = Get-Command gemini -ErrorAction Stop
+        }
+        catch {
+            Write-Error "La commande 'gemini' n'a pas été trouvée. Assurez-vous que Gemini CLI est installé."
+            return
+        }
+
+        Write-Verbose "Envoi de l'invite à Gemini CLI..."
+        
+        # Exécuter gemini en mode non interactif avec notre invite
+        $output = &amp; $geminiCommand.Source -p $Prompt 2&gt;&amp;1
+
+        if (-not $?) {
+            Write-Warning "La commande gemini s'est terminée avec une erreur."
+            $output | ForEach-Object { Write-Warning $_.ToString() }
+            return
+        }
+
+        # Renvoyer une sortie propre
+        return $output
+    }
+}
+</code></pre>
+<h4><strong>Essayons la magie !</strong></h4>
+<p>Posons-lui une question générale directement depuis notre console PowerShell.</p>
+<pre class="line-numbers"><code class="language-powershell">Invoke-Gemini -Prompt "Parlez-moi des cinq dernières tendances en matière d'apprentissage automatique"
+</code></pre>
+<p><strong>Félicitations !</strong> Vous venez d'intégrer avec succès l'IA dans PowerShell.</p>
+<p>Dans le prochain article, je vous expliquerai comment utiliser Gemini CLI pour exécuter des scripts et automatiser des tâches.</p>

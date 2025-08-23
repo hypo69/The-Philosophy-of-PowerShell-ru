@@ -1,0 +1,140 @@
+<p dir="rtl"><img src="assets/cover.png" alt="1"></p>
+<h1 dir="rtl">הפילוסופיה של <span dir="ltr">PowerShell</span></h1>
+<p dir="rtl">&nbsp;&nbsp;&nbsp;&nbsp;מטרת סדרה זו אינה ליצור מדריך <span dir="ltr">cmdlet</span> נוסף.
+הרעיון המרכזי שאפתח לאורך כל הפרקים הוא המעבר מחשיבה בטקסט ל<strong>חשיבה באובייקטים</strong>.
+במקום לעבוד עם מחרוזות לא מובנות, אלמד אותך כיצד לפעול עם אובייקטים מלאים עם המאפיינים והשיטות שלהם,
+ולהעביר אותם דרך הצינור, כמו בפס ייצור במפעל.</p>
+<p dir="rtl">&nbsp;&nbsp;&nbsp;&nbsp;סדרה זו תעזור לך לחרוג מכתיבת פקודות פשוטה ולרכוש גישה הנדסית מודעת ל-<span dir="ltr">PowerShell</span>,
+ככלי רב עוצמה לניתוח מערכת ההפעלה.</p>
+<hr>
+<h2 dir="rtl">🗺️ תוכן עניינים</h2>
+<h3 dir="rtl"><strong>חלק א': יסודות ובסיס</strong></h3>
+<ul>
+<li dir="rtl"><strong><a href="./01.md">חלק 0: מה היה לפני <span dir="ltr">PowerShell</span>?</a></strong>
+<ul>
+<li dir="rtl">סקירה היסטורית: <span dir="ltr"><code>COMMAND.COM</code></span>, <span dir="ltr"><code>AUTOEXEC.BAT</code></span>, <span dir="ltr"><code>CONFIG.SYS</code></span>.</li>
+<li dir="rtl">השוואה לעולם <span dir="ltr">UNIX</span> (<span dir="ltr"><code>sh</code></span>, <span dir="ltr"><code>csh</code></span>).</li>
+<li dir="rtl">אבולוציית <span dir="ltr">Windows</span>: ליבת <span dir="ltr">NT</span> וכלי ניהול מפוזרים.</li>
+</ul>
+</li>
+<li dir="rtl"><strong><a href="./01.md">חלק 1: הפעלה ראשונה ומושגי מפתח</a></strong>
+<ul>
+<li dir="rtl">פרויקט <span dir="ltr">Monad</span> ולידת <span dir="ltr">PowerShell</span>.</li>
+<li dir="rtl"><strong>רעיון מרכזי:</strong> אובייקטים במקום טקסט.</li>
+<li dir="rtl">תחביר "פועל-שם עצם".</li>
+<li dir="rtl">העוזר הראשי שלך: <span dir="ltr"><code>Get-Help</code></span>.</li>
+</ul>
+</li>
+<li dir="rtl"><strong><a href="./02.md">חלק 2: צינור, משתנים וחקר אובייקטים</a></strong>
+<ul>
+<li dir="rtl">עקרונות פעולת הצינור (<span dir="ltr"><code>|</code></span>).</li>
+<li dir="rtl">עבודה עם משתנים (<span dir="ltr"><code>$var</code></span>, <span dir="ltr"><code>$_</code></span>).</li>
+<li dir="rtl">ניתוח אובייקטים באמצעות <span dir="ltr"><code>Get-Member</code></span>.</li>
+<li dir="rtl"><em>דוגמת קוד: <a href="./code/02/system_monitor.ps1"><span dir="ltr">system_monitor.ps1</span></a></em></li>
+</ul>
+</li>
+<li dir="rtl"><strong><a href="./03.md">חלק 3: ניווט וניהול מערכת קבצים</a></strong>
+<ul>
+<li dir="rtl">מושג הספקים (<span dir="ltr"><code>PSDrives</code></span>): מערכת קבצים, רישום, אישורים.</li>
+<li dir="rtl">אופרטורי השוואה ולוגיקה.</li>
+<li dir="rtl">מבוא לפונקציות.</li>
+<li dir="rtl"><em>דוגמאות קוד: <a href="./code/03/Find-DuplicateFiles.ps1"><span dir="ltr">Find-DuplicateFiles.ps1</span></a>, <a href="./code/03/Backup-FolderToZip.ps1"><span dir="ltr">Backup-FolderToZip.ps1</span></a></em></li>
+</ul>
+</li>
+<li dir="rtl"><strong>חלק 4: עבודה אינטראקטיבית: <span dir="ltr"><code>Out-ConsoleGridView</code></span>, <span dir="ltr"><code>F7History</code></span> ו-<span dir="ltr"><code>ConsoleGuiTools</code></span></strong>
+<ul>
+<li dir="rtl"><span dir="ltr"><code>Where-Object</code></span>: מסננת לאובייקטים.</li>
+<li dir="rtl"><span dir="ltr"><code>Sort-Object</code></span>: סידור נתונים.</li>
+<li dir="rtl"><span dir="ltr"><code>Select-Object</code></span>: בחירת מאפיינים ויצירת שדות מחושבים.</li>
+</ul>
+</li>
+<li dir="rtl"><strong><a href="./05.md">חלק 5: משתנים וסוגי נתונים בסיסיים</a></strong>
+<ul>
+<li dir="rtl">משתנים כאובייקטים <span dir="ltr"><code>PSVariable</code></span>.</li>
+<li dir="rtl">היקפים (<span dir="ltr">Scope</span>).</li>
+<li dir="rtl">עבודה עם מחרוזות, מערכים וטבלאות גיבוב.</li>
+</ul>
+</li>
+</ul>
+<h3 dir="rtl"><strong>חלק ג': מסקריפטים לכלים מקצועיים</strong></h3>
+<ul>
+<li dir="rtl"><strong><a href="./06.md">חלק 6: יסודות הסקריפטינג. קבצי <span dir="ltr"><code>.ps1</code></span> ומדיניות ביצוע</a></strong>
+<ul>
+<li dir="rtl">מעבר מקונסולה אינטראקטיבית לקבצי <span dir="ltr"><code>.ps1</code></span>.</li>
+<li dir="rtl">מדיניות ביצוע (<span dir="ltr"><code>Execution Policy</code></span>): מהן וכיצד להגדיר אותן.</li>
+</ul>
+</li>
+<li dir="rtl"><strong><a href="./07.md">חלק 7: מבנים לוגיים ולולאות</a></strong>
+<ul>
+<li dir="rtl">קבלת החלטות: <span dir="ltr"><code>If / ElseIf / Else</code></span> ו-<span dir="ltr"><code>Switch</code></span>.</li>
+<li dir="rtl">חזרה על פעולות: לולאות <span dir="ltr"><code>ForEach</code></span>, <span dir="ltr"><code>For</code></span>, <span dir="ltr"><code>While</code></span>.</li>
+</ul>
+</li>
+<li dir="rtl"><strong><a href="./08.md">חלק 8: פונקציות — יצירת <span dir="ltr">cmdlets</span> משלך</a></strong>
+<ul>
+<li dir="rtl">אנטומיה של פונקציה מתקדמת: <span dir="ltr"><code>[CmdletBinding()]</code></span>, <span dir="ltr"><code>[Parameter()]</code></span>.</li>
+<li dir="rtl">יצירת עזרה (<span dir="ltr"><code>Comment-Based Help</code></span>).</li>
+<li dir="rtl">עיבוד צינור: בלוקים <span dir="ltr"><code>begin</code></span>, <span dir="ltr"><code>process</code></span>, <span dir="ltr"><code>end</code></span>.</li>
+</ul>
+</li>
+<li dir="rtl"><strong><a href="./09.md">חלק 9: עבודה עם נתונים: <span dir="ltr">CSV</span>, <span dir="ltr">JSON</span>, <span dir="ltr">XML</span></a></strong>
+<ul>
+<li dir="rtl">ייבוא וייצוא נתונים טבלאיים באמצעות <span dir="ltr"><code>Import-Csv</code></span> ו-<span dir="ltr"><code>Export-Csv</code></span>.</li>
+<li dir="rtl">עבודה עם <span dir="ltr">API</span>: <span dir="ltr"><code>ConvertTo-Json</code></span> ו-<span dir="ltr"><code>ConvertFrom-Json</code></span>.</li>
+<li dir="rtl">יסודות העבודה עם <span dir="ltr">XML</span>.</li>
+</ul>
+</li>
+<li dir="rtl"><strong><a href="./10.md">חלק 10: מודולים ו-<span dir="ltr">PowerShell Gallery</span></a></strong>
+<ul>
+<li dir="rtl">ארגון קוד למודולים: <span dir="ltr"><code>.psm1</code></span> ו-<span dir="ltr"><code>.psd1</code></span>.</li>
+<li dir="rtl">ייבוא מודולים וייצוא פונקציות.</li>
+<li dir="rtl">שימוש בספרייה הגלובלית <span dir="ltr"><code>PowerShell Gallery</code></span>.</li>
+</ul>
+</li>
+</ul>
+<h3 dir="rtl"><strong>חלק ד': טכניקות מתקדמות ופרויקט סופי</strong></h3>
+<ul>
+<li dir="rtl"><strong><a href="./11.md">חלק 11: ניהול מרחוק ומשימות רקע</a></strong>
+<ul>
+<li dir="rtl">יסודות <span dir="ltr">PowerShell Remoting (WinRM)</span>.</li>
+<li dir="rtl">סשנים אינטראקטיביים (<span dir="ltr"><code>Enter-PSSession</code></span>).</li>
+<li dir="rtl">ניהול המוני באמצעות <span dir="ltr"><code>Invoke-Command</code></span>.</li>
+<li dir="rtl">הפעלת פעולות ארוכות טווח ברקע (<span dir="ltr"><code>Start-Job</code></span>).</li>
+</ul>
+</li>
+<li dir="rtl"><strong><a href="./12.md">חלק 12: מבוא ל-<span dir="ltr">GUI</span> ב-<span dir="ltr">PowerShell</span> באמצעות <span dir="ltr">Windows Forms</span></a></strong>
+<ul>
+<li dir="rtl">יצירת חלונות, כפתורים ותוויות.</li>
+<li dir="rtl">טיפול באירועים (לחיצת כפתור).</li>
+</ul>
+</li>
+<li dir="rtl"><strong><a href="./13.md">חלק 13: פרויקט "מוניטור מעבד" — עיצוב ממשק</a></strong>
+<ul>
+<li dir="rtl">פריסת ממשק משתמש גרפי.</li>
+<li dir="rtl">הגדרת רכיב <span dir="ltr"><code>Chart</code></span> להצגת גרפים.</li>
+</ul>
+</li>
+<li dir="rtl"><strong><a href="./14.md">חלק 14: פרויקט "מוניטור מעבד" — איסוף נתונים ולוגיקה</a></strong>
+<ul>
+<li dir="rtl">קבלת מדדי ביצועים באמצעות <span dir="ltr"><code>Get-Counter</code></span>.</li>
+<li dir="rtl">שימוש בטיימר לעדכון נתונים בזמן אמת.</li>
+</ul>
+</li>
+<li dir="rtl"><strong><a href="./15.md">חלק 15: פרויקט "מוניטור מעבד" — הרכבה סופית וצעדים הבאים</a></strong>
+<ul>
+<li dir="rtl">הוספת טיפול בשגיאות (<span dir="ltr"><code>Try...Catch</code></span>).</li>
+<li dir="rtl">סיכום ורעיונות לפיתוח נוסף.</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 dir="rtl">🎯 למי מיועדת סדרה זו?</h2>
+<ul>
+<li dir="rtl"><strong>למתחילים</strong> שרוצים להניח יסודות מוצקים ונכונים בלימוד <span dir="ltr">PowerShell</span>, תוך הימנעות מטעויות נפוצות.</li>
+<li dir="rtl"><strong>למנהלי <span dir="ltr">Windows</span> מנוסים</strong> הרגילים ל-<span dir="ltr"><code>cmd.exe</code></span> או <span dir="ltr">VBScript</span> ורוצים לסדר את הידע שלהם על ידי מעבר לכלי מודרני וחזק יותר.</li>
+<li dir="rtl"><strong>לכל מי</strong> שרוצה ללמוד לחשוב לא בפקודות, אלא במערכות, וליצור סקריפטים אוטומטיים אלגנטיים, אמינים וקלים לתחזוקה.</li>
+</ul>
+<h2 dir="rtl">✍️ משוב והשתתפות</h2>
+<p dir="rtl">&nbsp;&nbsp;&nbsp;&nbsp;אם מצאתם שגיאה, שגיאת כתיב או שיש לכם הצעה לשיפור חלק כלשהו, אנא אל תהססו ליצור <strong><span dir="ltr">Issue</span></strong> במאגר זה.</p>
+<h2 dir="rtl">📜 רישיון</h2>
+<p dir="rtl">&nbsp;&nbsp;&nbsp;&nbsp;כל הקוד והטקסטים במאגר זה מופצים תחת <strong><a href="./LICENSE">רישיון <span dir="ltr">MIT</span></a></strong>. אתם חופשיים להשתמש, לשנות ולהפיץ את החומרים עם ייחוס.</p>

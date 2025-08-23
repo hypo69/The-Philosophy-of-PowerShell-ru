@@ -1,0 +1,289 @@
+<h3 dir="rtl"><strong>דוגמאות מעשיות לשימוש ב-<span dir="ltr">Out-ConsoleGridView</span></strong></h3>
+<p dir="rtl">בפרק הקודם, הכרנו את <span dir="ltr"><code>Out-ConsoleGridView</code></span> — כלי רב עוצמה למניפולציה אינטראקטיבית של נתונים ישירות בטרמינל. אם אינך יודע על מה אני מדבר, אני ממליץ לקרוא זאת תחילה.
+מאמר זה מוקדש כולו לו. לא אחזור על התיאוריה, אלא אעבור מיד לפרקטיקה ואציג 10 תרחישים שבהם <span dir="ltr">cmdlet</span> זה יכול לחסוך למנהל מערכת או למשתמש מתקדם זמן רב.</p>
+<p dir="rtl"><span dir="ltr"><code>Out-ConsoleGridView</code></span> הוא לא רק "מציג". הוא <strong>מסנן אובייקטים אינטראקטיבי</strong> באמצע הצינור שלך.</p>
+<p dir="rtl"><strong>דרישות קדם:</strong></p>
+<ul>
+<li dir="rtl"><span dir="ltr">PowerShell 7.2</span> ואילך.</li>
+<li dir="rtl">מודול <span dir="ltr"><code>Microsoft.PowerShell.ConsoleGuiTools</code></span> מותקן. אם עדיין לא התקנת אותו:
+<pre class="line-numbers"><code class="language-powershell">Install-Module Microsoft.PowerShell.ConsoleGuiTools -Scope CurrentUser
+</code></pre>
+</li>
+</ul>
+<hr>
+<h3 dir="rtl">10 דוגמאות מעשיות</h3>
+<h4 dir="rtl">דוגמה 1: עצירת תהליכים אינטראקטיבית</h4>
+<p dir="rtl">משימה קלאסית: מצא וסיים מספר תהליכים "תקועים" או מיותרים.</p>
+<pre class="line-numbers"><code class="language-powershell"># בחר תהליכים באופן אינטראקטיבי
+$procsToStop = Get-Process | Sort-Object -Property CPU -Descending | Out-ConsoleGridView -OutputMode Multiple
+
+# אם משהו נבחר, העבר את האובייקטים לסיום
+if ($procsToStop) {
+    $procsToStop | Stop-Process -WhatIf
+}
+</code></pre>
+<p><img src="assets/02/1.png" alt="1"></p>
+<video width="600" controls>
+  <source src="https://github.com/user-attachments/assets/9d17f7d3-6efb-4069-a5f4-829e7e63b63f" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<ol>
+<li dir="rtl"><span dir="ltr"><code>Get-Process</code></span> מאחזר את כל התהליכים הפועלים.</li>
+<li dir="rtl"><span dir="ltr"><code>Sort-Object</code></span> ממיין אותם לפי שימוש במעבד, כך שה"זללנים" ביותר נמצאים למעלה.</li>
+<li dir="rtl"><span dir="ltr"><code>Out-ConsoleGridView</code></span> מציג את הטבלה. אתה יכול להקליד <span dir="ltr"><code>chrome</code></span> או <span dir="ltr"><code>notepad</code></span> כדי לסנן את הרשימה באופן מיידי, ולבחור את התהליכים הרצויים באמצעות מקש <span dir="ltr"><code>Space</code></span>.</li>
+<li dir="rtl">לאחר לחיצה על <span dir="ltr"><code>Enter</code></span>, <strong>אובייקטי</strong> התהליכים שנבחרו מועברים למשתנה <span dir="ltr"><code>$procsToStop</code></span> ולאחר מכן ל-<span dir="ltr"><code>Stop-Process</code></span>.</li>
+</ol>
+<h4 dir="rtl">דוגמה 2: ניהול שירותי <span dir="ltr">Windows</span></h4>
+<p dir="rtl">צריך להפעיל מחדש במהירות מספר שירותים הקשורים ליישום אחד (לדוגמה, <span dir="ltr">SQL Server</span>).</p>
+<pre class="line-numbers"><code class="language-powershell">$services = Get-Service | Out-ConsoleGridView -OutputMode Multiple -Title "בחר שירותים להפעלה מחדש"
+
+if ($services) {
+    $services | Restart-Service -WhatIf
+}
+</code></pre>
+<p><img src="assets/02/1.png" alt="1"></p>
+<video width="600" controls>
+  <source src="https://github.com/user-attachments/assets/37986608-21d6-4013-b421-16072d1cf128" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<ol>
+<li dir="rtl">אתה מקבל רשימה של כל השירותים.</li>
+<li dir="rtl">בתוך <span dir="ltr"><code>Out-ConsoleGridView</code></span>, אתה מקליד <span dir="ltr"><code>sql</code></span> במסנן ורואה מיד את כל השירותים הקשורים ל-<span dir="ltr">SQL Server</span>.</li>
+<li dir="rtl">אתה בוחר את השירותים הדרושים ולוחץ <span dir="ltr"><code>Enter</code></span>. אובייקטי השירותים שנבחרו מועברים להפעלה מחדש.</li>
+</ol>
+<h4 dir="rtl">דוגמה 3: ניקוי תיקיית "הורדות" מקבצים גדולים</h4>
+<p dir="rtl">עם הזמן, תיקיית "הורדות" מתמלאת בקבצים מיותרים. בואו נמצא ונמחק את הגדולים שבהם.</p>
+<pre class="line-numbers"><code class="language-powershell">
+# --- שלב 1: הגדרת הנתיב לתיקיית 'Downloads'
+$DownloadsPath = "E:\Users\user\Downloads" # &lt;--- שנה שורה זו לנתיב שלך
+===========================================================================
+
+# בדיקה: אם הנתיב לא צוין או שהתיקייה לא קיימת - צא.
+if ([string]::IsNullOrEmpty($DownloadsPath) -or (-not (Test-Path -Path $DownloadsPath))) {
+    Write-Error "תיקיית 'הורדות' לא נמצאה בנתיב שצוין: '$DownloadsPath'. אנא בדוק את הנתיב בבלוק ההגדרות בתחילת הסקריפט."
+    return
+}
+
+# --- שלב 2: יידוע המשתמש ואיסוף נתונים ---
+Write-Host "מתחיל סריקה של תיקייה '$DownloadsPath'. זה עשוי לקחת זמן..." -ForegroundColor Cyan
+
+$files = Get-ChildItem -Path $DownloadsPath -File -Recurse -ErrorAction SilentlyContinue | 
+    Sort-Object -Property Length -Descending
+
+# --- שלב 3: בדיקת קבצים וקריאה לחלון האינטראקטיבי ---
+if ($files) {
+    Write-Host "הסריקה הושלמה. נמצאו $($files.Count) קבצים. פותח חלון בחירה..." -ForegroundColor Green
+    
+    $filesToShow = $files | Select-Object FullName, @{Name="SizeMB"; Expression={[math]::Round($_.Length / 1MB, 2)}}, LastWriteTime
+    
+    $filesToDelete = $filesToShow | Out-ConsoleGridView -OutputMode Multiple -Title "בחר קבצים למחיקה מ-'$DownloadsPath'"
+
+    # --- שלב 4: עיבוד בחירת המשתמש ---
+    if ($filesToDelete) {
+        Write-Host "הקבצים הבאים יימחקו:" -ForegroundColor Yellow
+        $filesToDelete | Format-Table -AutoSize
+        
+        $filesToDelete.FullName | Remove-Item -WhatIf -Verbose
+    } else {
+        Write-Host "הפעולה בוטלה. לא נבחרו קבצים." -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "לא נמצאו קבצים בתיקייה '$DownloadsPath'." -ForegroundColor Yellow
+}
+</code></pre>
+<p><a href="https://github.com/hypo69/The-Philosophy-of-PowerShell-ru/blob/master/code/scripts/Clear-DownloadsFolder.ps1">Clear-DownloadsFolder.ps1</a></p>
+<p><a href="https://github.com/user-attachments/assets/e7402188-5ffe-4e11-92ca-6f7eb4da709a">תוכן הורדות</a></p>
+<video width="600" controls>
+  <source src="https://github.com/user-attachments/assets/e7402188-5ffe-4e11-92ca-6f7eb4da709a" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<ol>
+<li dir="rtl">אנו מקבלים את כל הקבצים, ממיינים אותם לפי גודל, ובעזרת <span dir="ltr"><code>Select-Object</code></span> יוצרים עמודת <span dir="ltr"><code>SizeMB</code></span> נוחה.</li>
+<li dir="rtl">ב-<span dir="ltr"><code>Out-ConsoleGridView</code></span> אתה רואה רשימה ממוינת שבה תוכל לבחור בקלות קבצי <span dir="ltr"><code>.iso</code></span> או <span dir="ltr"><code>.zip</code></span> ישנים וגדולים.</li>
+<li dir="rtl">לאחר הבחירה, נתיביהם המלאים מועברים ל-<span dir="ltr"><code>Remove-Item</code></span>.</li>
+</ol>
+<h4 dir="rtl">דוגמה 4: הוספת משתמשים לקבוצת <span dir="ltr">Active Directory</span></h4>
+<p dir="rtl">דבר חיוני למנהלי <span dir="ltr">AD</span>.</p>
+<pre class="line-numbers"><code class="language-powershell"># קבל משתמשים ממחלקת השיווק
+$users = Get-ADUser -Filter 'Department -eq "Marketing"' -Properties DisplayName
+
+# בחר באופן אינטראקטיבי את מי להוסיף
+$usersToAdd = $users | Select-Object Name, DisplayName | Out-ConsoleGridView -OutputMode Multiple
+
+if ($usersToAdd) {
+    Add-ADGroupMember -Identity "Marketing-Global-Group" -Members $usersToAdd -WhatIf
+}
+</code></pre>
+<p dir="rtl">במקום להזין ידנית שמות משתמשים, אתה מקבל רשימה נוחה שבה תוכל למצוא ולבחור במהירות את העובדים הדרושים לפי שם משפחה או שם משתמש.</p>
+<hr>
+<h4 dir="rtl">דוגמה 5: גלה אילו תוכניות משתמשות באינטרנט כרגע</h4>
+<p dir="rtl">אחת המשימות הנפוצות: "איזו תוכנית מאטה את האינטרנט?" או "מי שולח נתונים לאן?". עם <span dir="ltr"><code>Out-ConsoleGridView</code></span>, תוכל לקבל תשובה ברורה ואינטראקטיבית.</p>
+<p dir="rtl"><strong>בתוך הטבלה:</strong></p>
+<ul>
+<li dir="rtl"><strong>הקלד <span dir="ltr"><code>chrome</code></span> או <span dir="ltr"><code>msedge</code></span></strong> בשדה הסינון כדי לראות את כל החיבורים הפעילים של הדפדפן שלך.</li>
+<li dir="rtl"><strong>הזן כתובת <span dir="ltr">IP</span></strong> (לדוגמה, <span dir="ltr"><code>151.101.1.69</code></span> מהעמודה <span dir="ltr"><code>RemoteAddress</code></span>) כדי לראות אילו תהליכים אחרים מחוברים לאותו שרת.</li>
+</ul>
+<pre class="line-numbers"><code class="language-powershell"># קבל את כל חיבורי ה-TCP הפעילים
+$connections = Get-NetTCPConnection -State Established | 
+    Select-Object RemoteAddress, RemotePort, OwningProcess, @{Name="ProcessName"; Expression={(Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).ProcessName}}
+
+# הצג בטבלה אינטראקטיבית לניתוח
+$connections | Out-ConsoleGridView -Title "חיבורי אינטרנט פעילים"
+</code></pre>
+<ol>
+<li dir="rtl"><span dir="ltr"><code>Get-NetTCPConnection -State Established</code></span> אוסף את כל חיבורי הרשת המבוססים.</li>
+<li dir="rtl">באמצעות <span dir="ltr"><code>Select-Object</code></span>, אנו יוצרים דוח נוח: אנו מוסיפים את שם התהליך (<span dir="ltr"><code>ProcessName</code></span>) למזהה שלו (<span dir="ltr"><code>OwningProcess</code></span>) כדי שיהיה ברור איזו תוכנית יצרה את החיבור.</li>
+<li dir="rtl"><span dir="ltr"><code>Out-ConsoleGridView</code></span> מציג לך תמונה חיה של פעילות הרשת.</li>
+</ol>
+<p><a href="https://github.com/user-attachments/assets/1ba78f04-bad8-4717-853b-27317cac72ec">Net</a></p>
+<video width="600" controls>
+  <source src="https://github.com/user-attachments/assets/1ba78f04-bad8-4717-853b-27317cac72ec" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<hr>
+<h4 dir="rtl">דוגמה 6: ניתוח התקנת תוכנה ועדכונים</h4>
+<p dir="rtl">נחפש אירועים מהמקור <strong>"<span dir="ltr">MsiInstaller</span>"</strong>. הוא אחראי על התקנה, עדכון והסרה של רוב התוכניות (בפורמט <span dir="ltr"><code>.msi</code></span>), וכן על רכיבי עדכון רבים של <span dir="ltr">Windows</span>.</p>
+<pre class="line-numbers"><code class="language-powershell"># מצא את 100 האירועים האחרונים מהמתקין של Windows (MsiInstaller)
+# אירועים אלה קיימים בכל מערכת
+$installEvents = Get-WinEvent -ProviderName 'MsiInstaller' -MaxEvents 100
+
+# אם נמצאו אירועים, הצג אותם בצורה נוחה
+if ($installEvents) {
+    $installEvents | 
+        # בחר רק את השימושיים ביותר: זמן, הודעה ומזהה אירוע
+        # מזהה 11707 - התקנה מוצלחת, מזהה 11708 - התקנה נכשלה
+        Select-Object TimeCreated, Id, Message |
+        Out-ConsoleGridView -Title "יומן התקנת תוכנה (MsiInstaller)"
+} else {
+    Write-Warning "לא נמצאו אירועים מ-'MsiInstaller'. זה מאוד חריג."
+}
+</code></pre>
+<p dir="rtl"><strong>בתוך הטבלה:</strong></p>
+<ul>
+<li dir="rtl">אתה יכול לסנן את הרשימה לפי שם התוכנית (לדוגמה, <span dir="ltr"><code>Edge</code></span> או <span dir="ltr"><code>Office</code></span>) כדי לראות את כל היסטוריית העדכונים שלה.</li>
+<li dir="rtl">אתה יכול למיין לפי <span dir="ltr"><code>Id</code></span> כדי למצוא התקנות שנכשלו (<span dir="ltr"><code>11708</code></span>).</li>
+</ul>
+<hr>
+<h4 dir="rtl">דוגמה 7: הסרת התקנה אינטראקטיבית של תוכניות</h4>
+<pre class="line-numbers"><code class="language-powershell"># נתיבי רישום שבהם מאוחסן מידע על תוכניות מותקנות
+$registryPaths = @(
+    'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+    'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+)
+
+# אסוף נתונים מהרישום, הסר רכיבי מערכת שאין להם שם
+$installedPrograms = Get-ItemProperty $registryPaths | 
+    Where-Object { $_.DisplayName -and $_.UninstallString } |
+    Select-Object DisplayName, DisplayVersion, Publisher, InstallDate |
+    Sort-Object DisplayName
+
+# אם נמצאו תוכניות, הצג אותן בטבלה אינטראקטיבית
+if ($installedPrograms) {
+    $programsToUninstall = $installedPrograms | Out-ConsoleGridView -OutputMode Multiple -Title "בחר תוכניות להסרה"
+    
+    if ($programsToUninstall) {
+        Write-Host "התוכניות הבאות יוסרו:" -ForegroundColor Yellow
+        $programsToUninstall | Format-Table -AutoSize
+        
+        # בלוק זה מורכב יותר, מכיוון ש-Uninstall-Package לא יעבוד כאן.
+        # אנו מריצים את פקודת הסרת ההתקנה מהרישום.
+        foreach ($program in $programsToUninstall) {
+            # מצא את אובייקט התוכנית המקורי עם מחרוזת הסרת ההתקנה
+            $fullProgramInfo = Get-ItemProperty $registryPaths | Where-Object { $_.DisplayName -eq $program.DisplayName }
+            
+            if ($fullProgramInfo.UninstallString) {
+                Write-Host "מפעיל את תוכנית הסרת ההתקנה עבור '$($program.DisplayName)'..." -ForegroundColor Yellow
+                # אזהרה: זה יפעיל את תוכנית הסרת ההתקנה הגרפית הסטנדרטית של התוכנית.
+                # WhatIf לא יעבוד כאן, היזהר.
+                # cmd.exe /c $fullProgramInfo.UninstallString
+            }
+        }
+        Write-Warning "כדי להסיר תוכניות בפועל, בטל את ההערה מהשורה 'cmd.exe /c ...' בסקריפט."
+    }
+} else {
+    Write-Warning "לא ניתן למצוא תוכניות מותקנות ברישום."
+}
+</code></pre>
+<hr>
+<p dir="rtl">אתה צודק לחלוטין. דוגמת <span dir="ltr">Active Directory</span> אינה מתאימה למשתמש רגיל ודורשת סביבה מיוחדת.</p>
+<p dir="rtl">בואו נחליף אותה בתרחיש אוניברסלי ומובן הרבה יותר, המדגים בצורה מושלמת את עוצמת השרשור של <span dir="ltr"><code>Out-ConsoleGridView</code></span> ויהיה שימושי לכל משתמש.</p>
+<hr>
+<h4 dir="rtl">דוגמה 8: שרשור <span dir="ltr"><code>Out-ConsoleGridView</code></span></h4>
+<p dir="rtl">זוהי הטכניקה החזקה ביותר. הפלט של סשן אינטראקטיבי אחד הופך לקלט עבור אחר. <strong>משימה:</strong> בחר אחת מתיקיות הפרויקט שלך, ולאחר מכן בחר מתוכה קבצים ספציפיים ליצירת ארכיון <span dir="ltr">ZIP</span>.</p>
+<pre class="line-numbers"><code class="language-powershell"># --- שלב 1: מצא באופן אוניברסלי את תיקיית "מסמכים" ---
+$SearchPath = [System.Environment]::GetFolderPath('MyDocuments')
+
+# --- שלב 2: בחר באופן אינטראקטיבי תיקייה אחת מהמיקום שצוין ---
+$selectedFolder = Get-ChildItem -Path $SearchPath -Directory | 
+    Out-ConsoleGridView -Title "בחר תיקייה לארכיון"
+
+if ($selectedFolder) {
+    # --- שלב 3: אם נבחרה תיקייה, קבל את קבציה ובחר אילו מהם לארכיון ---
+    $filesToArchive = Get-ChildItem -Path $selectedFolder.FullName -File | 
+        Out-ConsoleGridView -OutputMode Multiple -Title "בחר קבצים לארכיון מ-'$($selectedFolder.Name)'"
+
+    if ($filesToArchive) {
+        # --- שלב 4: בצע פעולה עם נתיבים אוניברסליים ---
+        $archiveName = "Archive-$($selectedFolder.Name)-$(Get-Date -Format 'yyyy-MM-dd').zip"
+        
+        # דרך אוניברסלית לקבל נתיב שולחן עבודה
+        $desktopPath = [System.Environment]::GetFolderPath('Desktop')
+        $destinationPath = Join-Path -Path $desktopPath -ChildPath $archiveName
+        
+        # צור ארכיון
+        Compress-Archive -Path $filesToArchive.FullName -DestinationPath $destinationPath -WhatIf
+        
+        Write-Host "ארכיון '$archiveName' ייווצר בשולחן העבודה שלך בנתיב '$destinationPath'." -ForegroundColor Green
+    }
+}
+</code></pre>
+<ol>
+<li dir="rtl">ה-<span dir="ltr"><code>Out-ConsoleGridView</code></span> הראשון מציג לך רשימה של תיקיות בתוך "המסמכים" שלך. אתה יכול למצוא במהירות את התיקייה הדרושה לך על ידי הקלדת חלק משמה, ולבחור <strong>תיקייה אחת</strong>.</li>
+<li dir="rtl">אם נבחרה תיקייה, הסקריפט פותח מיד <span dir="ltr"><code>Out-ConsoleGridView</code></span> <strong>שני</strong>, המציג כעת את <strong>הקבצים שבתוך</strong> תיקייה זו.</li>
+<li dir="rtl">אתה בוחר <strong>קובץ אחד או יותר</strong> באמצעות מקש <span dir="ltr"><code>Space</code></span> ולוחץ <span dir="ltr"><code>Enter</code></span>.</li>
+<li dir="rtl">הסקריפט לוקח את הקבצים שנבחרו ויוצר מהם ארכיון <span dir="ltr">ZIP</span> בשולחן העבודה שלך.</li>
+</ol>
+<p dir="rtl">זה הופך משימה מורכבת מרובת שלבים (מצא תיקייה, מצא בה קבצים, העתק את נתיביהם, הפעל את פקודת הארכיון) לתהליך אינטראקטיבי אינטואיטיבי דו-שלבי.</p>
+<h4 dir="rtl">דוגמה 9: ניהול רכיבי <span dir="ltr">Windows</span> אופציונליים</h4>
+<pre class="line-numbers"><code class="language-powershell"># --- דוגמה 9: ניהול רכיבי Windows אופציונליים ---
+
+# קבל רק רכיבים מופעלים
+$features = Get-WindowsOptionalFeature -Online | Where-Object { $_.State -eq 'Enabled' }
+
+$featuresToDisable = $features | Select-Object FeatureName, DisplayName | 
+    Out-ConsoleGridView -OutputMode Multiple -Title "בחר רכיבים לביטול"
+
+if ($featuresToDisable) {
+    # אזהר את המשתמש מפני אי-הפיכות
+    Write-Host "אזהרה! הרכיבים הבאים יושבתו באופן מיידי." -ForegroundColor Red
+    Write-Host "פעולה זו אינה תומכת במצב בטוח -WhatIf."
+    $featuresToDisable | Select-Object DisplayName
+
+    # בקש אישור ידני
+    $confirmation = Read-Host "להמשיך? (y/n)"
+    
+    if ($confirmation -eq 'y') {
+        foreach($feature in $featuresToDisable){
+            Write-Host "מבטל רכיב '$($feature.DisplayName)'..." -ForegroundColor Yellow
+            Disable-WindowsOptionalFeature -Online -FeatureName $feature.FeatureName
+        }
+        Write-Host "הפעולה הושלמה. ייתכן שתידרש הפעלה מחדש." -ForegroundColor Green
+    } else {
+        Write-Host "הפעולה בוטלה."
+    }
+}
+</code></pre>
+<p dir="rtl">אתה יכול למצוא ולבטל בקלות רכיבים מיותרים, כגון <span dir="ltr"><code>Telnet-Client</code></span> או <span dir="ltr"><code>Windows-Sandbox</code></span>.</p>
+<h4 dir="rtl">דוגמה 10: ניהול מכונות וירטואליות של <span dir="ltr">Hyper-V</span></h4>
+<p dir="rtl">עצור במהירות מספר מכונות וירטואליות לצורך תחזוקת המארח.</p>
+<pre class="line-numbers"><code class="language-powershell"># קבל רק מכונות וירטואליות פועלות
+$vms = Get-VM | Where-Object { $_.State -eq 'Running' }
+
+$vmsToStop = $vms | Select-Object Name, State, Uptime | 
+    Out-ConsoleGridView -OutputMode Multiple -Title "בחר מכונות וירטואליות לעצירה"
+
+if ($vmsToStop) {
+    $vmsToStop | Stop-VM -WhatIf
+}
+</code></pre>
+<p dir="rtl">אתה מקבל רשימה של מכונות פועלות בלבד ויכול לבחור באופן אינטראקטיבי את אלה שצריך לכבות בבטחה.</p>

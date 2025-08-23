@@ -1,0 +1,140 @@
+<p><img src="assets/cover.png" alt="1"></p>
+<h1>La Filosofía de PowerShell</h1>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;El objetivo de esta serie no es crear otra referencia de cmdlets.
+La idea clave que desarrollaré a lo largo de todos los capítulos es la transición del pensamiento en texto al <strong>pensamiento en objetos</strong>.
+En lugar de trabajar con cadenas sin estructura, le enseñaré cómo operar con objetos completos con sus propiedades y métodos,
+pasándolos a través de la canalización, como en una línea de montaje en una fábrica.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Esta serie le ayudará a ir más allá de la simple escritura de comandos y a adquirir un enfoque de ingeniería consciente de PowerShell,
+como una potente herramienta para diseccionar el sistema operativo.</p>
+<hr>
+<h2>🗺️ Tabla de contenidos</h2>
+<h3><strong>Sección I: Fundamentos y conceptos básicos</strong></h3>
+<ul>
+<li><strong><a href="./01.md">Parte 0: ¿Qué había antes de PowerShell?</a></strong>
+<ul>
+<li>Excursión histórica: <code>COMMAND.COM</code>, <code>AUTOEXEC.BAT</code>, <code>CONFIG.SYS</code>.</li>
+<li>Comparación con el mundo UNIX (<code>sh</code>, <code>csh</code>).</li>
+<li>Evolución de Windows: núcleo NT y herramientas de administración dispares.</li>
+</ul>
+</li>
+<li><strong><a href="./01.md">Parte 1: Primer lanzamiento y conceptos clave</a></strong>
+<ul>
+<li>El proyecto Monad y el nacimiento de PowerShell.</li>
+<li><strong>Idea principal:</strong> Objetos en lugar de texto.</li>
+<li>Sintaxis "Verbo-Sustantivo".</li>
+<li>Su principal asistente: <code>Get-Help</code>.</li>
+</ul>
+</li>
+<li><strong><a href="./02.md">Parte 2: Canalización, variables y exploración de objetos</a></strong>
+<ul>
+<li>Principios de funcionamiento de la canalización (<code>|</code>).</li>
+<li>Trabajar con variables (<code>$var</code>, <code>$_</code>).</li>
+<li>Análisis de objetos con <code>Get-Member</code>.</li>
+<li><em>Ejemplo de código: <a href="./code/02/system_monitor.ps1">system_monitor.ps1</a></em></li>
+</ul>
+</li>
+<li><strong><a href="./03.md">Parte 3: Navegación y gestión del sistema de archivos</a></strong>
+<ul>
+<li>El concepto de proveedores (<code>PSDrives</code>): sistema de archivos, registro, certificados.</li>
+<li>Operadores de comparación y lógica.</li>
+<li>Introducción a las funciones.</li>
+<li><em>Ejemplos de código: <a href="./code/03/Find-DuplicateFiles.ps1">Find-DuplicateFiles.ps1</a>, <a href="./code/03/Backup-FolderToZip.ps1">Backup-FolderToZip.ps1</a></em></li>
+</ul>
+</li>
+<li><strong>Parte 4: Trabajo interactivo: <code>Out-ConsoleGridView</code>, <code>F7History</code> y <code>ConsoleGuiTools</code></strong>
+<ul>
+<li><code>Where-Object</code>: Un tamiz para objetos.</li>
+<li><code>Sort-Object</code>: Ordenación de datos.</li>
+<li><code>Select-Object</code>: Selección de propiedades y creación de campos calculados.</li>
+</ul>
+</li>
+<li><strong><a href="./05.md">Parte 5: Variables y tipos de datos básicos</a></strong>
+<ul>
+<li>Variables como objetos <code>PSVariable</code>.</li>
+<li>Ámbitos.</li>
+<li>Trabajar con cadenas, matrices y tablas hash.</li>
+</ul>
+</li>
+</ul>
+<h3><strong>Sección III: De scripts a herramientas profesionales</strong></h3>
+<ul>
+<li><strong><a href="./06.md">Parte 6: Conceptos básicos de scripting. Archivos <code>.ps1</code> y política de ejecución</a></strong>
+<ul>
+<li>Transición de la consola interactiva a los archivos <code>.ps1</code>.</li>
+<li>Políticas de ejecución (<code>Execution Policy</code>): qué son y cómo configurarlas.</li>
+</ul>
+</li>
+<li><strong><a href="./07.md">Parte 7: Construcciones lógicas y bucles</a></strong>
+<ul>
+<li>Toma de decisiones: <code>If / ElseIf / Else</code> y <code>Switch</code>.</li>
+<li>Repetición de acciones: bucles <code>ForEach</code>, <code>For</code>, <code>While</code>.</li>
+</ul>
+</li>
+<li><strong><a href="./08.md">Parte 8: Funciones — creación de sus propios cmdlets</a></strong>
+<ul>
+<li>Anatomía de una función avanzada: <code>[CmdletBinding()]</code>, <code>[Parameter()]</code>.</li>
+<li>Creación de ayuda (<code>Comment-Based Help</code>).</li>
+<li>Procesamiento de canalizaciones: bloques <code>begin</code>, <code>process</code>, <code>end</code>.</li>
+</ul>
+</li>
+<li><strong><a href="./09.md">Parte 9: Trabajar con datos: CSV, JSON, XML</a></strong>
+<ul>
+<li>Importación y exportación de datos tabulares con <code>Import-Csv</code> y <code>Export-Csv</code>.</li>
+<li>Trabajar con API: <code>ConvertTo-Json</code> y <code>ConvertFrom-Json</code>.</li>
+<li>Conceptos básicos de trabajo con XML.</li>
+</ul>
+</li>
+<li><strong><a href="./10.md">Parte 10: Módulos y PowerShell Gallery</a></strong>
+<ul>
+<li>Organización de código en módulos: <code>.psm1</code> y <code>.psd1</code>.</li>
+<li>Importación de módulos y exportación de funciones.</li>
+<li>Uso de la biblioteca global <code>PowerShell Gallery</code>.</li>
+</ul>
+</li>
+</ul>
+<h3><strong>Sección IV: Técnicas avanzadas y proyecto final</strong></h3>
+<ul>
+<li><strong><a href="./11.md">Parte 11: Gestión remota y tareas en segundo plano</a></strong>
+<ul>
+<li>Conceptos básicos de PowerShell Remoting (WinRM).</li>
+<li>Sesiones interactivas (<code>Enter-PSSession</code>).</li>
+<li>Gestión masiva con <code>Invoke-Command</code>.</li>
+<li>Ejecución de operaciones de larga duración en segundo plano (<code>Start-Job</code>).</li>
+</ul>
+</li>
+<li><strong><a href="./12.md">Parte 12: Introducción a la GUI en PowerShell con Windows Forms</a></strong>
+<ul>
+<li>Creación de ventanas, botones y etiquetas.</li>
+<li>Manejo de eventos (clic de botón).</li>
+</ul>
+</li>
+<li><strong><a href="./13.md">Parte 13: Proyecto "Monitor de CPU" — Diseño de la interfaz</a></strong>
+<ul>
+<li>Diseño de la interfaz gráfica de usuario.</li>
+<li>Configuración del elemento <code>Chart</code> para mostrar gráficos.</li>
+</ul>
+</li>
+<li><strong><a href="./14.md">Parte 14: "CPU Monitor" Project — Recopilación de datos y lógica</a></strong>
+<ul>
+<li>Obtención de métricas de rendimiento con <code>Get-Counter</code>.</li>
+<li>Uso de un temporizador para actualizar datos en tiempo real.</li>
+</ul>
+</li>
+<li><strong><a href="./15.md">Parte 15: "CPU Monitor" Project — Ensamblaje final y próximos pasos</a></strong>
+<ul>
+<li>Adición de manejo de errores (<code>Try...Catch</code>).</li>
+<li>Resumen e ideas para un mayor desarrollo.</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2>🎯 ¿Para quién es esta serie?</h2>
+<ul>
+<li><strong>Para principiantes</strong> que desean establecer una base sólida y correcta en el aprendizaje de PowerShell, evitando errores comunes.</li>
+<li><strong>Para administradores de Windows experimentados</strong> que están acostumbrados a <code>cmd.exe</code> o VBScript y desean sistematizar sus conocimientos cambiando a una herramienta moderna y más potente.</li>
+<li><strong>Para todos</strong> los que quieran aprender a pensar no en comandos, sino en sistemas, y crear scripts de automatización elegantes, fiables y fáciles de mantener.</li>
+</ul>
+<h2>✍️ Comentarios y participación</h2>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Si encuentra un error, un error tipográfico o tiene una sugerencia para mejorar alguna parte, no dude en crear un <strong>Issue</strong> en este repositorio.</p>
+<h2>📜 Licencia</h2>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Todo el código y los textos de este repositorio se distribuyen bajo la <strong><a href="./LICENSE">licencia MIT</a></strong>. Puede usar, modificar y distribuir libremente los materiales con atribución.</p>

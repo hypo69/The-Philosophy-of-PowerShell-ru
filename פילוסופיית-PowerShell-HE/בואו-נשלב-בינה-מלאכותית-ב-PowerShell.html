@@ -1,0 +1,98 @@
+<h1 dir="rtl">בואו נשלב בינה מלאכותית ב-<span dir="ltr">PowerShell</span></h1>
+<h4 dir="rtl"><strong>מהו <span dir="ltr">Gemini CLI</span>?</strong></h4>
+<p dir="rtl">על <strong><span dir="ltr">Gemini CLI</span></strong> כבר סיפרתי בפירוט ב<a href="https://pikabu.ru/series/geminicli_48168"><span dir="ltr">Gemini CLI: היכרות וצעדים ראשונים</span></a>. אבל אם פספסתם, הנה מבוא קצר.</p>
+<p dir="rtl">בקיצור, <strong><span dir="ltr">Gemini CLI</span></strong> הוא שורת פקודה לאינטראקציה עם מודלי <span dir="ltr">AI</span> של גוגל. אתה מפעיל אותו בטרמינל שלך, והוא הופך לצ'אט, שבניגוד לגרסאות ווב, יש לו גישה למערכת הקבצים שלך.</p>
+<p dir="rtl"><strong>יכולות מפתח:</strong></p>
+<ul>
+<li dir="rtl"><strong>מבין קוד:</strong> הוא יכול לנתח את הסקריפטים שלך, למצוא בהם שגיאות ולהציע תיקונים.</li>
+<li dir="rtl"><strong>מייצר קוד:</strong> אתה יכול לבקש ממנו לכתוב סקריפט <span dir="ltr">PowerShell</span> לפתרון הבעיה שלך, והוא יעשה זאת.</li>
+<li dir="rtl"><strong>עובד עם קבצים:</strong> יכול לקרוא קבצים, ליצור חדשים, לבצע שינויים בקיימים.</li>
+<li dir="rtl"><strong>מריץ פקודות:</strong> יכול לבצע פקודות מעטפת, כגון <span dir="ltr"><code>git</code></span> או <span dir="ltr"><code>npm</code></span>.</li>
+</ul>
+<p dir="rtl">לצורך מטרותינו, הדבר החשוב ביותר הוא ש-<span dir="ltr">Gemini CLI</span> יודע לעבוד ב<strong>מצב לא אינטראקטיבי</strong>. כלומר, אנו יכולים להעביר לו פרומפט כארגומנט שורת פקודה, והוא פשוט יחזיר לנו תשובה, מבלי להפעיל את הצ'אט האינטראקטיבי שלו. זו בדיוק היכולת שבה נשתמש.</p>
+<h4 dir="rtl"><strong>התקנה והגדרה</strong></h4>
+<p dir="rtl">כדי להתחיל, עלינו להכין את הסביבה שלנו. זה נעשה פעם אחת.</p>
+<p dir="rtl"><strong>שלב 1: התקנת <span dir="ltr">Node.js</span></strong>
+<span dir="ltr">Gemini CLI</span> הוא יישום שנכתב ב-<span dir="ltr">Node.js</span> (סביבה פופולרית עבור <span dir="ltr">JavaScript</span>). לכן, תחילה עלינו להתקין את <span dir="ltr">Node.js</span> עצמו.</p>
+<ol>
+<li dir="rtl">עבור לאתר הרשמי: <a href="https://nodejs.org/"><span dir="ltr">https://nodejs.org/</span></a></li>
+<li dir="rtl">הורד והתקן את גרסת ה-<strong><span dir="ltr">LTS</span></strong>. זוהי האפשרות היציבה והמומלצת ביותר. פשוט עקוב אחר הוראות ההתקנה.</li>
+<li dir="rtl">לאחר ההתקנה, פתח חלון <span dir="ltr">PowerShell</span> חדש ובדוק שהכל עובד:
+<pre class="line-numbers"><code class="language-powershell">node -v
+npm -v
+</code></pre>
+<p dir="rtl">אתה אמור לראות גרסאות, לדוגמה, <span dir="ltr"><code>v20.12.2</code></span> ו-<span dir="ltr"><code>10.5.0</code></span>.</p>
+</li>
+</ol>
+<p dir="rtl"><strong>שלב 2: התקנת <span dir="ltr">Gemini CLI</span> עצמו</strong>
+כעת, כשיש לנו <span dir="ltr"><code>npm</code></span> (מנהל החבילות של <span dir="ltr">Node.js</span>), התקנת <span dir="ltr">Gemini CLI</span> מסתכמת בפקודה אחת. הפעל אותה ב-<span dir="ltr">PowerShell</span>:</p>
+<pre class="line-numbers"><code class="language-powershell">npm install -g @google/gemini-cli
+</code></pre>
+<p dir="rtl">הדגל <span dir="ltr"><code>-g</code></span> פירושו "התקנה גלובלית", מה שיהפוך את הפקודה <span dir="ltr"><code>gemini</code></span> לזמינה מכל מקום במערכת שלך.</p>
+<p dir="rtl"><strong>שלב 3: אימות</strong>
+בפעם הראשונה שתפעיל את <span dir="ltr">Gemini CLI</span>, הוא יבקש ממך להיכנס לחשבון <span dir="ltr">Google</span> שלך. זה נחוץ כדי שיוכל להשתמש במכסה החינמית שלך.</p>
+<ol>
+<li dir="rtl">פשוט הקלד את הפקודה ב-<span dir="ltr">PowerShell</span>:
+<pre class="line-numbers"><code class="language-powershell">gemini
+</code></pre>
+</li>
+<li dir="rtl">הוא ישאל אותך שאלה לגבי כניסה. בחר "היכנס באמצעות <span dir="ltr">Google</span>".</li>
+<li dir="rtl">הדפדפן שלך יפתח חלון כניסה סטנדרטי של <span dir="ltr">Google</span>. היכנס לחשבונך והענק את ההרשאות הנדרשות.</li>
+<li dir="rtl">לאחר מכן, תראה הודעת קבלת פנים מ-<span dir="ltr">Gemini</span> בקונסולה. מזל טוב, אתה מוכן לעבודה! תוכל להקליד <span dir="ltr"><code>/quit</code></span> כדי לצאת מהצ'אט שלו.</li>
+</ol>
+<h4 dir="rtl"><strong>הפילוסופיה של <span dir="ltr">PowerShell</span>: ה-<span dir="ltr"><code>Invoke-Expression</code></span> הנורא</strong></h4>
+<p dir="rtl">לפני שנחבר הכל יחד, בואו נכיר את אחד ה-<span dir="ltr">cmdlets</span> המסוכנים ביותר ב-<span dir="ltr">PowerShell</span> — <span dir="ltr"><code>Invoke-Expression</code></span>, או הכינוי הקצר שלו <span dir="ltr"><code>iex</code></span>.</p>
+<p dir="rtl"><span dir="ltr"><code>Invoke-Expression</code></span> לוקח מחרוזת טקסט ומבצע אותה כאילו הייתה פקודה שהוקלדה בקונסולה.</p>
+<p dir="rtl"><strong>דוגמה:</strong></p>
+<pre class="line-numbers"><code class="language-powershell">$commandString = "Get-Process -Name 'chrome'"
+Invoke-Expression -InputObject $commandString
+</code></pre>
+<p dir="rtl">פקודה זו תעשה את אותו הדבר כמו קריאה פשוטה ל-<span dir="ltr"><code>Get-Process -Name 'chrome'</code></span>.</p>
+<p dir="rtl"><strong>מדוע הוא מסוכן?</strong> מכיוון שביצוע מחרוזת שאינך שולט בה (לדוגמה, שהתקבלה מהאינטרנט או מ-<span dir="ltr">AI</span>), הוא חור אבטחה עצום. אם ה-<span dir="ltr">AI</span> יחזיר בטעות או בזדון את הפקודה <span dir="ltr"><code>Remove-Item -Path C:\ -Recurse -Force</code></span>, <span dir="ltr"><code>iex</code></span> יבצע אותה ללא היסוס.</p>
+<p dir="rtl">לצורך משימתנו — יצירת גשר מנוהל ומבוקר בין שאילתת שפה טבעית לביצועה — הוא מתאים באופן מושלם. נשתמש בו בזהירות, מתוך מודעות מלאה לסיכונים.</p>
+<h4 dir="rtl"><strong>מחברים הכל יחד: ה-<span dir="ltr">cmdlet</span> <span dir="ltr"><code>Invoke-Gemini</code></span></strong></h4>
+<p dir="rtl">בואו נכתוב פונקציית <span dir="ltr">PowerShell</span> פשוטה שתאפשר לנו לשלוח פרומפטים בפקודה אחת.</p>
+<p dir="rtl">העתק קוד זה והדבק אותו בחלון <span dir="ltr">PowerShell</span> שלך כדי שיהיה זמין בסשן הנוכחי.</p>
+<pre class="line-numbers"><code class="language-powershell">function Invoke-Gemini {
+    &lt;#
+    .SYNOPSIS
+        שולח פרומפט טקסט ל-Gemini CLI ומחזיר את תגובתו.
+    #&gt;
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]
+        [string]$Prompt
+    )
+
+    process {
+        try {
+            # בדוק אם הפקודה gemini זמינה
+            $geminiCommand = Get-Command gemini -ErrorAction Stop
+        }
+        catch {
+            Write-Error "הפקודה 'gemini' לא נמצאה. ודא ש-Gemini CLI מותקן."
+            return
+        }
+
+        Write-Verbose "שולח פרומפט ל-Gemini CLI..."
+        
+        # הפעל את gemini במצב לא אינטראקטיבי עם הפרומפט שלנו
+        $output = &amp; $geminiCommand.Source -p $Prompt 2&gt;&amp;1
+
+        if (-not $?) {
+            Write-Warning "הפקודה gemini הסתיימה בשגיאה."
+            $output | ForEach-Object { Write-Warning $_.ToString() }
+            return
+        }
+
+        # החזר פלט נקי
+        return $output
+    }
+}
+</code></pre>
+<h4 dir="rtl"><strong>בואו ננסה את הקסם!</strong></h4>
+<p dir="rtl">בואו נשאל אותו שאלה כללית ישירות מקונסולת <span dir="ltr">PowerShell</span> שלנו.</p>
+<pre class="line-numbers"><code class="language-powershell">Invoke-Gemini -Prompt "ספר לי על חמשת הטרנדים האחרונים בתחום למידת מכונה"
+</code></pre>
+<p dir="rtl"><strong>מזל טוב!</strong> הרגע הטמעת בהצלחה <span dir="ltr">AI</span> ב-<span dir="ltr">PowerShell</span>.</p>
+<p dir="rtl">במאמר הבא אספר לכם כיצד להשתמש ב-<span dir="ltr">Gemini CLI</span> להרצת סקריפטים ואוטומציה של משימות.</p>

@@ -1,0 +1,140 @@
+<p><img src="assets/cover.png" alt="1"></p>
+<h1>La Philosophie de PowerShell</h1>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;L'objectif de cette série n'est pas de créer un autre manuel de cmdlets.
+L'idée clé que je développerai tout au long des chapitres est la transition de la pensée textuelle à la <strong>pensée orientée objet</strong>.
+Au lieu de travailler avec des chaînes non structurées, je vous apprendrai à manipuler des objets à part entière avec leurs propriétés et méthodes,
+en les transmettant via le pipeline, comme sur une chaîne de montage en usine.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Cette série vous aidera à dépasser la simple écriture de commandes et à acquérir une approche d'ingénierie consciente de PowerShell,
+en tant qu'outil puissant pour disséquer le système d'exploitation.</p>
+<hr>
+<h2>🗺️ Table des matières</h2>
+<h3><strong>Section I : Fondations et bases</strong></h3>
+<ul>
+<li><strong><a href="./01.md">Partie 0 : Qu'y avait-il avant PowerShell ?</a></strong>
+<ul>
+<li>Excursion historique : <code>COMMAND.COM</code>, <code>AUTOEXEC.BAT</code>, <code>CONFIG.SYS</code>.</li>
+<li>Comparaison avec le monde UNIX (<code>sh</code>, <code>csh</code>).</li>
+<li>Évolution de Windows : noyau NT et outils d'administration disparates.</li>
+</ul>
+</li>
+<li><strong><a href="./01.md">Partie 1 : Premier lancement et concepts clés</a></strong>
+<ul>
+<li>Le projet Monad et la naissance de PowerShell.</li>
+<li><strong>Idée principale :</strong> Les objets au lieu du texte.</li>
+<li>Syntaxe "Verbe-Nom".</li>
+<li>Votre assistant principal : <code>Get-Help</code>.</li>
+</ul>
+</li>
+<li><strong><a href="./02.md">Partie 2 : Pipeline, variables et exploration d'objets</a></strong>
+<ul>
+<li>Principes de fonctionnement du pipeline (<code>|</code>).</li>
+<li>Travailler avec des variables (<code>$var</code>, <code>$_</code>).</li>
+<li>Analyse d'objets avec <code>Get-Member</code>.</li>
+<li><em>Exemple de code : <a href="./code/02/system_monitor.ps1">system_monitor.ps1</a></em></li>
+</ul>
+</li>
+<li><strong><a href="./03.md">Partie 3 : Navigation et gestion du système de fichiers</a></strong>
+<ul>
+<li>Le concept des fournisseurs (<code>PSDrives</code>) : système de fichiers, registre, certificats.</li>
+<li>Opérateurs de comparaison et de logique.</li>
+<li>Introduction aux fonctions.</li>
+<li><em>Exemples de code : <a href="./code/03/Find-DuplicateFiles.ps1">Find-DuplicateFiles.ps1</a>, <a href="./code/03/Backup-FolderToZip.ps1">Backup-FolderToZip.ps1</a></em></li>
+</ul>
+</li>
+<li><strong>Partie 4 : Travail interactif : <code>Out-ConsoleGridView</code>, <code>F7History</code> et <code>ConsoleGuiTools</code></strong>
+<ul>
+<li><code>Where-Object</code> : Un tamis pour les objets.</li>
+<li><code>Sort-Object</code> : Ordonnancement des données.</li>
+<li><code>Select-Object</code> : Sélection de propriétés et création de champs calculés.</li>
+</ul>
+</li>
+<li><strong><a href="./05.md">Partie 5 : Variables et types de données de base</a></strong>
+<ul>
+<li>Variables en tant qu'objets <code>PSVariable</code>.</li>
+<li>Portées (Scope).</li>
+<li>Travailler avec des chaînes, des tableaux et des tables de hachage.</li>
+</ul>
+</li>
+</ul>
+<h3><strong>Section III : Des scripts aux outils professionnels</strong></h3>
+<ul>
+<li><strong><a href="./06.md">Partie 6 : Bases du scripting. Fichiers <code>.ps1</code> et politique d'exécution</a></strong>
+<ul>
+<li>Transition de la console interactive aux fichiers <code>.ps1</code>.</li>
+<li>Politiques d'exécution (<code>Execution Policy</code>) : ce que c'est et comment les configurer.</li>
+</ul>
+</li>
+<li><strong><a href="./07.md">Partie 7 : Constructions logiques et boucles</a></strong>
+<ul>
+<li>Prise de décision : <code>If / ElseIf / Else</code> et <code>Switch</code>.</li>
+<li>Répétition d'actions : boucles <code>ForEach</code>, <code>For</code>, <code>While</code>.</li>
+</ul>
+</li>
+<li><strong><a href="./08.md">Partie 8 : Fonctions — créer vos propres cmdlets</a></strong>
+<ul>
+<li>Anatomie d'une fonction avancée : <code>[CmdletBinding()]</code>, <code>[Parameter()]</code>.</li>
+<li>Création d'aide (<code>Comment-Based Help</code>).</li>
+<li>Traitement du pipeline : blocs <code>begin</code>, <code>process</code>, <code>end</code>.</li>
+</ul>
+</li>
+<li><strong><a href="./09.md">Partie 9 : Travailler avec les données : CSV, JSON, XML</a></strong>
+<ul>
+<li>Importation et exportation de données tabulaires avec <code>Import-Csv</code> et <code>Export-Csv</code>.</li>
+<li>Travailler avec les API : <code>ConvertTo-Json</code> et <code>ConvertFrom-Json</code>.</li>
+<li>Bases du travail avec XML.</li>
+</ul>
+</li>
+<li><strong><a href="./10.md">Partie 10 : Modules et PowerShell Gallery</a></strong>
+<ul>
+<li>Organisation du code en modules : <code>.psm1</code> et <code>.psd1</code>.</li>
+<li>Importation de modules et exportation de fonctions.</li>
+<li>Utilisation de la bibliothèque globale <code>PowerShell Gallery</code>.</li>
+</ul>
+</li>
+</ul>
+<h3><strong>Section IV : Techniques avancées et projet final</strong></h3>
+<ul>
+<li><strong><a href="./11.md">Partie 11 : Gestion à distance et tâches en arrière-plan</a></strong>
+<ul>
+<li>Bases de PowerShell Remoting (WinRM).</li>
+<li>Sessions interactives (<code>Enter-PSSession</code>).</li>
+<li>Gestion en masse avec <code>Invoke-Command</code>.</li>
+<li>Exécution d'opérations de longue durée en arrière-plan (<code>Start-Job</code>).</li>
+</ul>
+</li>
+<li><strong><a href="./12.md">Partie 12 : Introduction à l'interface graphique dans PowerShell avec Windows Forms</a></strong>
+<ul>
+<li>Création de fenêtres, de boutons et d'étiquettes.</li>
+<li>Gestion des événements (clic sur un bouton).</li>
+</ul>
+</li>
+<li><strong><a href="./13.md">Partie 13 : Projet "Moniteur CPU" — Conception de l'interface</a></strong>
+<ul>
+<li>Disposition de l'interface graphique.</li>
+<li>Configuration de l'élément <code>Chart</code> pour l'affichage des graphiques.</li>
+</ul>
+</li>
+<li><strong><a href="./14.md">Partie 14 : Projet "Moniteur CPU" — Collecte de données et logique</a></strong>
+<ul>
+<li>Obtention des métriques de performance avec <code>Get-Counter</code>.</li>
+<li>Utilisation d'un minuteur pour mettre à jour les données en temps réel.</li>
+</ul>
+</li>
+<li><strong><a href="./15.md">Partie 15 : Projet "Moniteur CPU" — Assemblage final et prochaines étapes</a></strong>
+<ul>
+<li>Ajout de la gestion des erreurs (<code>Try...Catch</code>).</li>
+<li>Résumé et idées pour un développement ultérieur.</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2>🎯 À qui s'adresse cette série ?</h2>
+<ul>
+<li><strong>Aux débutants</strong> qui souhaitent jeter des bases solides et correctes dans l'apprentissage de PowerShell, en évitant les erreurs courantes.</li>
+<li><strong>Aux administrateurs Windows expérimentés</strong> qui sont habitués à <code>cmd.exe</code> ou VBScript et qui souhaitent systématiser leurs connaissances en passant à un outil moderne et plus puissant.</li>
+<li><strong>À tous</strong> ceux qui veulent apprendre à penser non pas en commandes, mais en systèmes, et à créer des scripts d'automatisation élégants, fiables et faciles à maintenir.</li>
+</ul>
+<h2>✍️ Commentaires et participation</h2>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Si vous trouvez une erreur, une faute de frappe ou si vous avez une suggestion pour améliorer l'une des parties, n'hésitez pas à créer une <strong>Issue</strong> dans ce dépôt.</p>
+<h2>📜 Licence</h2>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Tout le code et les textes de ce dépôt sont distribués sous la <strong><a href="./LICENSE">licence MIT</a></strong>. Vous êtes libre d'utiliser, de modifier et de distribuer les matériaux avec attribution.</p>

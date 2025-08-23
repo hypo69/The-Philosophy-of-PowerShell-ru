@@ -1,0 +1,36 @@
+<p dir="rtl">להתראות, <span dir="ltr">PowerShell 2.0</span>.</p>
+<h3 dir="rtl">מיקרוסופט נפרדת סופית מ-<span dir="ltr">PowerShell 2.0</span> ב-<span dir="ltr">Windows</span></h3>
+<p dir="rtl"><strong>חברת מיקרוסופט הודיעה על הסרה מוחלטת של רכיב <span dir="ltr">Windows PowerShell 2.0</span> המיושן ממערכות ההפעלה <span dir="ltr">Windows 11</span> ו-<span dir="ltr">Windows Server 2025</span>, החל מאוגוסט 2025. צעד זה הוא חלק מאסטרטגיה גלובלית לשיפור האבטחה, פישוט אקוסיסטם ה-<span dir="ltr">PowerShell</span> וסילוק קוד מיושן.</strong></p>
+<p dir="rtl"><span dir="ltr">Windows PowerShell 2.0</span>, שהוצג לראשונה ב-<span dir="ltr">Windows 7</span>, הוכר רשמית כמיושן כבר בשנת 2017, אך נשאר זמין כרכיב אופציונלי כדי להבטיח תאימות לאחור. כעת מיקרוסופט עושה צעד נחוש, ומסירה אותו לחלוטין ממהדורות עתידיות.</p>
+<h4 dir="rtl">ציר זמן של שינויים</h4>
+<p dir="rtl">תהליך ההסרה יתבצע בשלבים:</p>
+<ul>
+<li dir="rtl"><strong>יולי 2025:</strong> <span dir="ltr">PowerShell 2.0</span> כבר הוסר מגרסאות תצוגה מקדימה של <span dir="ltr">Windows Insider</span>.</li>
+<li dir="rtl"><strong>אוגוסט 2025:</strong> הרכיב יוסר מ-<span dir="ltr">Windows 11</span>, גרסה <span dir="ltr">24H2</span>.</li>
+<li dir="rtl"><strong>ספטמבר 2025:</strong> <span dir="ltr">PowerShell 2.0</span> יוצא מ-<span dir="ltr">Windows Server 2025</span>.</li>
+</ul>
+<p dir="rtl">כל המהדורות הבאות של מערכות הפעלה אלו יגיעו ללא <span dir="ltr">PowerShell 2.0</span>.</p>
+<h4 dir="rtl">מדוע <span dir="ltr">PowerShell 2.0</span> מופסק?</h4>
+<p dir="rtl">הסיבה העיקרית להסרתו היא חששות אבטחה. ב-<span dir="ltr">PowerShell 2.0</span> חסרות תכונות אבטחה מרכזיות שהופיעו בגרסאות מאוחרות יותר, כגון:</p>
+<ul>
+<li dir="rtl">שילוב עם ממשק סריקת תוכנות זדוניות (<span dir="ltr">AMSI</span>).</li>
+<li dir="rtl">רישום משופר של בלוקי סקריפט.</li>
+<li dir="rtl">מצב שפה מוגבל (<span dir="ltr">Constrained Language Mode</span>).</li>
+</ul>
+<p dir="rtl">החסרונות הללו הפכו את <span dir="ltr">PowerShell 2.0</span> ליעד אטרקטיבי עבור תוקפים שיכלו להשתמש בו כדי לעקוף מערכות אבטחה מודרניות. בנוסף, הסרת הרכיב המיושן תאפשר למיקרוסופט להפחית את מורכבות בסיס הקוד ולפשט את התמיכה באקוסיסטם ה-<span dir="ltr">PowerShell</span>.</p>
+<h4 dir="rtl">מה זה אומר למשתמשים ולמנהלים?</h4>
+<p dir="rtl">עבור רוב המשתמשים, שינוי זה יעבור ללא תשומת לב, מכיוון שגרסאות <span dir="ltr">PowerShell</span> מודרניות, כגון <span dir="ltr">PowerShell 5.1</span> ו-<span dir="ltr">PowerShell 7.x</span>, נשארות זמינות ונתמכות באופן מלא. עם זאת, ארגונים ומפתחים המשתמשים בסקריפטים או תוכנות מדור קודם התלויים במפורש ב-<span dir="ltr">PowerShell 2.0</span>, צריכים לנקוט בפעולה.</p>
+<h4 dir="rtl">המלצות הגירה</h4>
+<p dir="rtl">מיקרוסופט ממליצה בחום:</p>
+<ul>
+<li dir="rtl"><strong>העבר סקריפטים וכלים לגרסאות <span dir="ltr">PowerShell</span> חדשות יותר.</strong> <span dir="ltr">PowerShell 5.1</span> מספק תאימות לאחור גבוהה כמעט עם כל הפקודות והמודולים. <span dir="ltr">PowerShell 7.x</span> מציע יכולות חוצות פלטפורמות ותכונות מודרניות רבות.</li>
+<li dir="rtl"><strong>עדכן או החלף תוכנות מיושנות.</strong> אם יישום או מתקין ישן דורשים <span dir="ltr">PowerShell 2.0</span>, יש למצוא גרסה חדשה יותר של המוצר. זה חל גם על מוצרי שרת מסוימים של מיקרוסופט (<span dir="ltr">Exchange</span>, <span dir="ltr">SharePoint</span>, <span dir="ltr">SQL</span>) שעבורם קיימות גרסאות מעודכנות העובדות עם <span dir="ltr">PowerShell</span> מודרני.</li>
+</ul>
+<h4 dir="rtl">גרסאות <span dir="ltr">Windows</span> מושפעות</h4>
+<p dir="rtl">הסרת <span dir="ltr">PowerShell 2.0</span> תשפיע על גרסאות מערכת ההפעלה הבאות:</p>
+<ul>
+<li dir="rtl"><span dir="ltr">Windows 11</span> (<span dir="ltr">Home</span>, <span dir="ltr">Pro</span>, <span dir="ltr">Enterprise</span>, <span dir="ltr">Education</span>, <span dir="ltr">SE</span>, <span dir="ltr">Multi-Session</span>, <span dir="ltr">IoT Enterprise</span>) גרסה <span dir="ltr">24H2</span>.</li>
+<li dir="rtl"><span dir="ltr">Windows Server 2025</span>.</li>
+</ul>
+<p dir="rtl">גרסאות קודמות של <span dir="ltr">Windows 11</span>, כגון <span dir="ltr">23H2</span>, ככל הנראה ישמרו את <span dir="ltr">PowerShell 2.0</span> כרכיב אופציונלי.</p>
+<p dir="rtl">צעד זה של מיקרוסופט מסמן את סוף עידן שלם בניהול <span dir="ltr">Windows</span>, ומדגיש את מחויבות החברה לסביבת מחשוב מאובטחת ומודרנית יותר.</p>

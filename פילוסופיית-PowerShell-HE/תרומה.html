@@ -1,0 +1,41 @@
+<h1 dir="rtl">כיצד לתרום לפרויקט הפילוסופיה של <span dir="ltr">PowerShell</span></h1>
+<p dir="rtl">שלום! שמי <span dir="ltr">hypo69</span>, ואני המחבר והמפתח היחיד של פרויקט זה. יצרתי אותו מכיוון שאני רוצה להפוך את <span dir="ltr">PowerShell</span> לנגיש ומובן יותר לכולם.</p>
+<p dir="rtl">למרות שאני מפתח אותו בעיקר בעצמי, אני מעריך מאוד את העניין מצד הקהילה ואשמח לקבל את עזרתכם. כדי להבטיח ששיתוף הפעולה שלנו יהיה יעיל ונעים לכולם, הרכבתי מדריך קצר זה.</p>
+<p dir="rtl">לפני שתתחילו, אנא קראו את <a href="CODE_OF_CONDUCT.md">קוד ההתנהגות</a>. אני רוצה שהתקשורת שלנו תהיה מכבדת ובונה.</p>
+<h2 dir="rtl">הכלל החשוב ביותר</h2>
+<p dir="rtl">מכיוון שאני מתחזק את הפרויקט לבדי, זמני מוגבל. לכן, אנא <strong>לפני שתתחילו לכתוב קוד, צרו <span dir="ltr">Issue</span></strong> כדי שנוכל לדון בהצעתכם. [3, 8] זה יעזור לוודא שהרעיון שלכם תואם את חזון הפרויקט, ויחסוך לשנינו זמן רב.</p>
+<h2 dir="rtl">איך אתם יכולים לעזור?</h2>
+<p dir="rtl">אני אהיה אסיר תודה במיוחד על עזרה בתחומים הבאים:</p>
+<ul>
+<li dir="rtl"><strong>מציאת ותיאור שגיאות (באגים).</strong> אם משהו לא עובד כמצופה, אנא הודיעו לי.</li>
+<li dir="rtl"><strong>הצעות לשיפור.</strong> יש לכם רעיון איך לשפר את הפרויקט? מצוין, בואו נדון בו ב-<span dir="ltr">Issues</span>.</li>
+<li dir="rtl"><strong>שיפור תיעוד.</strong> מצאתם שגיאת כתיב, אי-דיוק או שאתם חושבים שניתן להסביר חלק כלשהו בצורה ברורה יותר? תיקונים בתיעוד הם דרך מצוינת לעזור!</li>
+<li dir="rtl"><strong>כתיבת קוד.</strong> עזרה ביישום תכונות חדשות או תיקון באגים תמיד מתקבלת בברכה, אך אנא זכרו את "הכלל החשוב ביותר" לעיל.</li>
+</ul>
+<h2 dir="rtl">תהליך התרומה</h2>
+<h3 dir="rtl">1. דיון (<span dir="ltr">Issues</span>)</h3>
+<ul>
+<li dir="rtl"><strong>עבור באגים:</strong> היכנסו למדור <a href="https://github.com/hypo69/The-Philosophy-of-PowerShell-ru/issues"><span dir="ltr">Issues</span></a> ובדקו אם מישהו כבר דיווח על הבעיה שלכם. אם לא, צרו <span dir="ltr">issue</span> חדש עם תיאור מפורט:
+<ul>
+<li dir="rtl">שלבים לשחזור הבאג.</li>
+<li dir="rtl">מה ציפיתם לקבל.</li>
+<li dir="rtl">מה קיבלתם בפועל.</li>
+<li dir="rtl">במידת האפשר, מידע על הסביבה שלכם (גרסת מערכת הפעלה, גרסת תוכנה וכו').</li>
+</ul>
+</li>
+<li dir="rtl"><strong>עבור רעיונות חדשים (<span dir="ltr">Features</span>):</strong> צרו <span dir="ltr">issue</span> חדש ותארו את הרעיון שלכם. הסבירו איזו בעיה הוא פותר ומדוע הוא יהיה שימושי.</li>
+</ul>
+<h3 dir="rtl">2. ביצוע שינויים (<span dir="ltr">Pull Requests</span>)</h3>
+<p dir="rtl">לאחר שנסכים על רעיון ב-<span dir="ltr">Issues</span>, ניתן להתחיל לכתוב קוד.</p>
+<ol>
+<li dir="rtl"><strong>בצעו פורק (<span dir="ltr">Fork</span>)</strong> של מאגר זה.</li>
+<li dir="rtl"><strong>שכפלו (<span dir="ltr">Clone</span>)</strong> את הפורק שלכם למחשב.</li>
+<li dir="rtl"><strong>צרו ענף חדש</strong> עבור השינויים שלכם (לדוגמה, <span dir="ltr"><code>git checkout -b fix/fix-button</code></span>).</li>
+<li dir="rtl"><strong>כתבו קוד.</strong> נסו לדבוק בסגנון הקוד שכבר נמצא בשימוש בפרויקט.</li>
+<li dir="rtl"><strong>בצעו קומיט.</strong> כתבו הודעות קומיט ברורות, לדוגמה: <span dir="ltr"><code>fix: תוקנה שגיאת אימות עם סיסמה ריקה</code></span>.</li>
+<li dir="rtl"><strong>שלחו (<span dir="ltr">push</span>)</strong> את השינויים שלכם לפורק שלכם ב-<span dir="ltr">GitHub</span>.</li>
+<li dir="rtl"><strong>צרו <span dir="ltr">Pull Request</span></strong> למאגר שלי. בתיאור, ספרו בקצרה מה עשיתם, והקפידו לכלול את מספר ה-<span dir="ltr">Issue</span> שאתם מטפלים בו (לדוגמה, <span dir="ltr"><code>Closes #42</code></span>).</li>
+</ol>
+<h2 dir="rtl">מה הלאה?</h2>
+<p dir="rtl">אני אשתדל לבדוק את תרומתכם בהקדם האפשרי. זכרו שזהו פרויקט אישי שלי, וייתכנו לי התחייבויות אחרות, ולכן לעיתים התשובה עשויה לקחת זמן.</p>
+<p dir="rtl">בכל מקרה, תודה רבה על זמנכם ועל רצונכם לשפר את הפרויקט הזה!</p>

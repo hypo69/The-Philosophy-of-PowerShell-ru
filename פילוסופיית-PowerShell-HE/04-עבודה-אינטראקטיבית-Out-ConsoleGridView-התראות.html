@@ -1,0 +1,299 @@
+<h1 dir="rtl">הפילוסופיה של PowerShell.</h1>
+<h2 dir="rtl">חלק 4: עבודה אינטראקטיבית: <span dir="ltr"><code>Out-ConsoleGridView</code></span>, התראות.</h2>
+<ul>
+<li dir="rtl">ב<a href="https://github.com/hypo69/The-Philosophy-of-PowerShell-ru/blob/master/01.md">חלק הראשון</a> הגדרנו שני מושגי מפתח ב-<span dir="ltr">PowerShell</span>: צינור ואובייקט.</li>
+<li dir="rtl">ב<a href="https://github.com/hypo69/The-Philosophy-of-PowerShell-ru/blob/master/02.md">חלק השני</a> הסברתי מהם אובייקטים וצינורות.</li>
+<li dir="rtl">ב<a href="https://github.com/hypo69/The-Philosophy-of-PowerShell-ru/blob/master/03.md">חלק השלישי</a> הכרנו את מערכת הקבצים והספקים.</li>
+<li dir="rtl">היום נבחן עבודה אינטראקטיבית עם נתונים בקונסולה, וכן נכיר התראות והודעות.</li>
+</ul>
+<h3 dir="rtl">פרק ראשון: עבודה אינטראקטיבית עם נתונים בקונסולה.</h3>
+<h4 dir="rtl"><span dir="ltr"><code>Out-ConsoleGridView</code></span>. ממשק משתמש גרפי בקונסולת <span dir="ltr">PowerShell</span>.</h4>
+<p dir="rtl"><strong>❗ חשוב:</strong> כל הכלים המתוארים להלן דורשים <strong><span dir="ltr">PowerShell 7.2</span> ואילך</strong>.</p>
+<p dir="rtl"><span dir="ltr">Out-ConsoleGridView</span> היא טבלה אינטראקטיבית, ישירות בקונסולת <span dir="ltr">PowerShell</span>, המאפשרת:
+- להציג נתונים בטבלה;
+- לסנן ולמיין עמודות;
+- לבחור שורות עם הסמן — כדי להעביר אותן הלאה בצינור.
+- ועוד הרבה.</p>
+<p dir="rtl"><span dir="ltr"><code>Out-ConsoleGridView</code></span> הוא חלק מהמודול <span dir="ltr"><code>Microsoft.PowerShell.ConsoleGuiTools</code></span>.
+כדי להשתמש בו, עליך להתקין תחילה מודול זה.</p>
+<p dir="rtl">כדי להתקין את המודול, הפעל את הפקודה הבאה ב-<span dir="ltr">PowerShell</span>:</p>
+<pre class="line-numbers"><code class="language-powershell">Install-Module Microsoft.PowerShell.ConsoleGuiTools -Scope CurrentUser
+</code></pre>
+<p><img src="assets/04/1.png" alt="Install-Module Microsoft.PowerShell.ConsoleGuiTools -Scope CurrentUser"></p>
+<p dir="rtl"><em><span dir="ltr">Install-Module</span></em> מוריד ומתקין את המודול שצוין מהמאגר למערכת.
+אנלוגיות: <span dir="ltr"><code>pip install</code></span> ב-<span dir="ltr"><code>Python</code></span> או <span dir="ltr"><code>npm install</code></span> ב-<span dir="ltr"><code>Node.js</code></span>.</p>
+<p dir="rtl">📎 פרמטרים עיקריים של <em><span dir="ltr">Install-Module</span></em></p>
+<table>
+<thead>
+<tr>
+<th dir="rtl">פרמטר</th>
+<th dir="rtl">תיאור</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td dir="rtl"><span dir="ltr"><code>-Name</code></span></td>
+<td dir="rtl">שם המודול להתקנה.</td>
+</tr>
+<tr>
+<td dir="rtl"><span dir="ltr"><code>-Scope</code></span></td>
+<td dir="rtl">היקף ההתקנה: <span dir="ltr"><code>AllUsers</code></span> (ברירת מחדל, דורש הרשאות מנהל) או <span dir="ltr"><code>CurrentUser</code></span> (אינו דורש הרשאות מנהל).</td>
+</tr>
+<tr>
+<td dir="rtl"><span dir="ltr"><code>-Repository</code></span></td>
+<td dir="rtl">מציין את המאגר, לדוגמה <span dir="ltr"><code>PSGallery</code></span>.</td>
+</tr>
+<tr>
+<td dir="rtl"><span dir="ltr"><code>-Force</code></span></td>
+<td dir="rtl">התקנה כפויה ללא אישור.</td>
+</tr>
+<tr>
+<td dir="rtl"><span dir="ltr"><code>-AllowClobber</code></span></td>
+<td dir="rtl">מאפשר לדרוס פקודות קיימות.</td>
+</tr>
+<tr>
+<td dir="rtl"><span dir="ltr"><code>-AcceptLicense</code></span></td>
+<td dir="rtl">מקבל אוטומטית את רישיון המודול.</td>
+</tr>
+<tr>
+<td dir="rtl"><span dir="ltr"><code>-RequiredVersion</code></span></td>
+<td dir="rtl">מתקין גרסה ספציפית של המודול.</td>
+</tr>
+</tbody>
+</table>
+<p dir="rtl">לאחר ההתקנה, תוכל להעביר כל פלט ל-<span dir="ltr"><code>Out-ConsoleGridView</code></span> לעבודה אינטראקטיבית.</p>
+<pre class="line-numbers"><code class="language-powershell"># דוגמה קלאסית: הצגת רשימת תהליכים בטבלה אינטראקטיבית
+Get-Process | Out-ConsoleGridView
+</code></pre>
+<p><a href="https://github.com/user-attachments/assets/5828dd51-cfb8-4904-87be-796ccc8395be">1</a></p>
+<video width="600" controls>
+  <source src="https://github.com/user-attachments/assets/5828dd51-cfb8-4904-87be-796ccc8395be" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<p dir="rtl"><strong>ממשק:</strong></p>
+<ul>
+<li dir="rtl"><strong>סינון:</strong> פשוט התחל להקליד, והרשימה תסונן תוך כדי הקלדה.</li>
+<li dir="rtl"><strong>ניווט:</strong> השתמש במקשי החצים כדי לנווט ברשימה.</li>
+<li dir="rtl"><strong>בחירה:</strong> לחץ <span dir="ltr"><code>Space</code></span> כדי לבחור/לבטל בחירה של פריט אחד.</li>
+<li dir="rtl"><strong>בחירה מרובה:</strong> <span dir="ltr"><code>Ctrl+A</code></span> לבחירת כל הפריטים, <span dir="ltr"><code>Ctrl+D</code></span> לביטול בחירת הכל.</li>
+<li dir="rtl"><strong>אישור:</strong> לחץ <span dir="ltr"><code>Enter</code></span> כדי להחזיר את האובייקטים שנבחרו.</li>
+<li dir="rtl"><strong>ביטול:</strong> לחץ <span dir="ltr"><code>ESC</code></span> כדי לסגור את החלון מבלי להחזיר נתונים.</li>
+</ul>
+<h2 dir="rtl">מה <span dir="ltr"><code>Out-ConsoleGridView</code></span> יכול לעשות:</h2>
+<ul>
+<li dir="rtl">להציג נתונים טבלאיים ישירות בקונסולת <span dir="ltr">PowerShell</span> כטבלה אינטראקטיבית עם ניווט שורות ועמודות.</li>
+<li dir="rtl">למיין עמודות בלחיצת מקשים.</li>
+<li dir="rtl">לסנן נתונים באמצעות חיפוש.</li>
+<li dir="rtl">לבחור שורה אחת או יותר עם החזרת תוצאה.</li>
+<li dir="rtl">לעבוד בקונסולה נקייה ללא חלונות <span dir="ltr">GUI</span>.</li>
+<li dir="rtl">לתמוך במספר רב של שורות עם גלילה.</li>
+<li dir="rtl">לתמוך בסוגי נתונים שונים (מחרוזות, מספרים, תאריכים וכו').</li>
+</ul>
+<hr>
+<h2 dir="rtl">דוגמאות לשימוש ב-<span dir="ltr"><code>Out-ConsoleGridView</code></span></h2>
+<h3 dir="rtl">שימוש בסיסי — הצגת טבלה עם יכולת בחירה אינטראקטיבית. (תיבת סימון)</h3>
+<pre class="line-numbers"><code class="language-powershell">Import-Module Microsoft.PowerShell.ConsoleGuiTools
+
+$data = Get-Process | Select-Object -First 30 -Property Id, ProcessName, CPU, WorkingSet
+
+# הצג טבלה עם יכולות סינון, מיון ובחירת שורות
+$selected = $data | Out-ConsoleGridView -Title "בחר תהליך(ים)" -OutputMode Multiple
+
+$selected | Format-Table -AutoSize
+</code></pre>
+<p><a href="https://github.com/user-attachments/assets/3f1a2a62-066f-4dbb-947a-9b26095da356">2</a></p>
+<video>
+  <source src="https://github.com/user-attachments/assets/3f1a2a62-066f-4dbb-947a-9b26095da356" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<p dir="rtl">רשימת התהליכים מוצגת בטבלת קונסולה אינטראקטיבית. 
+ניתן לסנן לפי שם, למיין עמודות ולבחור תהליכים. 
+התהליכים שנבחרו מוחזרים למשתנה <span dir="ltr"><code>$selected</code></span>.</p>
+<hr>
+<h3 dir="rtl">בחירת שורה בודדת עם החזרת תוצאה חובה. (רדיו)</h3>
+<pre class="line-numbers"><code class="language-powershell">$choice = Get-Service | Select-Object -First 20 | Out-ConsoleGridView -Title "בחר שירות" -OutputMode Single
+
+Write-Host "בחרת שירות: $($choice.Name)"
+</code></pre>
+<p><a href="https://github.com/user-attachments/assets/5ee8fb92-8e18-496a-9db7-2d86b243742e"></a></p>
+<video>
+  <source src="https://github.com/user-attachments/assets/5ee8fb92-8e18-496a-9db7-2d86b243742e" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<p dir="rtl">המשתמש בוחר שורה בודדת (שירות). <span dir="ltr"><code>-OutputMode Single</code></span> מונע בחירות מרובות.</p>
+<hr>
+<h3 dir="rtl">סינון ומיון מערכים גדולים</h3>
+<pre class="line-numbers"><code class="language-powershell">$data = 1..1000 | ForEach-Object { 
+    [PSCustomObject]@{ 
+        Number = $_ 
+        Square = $_ * $_ 
+        Cube    = $_ * $_ * $_ 
+    } 
+}
+
+$data | Out-ConsoleGridView -Title "מספרים וחזקות"  -OutputMode Multiple
+</code></pre>
+<p dir="rtl">מציג טבלה של 1000 שורות עם מספרים וחזקותיהם.</p>
+<h3 dir="rtl"><strong>ניהול תהליכים אינטראקטיבי:</strong></h3>
+<p dir="rtl">באפשרותך לבחור מספר תהליכים לעצירה. הפרמטר <span dir="ltr"><code>-OutputMode Multiple</code></span> מציין שאנו רוצים להחזיר את כל הפריטים שנבחרו.</p>
+<pre class="line-numbers"><code class="language-powershell"># העבר את התוצאות בצינור.
+# עצור תהליכים נבחרים עם הפרמטר -WhatIf לתצוגה מקדימה.
+# לשם כך, הגדר את המשתנה $procsToStop
+$procsToStop = Get-Process | Out-ConsoleGridView -OutputMode Multiple
+    
+# אם משהו נבחר, העבר את האובייקטים הלאה בצינור
+if ($procsToStop) {
+    $procsToStop | Stop-Process -WhatIf
+}
+</code></pre>
+<h3 dir="rtl"><strong>בחירת קבצים לארכיון:</strong></h3>
+<p dir="rtl">מצא את כל קבצי ה-<span dir="ltr">.log</span> בתיקייה, בחר את אלה הדרושים וצור מהם ארכיון.</p>
+<pre class="line-numbers"><code class="language-powershell">$filesToArchive = Get-ChildItem -Path C:\Logs -Filter "*.log" -Recurse | Out-ConsoleGridView -OutputMode Multiple
+</code></pre>
+<p dir="rtl">❗היזהר עם רקורסיה</p>
+<pre class="line-numbers"><code class="language-powershell">if ($filesToArchive) {
+    Compress-Archive -Path $filesToArchive.FullName -DestinationPath C:\Temp\LogArchive.zip
+    
+    # הוסף הודעת הצלחה
+    Write-Host "✅ ארכיון הושלם בהצלחה!" -ForegroundColor Green
+}
+</code></pre>
+<h3 dir="rtl"><strong>בחירת פריט בודד לניתוח מפורט:</strong></h3>
+<h4 dir="rtl">תבנית "<span dir="ltr">Drill-Down</span>" — מרשימה כללית לפרטים עם <span dir="ltr"><code>Out-ConsoleGridView</code></span></h4>
+<p dir="rtl">לעתים קרובות בעבודה עם אובייקטים מערכתיים, אנו נתקלים בדילמה:</p>
+<ol>
+<li dir="rtl">אם תבקש <strong>את כל המאפיינים</strong> עבור <strong>כל האובייקטים</strong> (<span dir="ltr"><code>Get-NetAdapter | Format-List *</code></span>), הפלט יהיה עצום ולא קריא.</li>
+<li dir="rtl">אם תציג <strong>טבלה קצרה</strong>, נאבד פרטים חשובים.</li>
+<li dir="rtl">לפעמים ניסיון לקבל את כל הנתונים בבת אחת עלול להוביל לשגיאה אם אחד האובייקטים מכיל ערכים לא חוקיים.</li>
+</ol>
+<p dir="rtl">פתרון בעיה זו הוא תבנית <strong>"<span dir="ltr">Drill-Down</span>"</strong> (פירוט או "צלילה לעומק"). מהותה פשוטה:</p>
+<ul>
+<li dir="rtl"><strong>שלב 1 (סקירה):</strong> הצג למשתמש רשימה נקייה, תמציתית ובטוחה של פריטים ל<strong>בחירה</strong>.</li>
+<li dir="rtl"><strong>שלב 2 (פירוט):</strong> לאחר שהמשתמש בחר פריט ספציפי אחד, הצג לו <strong>את כל המידע הזמין</strong> עבור פריט מסוים זה.</li>
+</ul>
+<h4 dir="rtl">דוגמה מעשית: יצירת סייר מתאמי רשת</h4>
+<p dir="rtl">בואו ניישם תבנית זו באמצעות הפקודה <span dir="ltr"><code>Get-NetAdapter</code></span> כדוגמה.</p>
+<p dir="rtl"><strong>משימה:</strong> תחילה, הצג רשימה קצרה של מתאמי רשת. לאחר בחירת אחד מהם, פתח חלון שני עם כל המאפיינים שלו.</p>
+<p dir="rtl"><strong>קוד מוכן:</strong></p>
+<pre class="line-numbers"><code class="language-powershell"># --- שלב 1: בחירת מתאם מרשימה קצרה ---
+$adapterList = Get-NetAdapter | Select-Object Name, InterfaceDescription, Status, LinkSpeed
+$selectedAdapter = $adapterList | Out-ConsoleGridView -Title "שלב 1: בחר מתאם רשת"
+
+# --- שלב 2: הצגת מידע מפורט או הודעת ביטול ---
+if ($null -ne $selectedAdapter) {
+    # קבל את כל המאפיינים עבור המתאם הנבחר
+    $detailedInfoObject = Get-NetAdapter -Name $selectedAdapter.Name | Select-Object *
+
+    # השתמש בטריק שלנו עם .psobject.Properties כדי להפוך את האובייקט לטבלת "שם-ערך" נוחה
+    $detailedInfoForGrid = $detailedInfoObject.psobject.Properties | Select-Object Name, Value
+    
+    # פתח חלון GridView שני עם מידע מלא
+    $detailedInfoForGrid | Out-ConsoleGridView -Title "שלב 2: מידע מלא עבור '$($selectedAdapter.Name)'"
+} else {
+    Write-Host "הפעולה בוטלה. מתאם לא נבחר." -ForegroundColor Yellow
+}
+</code></pre>
+<h4 dir="rtl">פירוק שלב אחר שלב</h4>
+<ol>
+<li dir="rtl">
+<p dir="rtl"><strong>יצירת רשימה "בטוחה":</strong>
+<span dir="ltr"><code>$adapterList = Get-NetAdapter | Select-Object Name, InterfaceDescription, Status, LinkSpeed</code></span>
+איננו מעבירים את הפלט של <span dir="ltr"><code>Get-NetAdapter</code></span> ישירות. במקום זאת, אנו יוצרים אובייקטים חדשים, "נקיים" באמצעות <span dir="ltr"><code>Select-Object</code></span>, הכוללים רק את המאפיינים שאנו צריכים לסקירה. זה מבטיח שנתונים בעייתיים שגרמו לשגיאה יושלכו.</p>
+</li>
+<li dir="rtl">
+<p dir="rtl"><strong>חלון אינטראקטיבי ראשון:</strong>
+<span dir="ltr"><code>$selectedAdapter = $adapterList | Out-ConsoleGridView ...</code></span>
+הסקריפט מציג את החלון הראשון ו<strong>משהה את ביצועו</strong>, ממתין לבחירתך. ברגע שתבחר שורה ותלחץ <span dir="ltr"><code>Enter</code></span>, האובייקט המתאים לשורה זו ייכתב למשתנה <span dir="ltr"><code>$selectedAdapter</code></span>.</p>
+</li>
+<li dir="rtl">
+<p dir="rtl"><strong>בדיקת הבחירה:</strong>
+<span dir="ltr"><code>if ($null -ne $selectedAdapter)</code></span>
+זוהי בדיקה קריטית חשובה. אם המשתמש ילחץ <span dir="ltr"><code>Esc</code></span> או יסגור את החלון, המשתנה <span dir="ltr"><code>$selectedAdapter</code></span> יהיה ריק (<span dir="ltr"><code>$null</code></span>). בדיקה זו מונעת את ביצוע שאר הקוד והתרחשות שגיאות.</p>
+</li>
+<li dir="rtl">
+<p dir="rtl"><strong>קבלת מידע מלא:</strong>
+<span dir="ltr"><code>$detailedInfoObject = Get-NetAdapter -Name $selectedAdapter.Name</code></span>
+הנה נקודת המפתח של התבנית. אנו קוראים שוב ל-<span dir="ltr"><code>Get-NetAdapter</code></span>, אך הפעם אנו מבקשים <strong>רק אובייקט אחד</strong> לפי שמו, שלקחנו מהפריט שנבחר בשלב הראשון. כעת אנו מקבלים את האובייקט המלא עם כל מאפייניו.</p>
+</li>
+<li dir="rtl">
+<p dir="rtl"><strong>טרנספורמציה עבור החלון השני:</strong>
+<span dir="ltr"><code>$detailedInfoForGrid = $detailedInfoObject.psobject.Properties | ...</code></span>
+אנו משתמשים בטריק העוצמתי שאתה כבר מכיר כדי "לפרוס" את האובייקט המורכב הבודד הזה לרשימה ארוכה של זוגות "שם מאפיין" | "ערך", שמתאימה באופן אידיאלי לתצוגה בטבלה.</p>
+</li>
+<li dir="rtl">
+<p dir="rtl"><strong>חלון אינטראקטיבי שני:</strong>
+<span dir="ltr"><code>$detailedInfoForGrid | Out-ConsoleGridView ...</code></span>
+חלון שני מופיע על המסך, הפעם עם מידע מקיף על המתאם שבחרת.</p>
+</li>
+</ol>
+<hr>
+<h3 dir="rtl">דוגמה עם כותרת מותאמת אישית ורמזים</h3>
+<p dir="rtl">הצגת יומן אירועי <span dir="ltr">Windows</span> בטבלה אינטראקטיבית עם הכותרת "אירועי מערכת".</p>
+<pre class="line-numbers"><code class="language-powershell">Get-EventLog -LogName System -Newest 50 |
+    Select-Object TimeGenerated, EntryType, Source, Message |
+    Out-ConsoleGridView -Title "System Events"  -OutputMode Multiple
+</code></pre>
+<p dir="rtl">קוד זה מאחזר את 50 האירועים האחרונים מיומן המערכת של <span dir="ltr">Windows</span>, בוחר מכל אירוע רק ארבעה מאפייני מפתח (זמן, סוג, מקור והודעה) ומציג אותם בחלון <span dir="ltr">Out-ConsoleGridView</span>.</p>
+<hr>
+<h3 dir="rtl">מידע על המערכת.</h3>
+<p><a href="https://github.com/user-attachments/assets/1e53a339-56f9-4add-8053-86d94dbc8e06">1</a></p>
+<video width="600" controls>
+  <source src="https://github.com/user-attachments/assets/1e53a339-56f9-4add-8053-86d94dbc8e06" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<p dir="rtl">קוד הסקריפט למידע על המערכת:
+<a href="https://github.com/hypo69/The-Philosophy-of-PowerShell-ru/blob/master/code/04/Get-SystemMonitor.ps1"><span dir="ltr">Get-SystemMonitor.ps1</span></a></p>
+<h3 dir="rtl">יצירת ה-<span dir="ltr">cmdlet</span> 'Get-SystemMonitor'</h3>
+<h4 dir="rtl">שלב 1: הגדרת משתנה <span dir="ltr"><code>PATH</code></span></h4>
+<ol>
+<li dir="rtl">
+<p dir="rtl"><strong>צור תיקייה קבועה עבור הכלים שלך,</strong> אם עדיין לא עשית זאת. לדוגמה:
+<span dir="ltr"><code>C:\PowerShell\Scripts</code></span></p>
+</li>
+<li dir="rtl">
+<p dir="rtl"><strong>הצב את קובץ ה-<span dir="ltr"><code>Get-SystemMonitor.ps1</code></span> שלך</strong> בתיקייה זו.</p>
+</li>
+<li dir="rtl">
+<p dir="rtl"><strong>הוסף תיקייה זו למשתנה המערכת <span dir="ltr"><code>PATH</code></span></strong>,</p>
+</li>
+</ol>
+<h4 dir="rtl">שלב 2: הגדרת כינוי בפרופיל <span dir="ltr">PowerShell</span></h4>
+<p dir="rtl">כעת, כשהמערכת יודעת היכן למצוא את הסקריפט שלך לפי שמו המלא, אנו יכולים ליצור עבורו כינוי קצר.</p>
+<ol>
+<li dir="rtl">
+<p dir="rtl"><strong>פתח את קובץ פרופיל ה-<span dir="ltr">PowerShell</span> שלך</strong>:</p>
+<pre class="line-numbers"><code class="language-powershell">notepad $PROFILE
+</code></pre>
+</li>
+<li dir="rtl">
+<p dir="rtl"><strong>הוסף לו את השורה הבאה:</strong></p>
+<pre class="line-numbers"><code class="language-powershell"># כינוי עבור צג המערכת
+Set-Alias -Name sysmon -Value "Get-SystemMonitor.ps1"
+</code></pre>
+<p dir="rtl"><strong>שים לב לנקודה המרכזית:</strong> מכיוון שהתיקייה עם הסקריפט כבר נמצאת ב-<span dir="ltr"><code>PATH</code></span>, איננו צריכים עוד לציין את הנתיב המלא לקובץ! אנו פשוט מתייחסים לשמו. זה הופך את הפרופיל שלך לנקי ואמין יותר. אם אי פעם תעביר את תיקיית <span dir="ltr"><code>C:\PowerShell\Scripts</code></span>, תצטרך לעדכן רק את משתנה <span dir="ltr"><code>PATH</code></span>, וקובץ הפרופיל שלך יישאר ללא שינוי.</p>
+</li>
+</ol>
+<h4 dir="rtl">הפעל מחדש את <span dir="ltr">PowerShell</span></h4>
+<p dir="rtl">סגור <strong>את כל</strong> חלונות ה-<span dir="ltr">PowerShell</span> הפתוחים ופתח חדש. זה הכרחי כדי שהמערכת תחיל את השינויים הן במשתנה <span dir="ltr"><code>PATH</code></span> והן בפרופיל שלך.</p>
+<hr>
+<h3 dir="rtl">תוצאה: מה אתה מקבל</h3>
+<p dir="rtl">לאחר ביצוע שלבים אלה, תוכל לקרוא לסקריפט שלך <strong>בשתי דרכים מכל מקום במערכת</strong>:</p>
+<ol>
+<li dir="rtl">
+<p dir="rtl"><strong>לפי שם מלא (אמין, לשימוש בסקריפטים אחרים):</strong></p>
+<pre class="line-numbers"><code class="language-powershell">Get-SystemMonitor.ps1
+Get-SystemMonitor.ps1 -Resource storage
+</code></pre>
+</li>
+<li dir="rtl">
+<p dir="rtl"><strong>לפי כינוי קצר (נוח, לעבודה אינטראקטיבית):</strong></p>
+<pre class="line-numbers"><code class="language-powershell">sysmon
+sysmon -Resource memory
+</code></pre>
+</li>
+</ol>
+<p dir="rtl">רשמת בהצלחה את הסקריפט שלך במערכת בצורה המקצועית והגמישה ביותר.</p>
+<p dir="rtl">מועיל? הירשם.
+אהבת — שים «+»
+בהצלחה! 🚀</p>
+<p dir="rtl">מאמרים נוספים על <span dir="ltr">PowerShell</span>:</p>
