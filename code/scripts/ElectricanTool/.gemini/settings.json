@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": [ "-y", "@modelcontextprotocol/server-github" ],
+      "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" }
+    },
+    "powershell": {
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "C:\\powershell\\scripts\\mcp-powershell-server\\mcp-powershell-stdio.ps1"
+      ],
+      "env": {
+        "POWERSHELL_TELEMETRY_OPTOUT": "1"
+      }
+    }
+  }
+}
