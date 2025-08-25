@@ -11,24 +11,7 @@
   Your browser does not support the video tag.
 </video>
 
-## Настройка
-
-```powershell
-$env:GEMINI_API_KEY = "AIzaSyCbq8bkt5Xr2hlE-73MIXFpdFYH-rLBd0k"
-if (-not $env:GEMINI_API_KEY) { Write-Error "..."; return }
-
-$scriptRoot = Get-Location
-# --- ИЗМЕНЕНИЕ: Переменная переименована ---
-$HistoryDir = Join-Path $scriptRoot ".gemini/.chat_history"
-# --- КОНЕЦ ИЗМЕНЕНИЯ ---
-$timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
-$historyFileName = "ai_session_$timestamp.jsonl"
-$historyFilePath = Join-Path $HistoryDir $historyFileName
-
-```
-# А давайте встроим ИИ в PowerShell. Часть вторая. Поисковик спецификаций (продолжение)
-
-## Шаг 1: Настройка - с чего все начинается
+## Шаг 1: Настройка
 
 ```powershell
 # --- Шаг 1: Настройка ---
@@ -44,7 +27,7 @@ $historyFileName = "ai_session_$timestamp.jsonl"
 $historyFilePath = Join-Path $HistoryDir $historyFileName
 ```
 
-**Назначение каждой строки:**
+**Назначение строк:**
 
 - `$env:GEMINI_API_KEY = "..."` - устанавливает API ключ для доступа к Gemini AI
 - `if (-not $env:GEMINI_API_KEY)` - проверяет наличие ключа, завершает работу если его нет
