@@ -36,11 +36,11 @@ param(
 )
 
 # --- Шаг 1: Настройка ---
-$env:GEMINI_API_KEY = "AIzaSyCbq8bkt5Xr2hlE-73MIXFpdFYH-rLBd0k"
+$env:GEMINI_API_KEY = "ХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХ"
 if (-not $env:GEMINI_API_KEY) { Write-Error "..."; return }
 
 $scriptRoot = Get-Location
-# --- ИЗМЕНЕНИЕ: Переменная переименована ---
+# ---  ---
 $HistoryDir = Join-Path $scriptRoot ".gemini/.chat_history"
 # --- КОНЕЦ ИЗМЕНЕНИЯ ---
 $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
@@ -51,9 +51,7 @@ $historyFilePath = Join-Path $HistoryDir $historyFileName
 # --- ФУНКЦИИ ---
 function Add-History { 
     param([string]$UserPrompt, [string]$ModelResponse)
-    # --- ИЗМЕНЕНИЕ: Использование новой переменной ---
     if (-not (Test-Path $HistoryDir)) { New-Item -Path $HistoryDir -ItemType Directory | Out-Null }
-    # --- КОНЕЦ ИЗМЕНЕНИЯ ---
     @{ user = $UserPrompt } | ConvertTo-Json -Compress | Add-Content -Path $historyFilePath
     @{ model = $ModelResponse } | ConvertTo-Json -Compress | Add-Content -Path $historyFilePath
 }
@@ -118,7 +116,7 @@ function Invoke-GeminiPrompt {
     catch { Write-Error "Критическая ошибка при вызове Gemini CLI: $_"; return $null }
 }
 
-# --- НОВАЯ ФУНКЦИЯ: Отображение выбранных данных в консольной таблице ---
+# --- Отображение выбранных данных в консольной таблице ---
 function Show-SelectionTable {
     param([array]$SelectedData)
     
@@ -229,9 +227,7 @@ $UserPrompt
             $gridSelection = $jsonObject | Out-ConsoleGridView -Title "Выберите строки для следующего запроса (OK) или закройте (Cancel)" -OutputMode Multiple
                 
             if ($null -ne $gridSelection) {
-                # --- ИЗМЕНЕНИЕ: Показать выбранные данные в консольной таблице ---
                 Show-SelectionTable -SelectedData $gridSelection
-                # --- КОНЕЦ ИЗМЕНЕНИЯ ---
                 
                 $selectionContextJson = $gridSelection | ConvertTo-Json -Compress -Depth 10
                 Write-Host "Выборка сохранена. Добавьте ваш следующий запрос (например, 'сравни их')." -ForegroundColor Magenta
