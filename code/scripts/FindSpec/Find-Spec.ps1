@@ -118,6 +118,46 @@ function Invoke-GeminiPrompt {
     catch { Write-Error "Критическая ошибка при вызове Gemini CLI: $_"; return $null }
 }
 
+# --- НОВАЯ ФУНКЦИЯ: Отображение выбранных данных в консольной таблице ---
+function Show-SelectionTable {
+    param([array]$SelectedData)
+    
+    if ($null -eq $SelectedData -or $SelectedData.Count -eq 0) {
+        return
+    }
+    
+    Write-Host "`n--- ВЫБРАННЫЕ ДАННЫЕ ---" -ForegroundColor Yellow
+    
+    # Если выбран только один элемент, обернуть в массив для единообразной обработки
+    if ($SelectedData -isnot [array]) {
+        $SelectedData = @($SelectedData)
+    }
+    
+    # Получить все уникальные свойства из выбранных объектов
+    $allProperties = @()
+    foreach ($item in $SelectedData) {
+        if ($item -is [PSCustomObject]) {
+            $properties = $item | Get-Member -MemberType Properties | Select-Object -ExpandProperty Name
+            $allProperties = $allProperties + $properties | Sort-Object -Unique
+        }
+    }
+    
+    # Если есть свойства, показать таблицу
+    if ($allProperties.Count -gt 0) {
+        $SelectedData | Format-Table -Property $allProperties -AutoSize -Wrap
+    }
+    else {
+        # Если нет определенных свойств, показать как простой список
+        for ($i = 0; $i -lt $SelectedData.Count; $i++) {
+            Write-Host "[$($i + 1)] $($SelectedData[$i])" -ForegroundColor White
+        }
+    }
+    
+    Write-Host "-------------------------" -ForegroundColor Yellow
+    Write-Host "Выбрано элементов: $($SelectedData.Count)" -ForegroundColor Magenta
+    Write-Host ""
+}
+
 
 # --- Шаг 2: Проверка окружения ---
 try { Get-Command gemini -ErrorAction Stop | Out-Null } catch { Write-Error "Команда 'gemini' не найдена..."; return }
@@ -189,6 +229,10 @@ $UserPrompt
             $gridSelection = $jsonObject | Out-ConsoleGridView -Title "Выберите строки для следующего запроса (OK) или закройте (Cancel)" -OutputMode Multiple
                 
             if ($null -ne $gridSelection) {
+                # --- ИЗМЕНЕНИЕ: Показать выбранные данные в консольной таблице ---
+                Show-SelectionTable -SelectedData $gridSelection
+                # --- КОНЕЦ ИЗМЕНЕНИЯ ---
+                
                 $selectionContextJson = $gridSelection | ConvertTo-Json -Compress -Depth 10
                 Write-Host "Выборка сохранена. Добавьте ваш следующий запрос (например, 'сравни их')." -ForegroundColor Magenta
             }
