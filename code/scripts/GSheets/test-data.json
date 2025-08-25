@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "name": "Тестовый товар 1",
+    "price": 1500,
+    "category": "Электроника",
+    "in_stock": true,
+    "created_date": "2024-08-24"
+  },
+  {
+    "id": 2,
+    "name": "Тестовый товар 2",
+    "price": 2500,
+    "category": "Бытовая техника",
+    "in_stock": false,
+    "created_date": "2024-08-23"
+  },
+  {
+    "id": 3,
+    "name": "Тестовый товар 3",
+    "price": 750,
+    "category": "Аксессуары",
+    "in_stock": true,
+    "created_date": "2024-08-22"
+  }
+]
