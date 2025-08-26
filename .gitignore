@@ -204,3 +204,5 @@ config.json
 /src/config.json
 /SANDBOX/davidka/davidka.json
 _tmp
+.chat_history/*
+
