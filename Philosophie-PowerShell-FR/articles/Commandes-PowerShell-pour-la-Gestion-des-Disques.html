@@ -1,0 +1,129 @@
+<h3>Diagnostic et récupération de disques avec PowerShell</h3>
+<p><code>PowerShell</code> vous permet d'automatiser les vérifications, d'effectuer des diagnostics à distance et de créer des scripts flexibles pour la surveillance. Ce guide vous mènera des vérifications de base au diagnostic et à la récupération de disques en profondeur.</p>
+<p><strong>Version :</strong> Ce guide est pertinent pour **<code>Windows 10/11</code>** et **<code>Windows Server 2016+</code>**.</p>
+<h3>Cmdlets clés pour la gestion des disques</h3>
+<table>
+<thead>
+<tr>
+<th>Cmdlet</th>
+<th>Objectif</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>**<code>Get-PhysicalDisk</code>**</td>
+<td>Informations sur les disques physiques (modèle, état de santé).</td>
+</tr>
+<tr>
+<td>**<code>Get-Disk</code>**</td>
+<td>Informations sur les disques au niveau du périphérique (état en ligne/hors ligne, style de partition).</td>
+</tr>
+<tr>
+<td>**<code>Get-Partition</code>**</td>
+<td>Informations sur les partitions sur les disques.</td>
+</tr>
+<tr>
+<td>**<code>Get-Volume</code>**</td>
+<td>Informations sur les volumes logiques (lettres de lecteur, système de fichiers, espace libre).</td>
+</tr>
+<tr>
+<td>**<code>Repair-Volume</code>**</td>
+<td>Vérifier et réparer les volumes logiques (analogue à <code>chkdsk</code>).</td>
+</tr>
+<tr>
+<td>**<code>Get-StoragePool</code>**</td>
+<td>Utilisé pour travailler avec les espaces de stockage (<code>Storage Spaces</code>).</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3>Étape 1 : Vérification de base de l'état du système</h3>
+<p>Commencez par une évaluation générale de l'état du sous-système de disque.</p>
+<h4>Affichage de tous les disques connectés</h4>
+<p>La commande <code>Get-Disk</code> fournit des informations récapitulatives sur tous les disques vus par le système d'exploitation.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-Disk
+</code></pre>
+<p>Vous verrez un tableau avec les numéros de disque, leurs tailles, leur état (<code>Online</code> ou <code>Offline</code>) et leur style de partition (<code>MBR</code> ou <code>GPT</code>).</p>
+<p><strong>Exemple :</strong> Trouver tous les disques qui sont hors ligne.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-Disk | Where-Object IsOffline -eq $true
+</code></pre>
+<h4>Vérification de la « santé » physique des disques</h4>
+<p>Le cmdlet <code>Get-PhysicalDisk</code> accède à l'état du matériel.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-PhysicalDisk | Select-Object FriendlyName, MediaType, HealthStatus, OperationalStatus
+</code></pre>
+<p>Faites particulièrement attention au champ <code>HealthStatus</code>. Il peut prendre les valeurs suivantes :</p>
+<ul>
+<li><strong>Healthy :</strong> Le disque est en bon état.</li>
+<li><strong>Warning :</strong> Il y a des problèmes, une attention est requise (par exemple, dépassement des seuils <code>S.M.A.R.T.</code>).</li>
+<li><strong>Unhealthy :</strong> Le disque est dans un état critique et peut tomber en panne.</li>
+</ul>
+<hr>
+<h3>Étape 2 : Analyse et récupération des volumes logiques</h3>
+<p>Après avoir vérifié l'état physique, nous passons à la structure logique — les volumes et le système de fichiers.</p>
+<h4>Informations sur les volumes logiques</h4>
+<p>La commande <code>Get-Volume</code> affiche tous les volumes montés dans le système.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-Volume | Format-Table DriveLetter, FileSystem, HealthStatus, SizeRemaining, Size
+</code></pre>
+<p>Champs clés :</p>
+<ul>
+<li><code>DriveLetter</code> — Lettre du volume (<code>C</code>, <code>D</code>, etc.).</li>
+<li><code>FileSystem</code> — Type de système de fichiers (<code>NTFS</code>, <code>ReFS</code>, <code>FAT32</code>).</li>
+<li><code>HealthStatus</code> — État du volume.</li>
+<li><code>SizeRemaining</code> et <code>Size</code> — Espace libre et total.</li>
+</ul>
+<h4>Vérification et réparation d'un volume (analogue à <code>chkdsk</code>)</h4>
+<p>Le cmdlet <code>Repair-Volume</code> est un remplacement moderne de l'utilitaire <code>chkdsk</code>.</p>
+<p><strong>1. Vérification d'un volume sans réparations (analyse uniquement)</strong></p>
+<p>Ce mode est sûr à exécuter sur un système en fonctionnement ; il ne fait que rechercher les erreurs.</p>
+<pre class="line-numbers"><code class="language-powershell">Repair-Volume -DriveLetter C -Scan
+</code></pre>
+<p><strong>2. Analyse complète et correction des erreurs</strong></p>
+<p>Ce mode est analogue à <code>chkdsk C: /f</code>. Il verrouille le volume pendant l'opération, de sorte qu'un redémarrage sera nécessaire pour le lecteur système.</p>
+<pre class="line-numbers"><code class="language-powershell">Repair-Volume -DriveLetter C -OfflineScanAndFix
+</code></pre>
+<blockquote>
+<p>❗️ <strong>Important :</strong> Si vous exécutez cette commande pour le lecteur système (<code>C:</code>), <code>PowerShell</code> planifiera une vérification au prochain démarrage du système. Pour l'exécuter immédiatement, redémarrez votre ordinateur.</p>
+</blockquote>
+<p><strong>Exemple :</strong> Vérifier et réparer automatiquement tous les volumes dont l'état n'est pas <code>Healthy</code>.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-Volume | Where-Object {$_.HealthStatus -ne 'Healthy'} | ForEach-Object {
+    Write-Host "Réparation du volume $($_.DriveLetter)..."
+    Repair-Volume -DriveLetter $_.DriveLetter -OfflineScanAndFix
+}
+</code></pre>
+<hr>
+<h3>Étape 3 : Diagnostic approfondi et <code>S.M.A.R.T.</code></h3>
+<p>Si les vérifications de base n'ont pas révélé de problèmes, mais que des soupçons subsistent, vous pouvez creuser plus profondément.</p>
+<h4>Analyse des journaux système</h4>
+<p>Les erreurs du sous-système de disque sont souvent enregistrées dans le journal système de <code>Windows</code>.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-WinEvent -LogName System | Where-Object {$_.Message -like "*disk*"} | Select-Object -First 20
+</code></pre>
+<p>Pour une recherche plus précise, vous pouvez filtrer par source d'événement :</p>
+<pre class="line-numbers"><code class="language-powershell">Get-WinEvent -ProviderName 'Microsoft-Windows-DiskDiagnostic' -MaxEvents 10
+</code></pre>
+<h4>Vérification de l'état <code>S.M.A.R.T.</code></h4>
+<p><code>S.M.A.R.T.</code> (<code>Self-Monitoring, Analysis and Reporting Technology</code>) est une technologie d'autodiagnostic des disques. <code>PowerShell</code> vous permet d'obtenir ces données.</p>
+<p><strong>Méthode 1 : Utilisation de <code>WMI</code> (pour la compatibilité)</strong></p>
+<pre class="line-numbers"><code class="language-powershell">Get-WmiObject -Namespace "root\wmi" -Class MSStorageDriver_FailurePredictStatus
+</code></pre>
+<p>Si <code>PredictFailure = True</code>, le disque prédit une défaillance imminente. C'est un signal pour un remplacement immédiat.</p>
+<p><strong>Méthode 2 : Approche moderne via les modules <code>CIM</code> et <code>Storage</code></strong></p>
+<p>Une méthode plus moderne et détaillée consiste à utiliser le cmdlet <code>Get-StorageReliabilityCounter</code>.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-PhysicalDisk | Get-StorageReliabilityCounter | Select-Object PhysicalDisk, Wear, Temperature, ReadErrorsTotal, WriteErrorsTotal
+</code></pre>
+<p>Ce cmdlet fournit des informations précieuses, telles que l'usure (pertinent pour les <code>SSD</code>), la température et le nombre d'erreurs de lecture/écriture.</p>
+<hr>
+<h3>Scénarios pratiques pour un administrateur système</h3>
+<p>Voici quelques exemples prêts à l'emploi pour les tâches quotidiennes.</p>
+<p><strong>1. Obtenir un rapport concis sur l'état de santé de tous les disques physiques.</strong></p>
+<pre class="line-numbers"><code class="language-powershell">Get-PhysicalDisk | Format-Table DeviceID, FriendlyName, MediaType, HealthStatus, OperationalStatus
+</code></pre>
+<p><strong>2. Créer un rapport <code>CSV</code> sur l'espace libre sur tous les volumes.</strong></p>
+<pre class="line-numbers"><code class="language-powershell">Get-Volume | Select-Object DriveLetter, FileSystemLabel, @{N='Size(GB)';E={[math]::Round($_.Size / 1GB, 2)}}, @{N='FreeSpace(GB)';E={[math]::Round($_.SizeRemaining / 1GB, 2)}} | Export-Csv -Path C:\Reports\DiskSpace.csv -NoTypeInformation -Encoding UTF8
+</code></pre>
+<p><strong>3. Trouver toutes les partitions sur un disque spécifique (par exemple, disque 0).</strong></p>
+<pre class="line-numbers"><code class="language-powershell">Get-Partition -DiskNumber 0
+</code></pre>
+<p><strong>4. Exécuter le diagnostic du disque système avec un redémarrage ultérieur.</strong></p>
+<pre class="line-numbers"><code class="language-powershell">Repair-Volume -DriveLetter C -OfflineScanAndFix
+Restart-Computer -Force
+</code></pre>

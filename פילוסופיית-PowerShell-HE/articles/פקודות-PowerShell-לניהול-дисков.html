@@ -1,0 +1,129 @@
+<h3 dir="rtl">אבחון ושחזור דיסקים באמצעות <span dir="ltr">PowerShell</span></h3>
+<p dir="rtl"><span dir="ltr">PowerShell</span> מאפשר אוטומציה של בדיקות, ביצוע אבחון מרחוק ויצירת סקריפטים גמישים לניטור. מדריך זה יוביל אתכם מבדיקות בסיסיות ועד לאבחון ושחזור דיסקים מעמיקים.</p>
+<p dir="rtl"><strong>גרסה:</strong> המדריך רלוונטי עבור **<span dir="ltr">Windows 10/11</span>** ו-**<span dir="ltr">Windows Server 2016+</span>**.</p>
+<h3 dir="rtl">פקודות <span dir="ltr">PowerShell</span> מרכזיות לעבודה עם דיסקים</h3>
+<table>
+<thead>
+<tr>
+<th dir="rtl">פקודה</th>
+<th dir="rtl">ייעוד</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td dir="rtl"><strong><span dir="ltr"><code>Get-PhysicalDisk</code></span></strong></td>
+<td dir="rtl">מידע על דיסקים פיזיים (דגם, מצב בריאות).</td>
+</tr>
+<tr>
+<td dir="rtl"><strong><span dir="ltr"><code>Get-Disk</code></span></strong></td>
+<td dir="rtl">מידע על דיסקים ברמת ההתקן (סטטוס <span dir="ltr">Online/Offline</span>, סגנון מחיצות).</td>
+</tr>
+<tr>
+<td dir="rtl"><strong><span dir="ltr"><code>Get-Partition</code></span></strong></td>
+<td dir="rtl">מידע על מחיצות בדיסקים.</td>
+</tr>
+<tr>
+<td dir="rtl"><strong><span dir="ltr"><code>Get-Volume</code></span></strong></td>
+<td dir="rtl">מידע על כוננים לוגיים (אותיות כונן, מערכת קבצים, שטח פנוי).</td>
+</tr>
+<tr>
+<td dir="rtl"><strong><span dir="ltr"><code>Repair-Volume</code></span></strong></td>
+<td dir="rtl">בדיקה ושחזור כוננים לוגיים (אנלוגי ל-<span dir="ltr"><code>chkdsk</code></span>).</td>
+</tr>
+<tr>
+<td dir="rtl"><strong><span dir="ltr"><code>Get-StoragePool</code></span></strong></td>
+<td dir="rtl">משמש לעבודה עם מרחבי אחסון (<span dir="ltr">Storage Spaces</span>).</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 dir="rtl">שלב 1: בדיקת תקינות מערכת בסיסית</h3>
+<p dir="rtl">התחילו בהערכה כללית של מצב תת-מערכת הדיסקים.</p>
+<h4 dir="rtl">צפייה בכל הדיסקים המחוברים</h4>
+<p dir="rtl">הפקודה <span dir="ltr"><code>Get-Disk</code></span> מספקת מידע מסכם על כל הדיסקים שהמערכת ההפעלה רואה.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-Disk
+</code></pre>
+<p dir="rtl">תראו טבלה עם מספרי הדיסקים, גודלם, סטטוס (<span dir="ltr"><code>Online</code></span> או <span dir="ltr"><code>Offline</code></span>) וסגנון מחיצות (<span dir="ltr"><code>MBR</code></span> או <span dir="ltr"><code>GPT</code></span>).</p>
+<p dir="rtl"><strong>דוגמה:</strong> מצאו את כל הדיסקים שנמצאים במצב לא מקוון.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-Disk | Where-Object IsOffline -eq $true
+</code></pre>
+<h4 dir="rtl">בדיקת "בריאות" פיזית של דיסקים</h4>
+<p dir="rtl">הפקודה <span dir="ltr"><code>Get-PhysicalDisk</code></span> ניגשת למצב החומרה עצמה.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-PhysicalDisk | Select-Object FriendlyName, MediaType, HealthStatus, OperationalStatus
+</code></pre>
+<p dir="rtl">שימו לב במיוחד לשדה <span dir="ltr"><code>HealthStatus</code></span>. הוא יכול לקבל את הערכים הבאים:</p>
+<ul dir="rtl">
+<li dir="rtl"><strong><span dir="ltr">Healthy</span>:</strong> הדיסק תקין.</li>
+<li dir="rtl"><strong><span dir="ltr">Warning</span>:</strong> יש בעיות, נדרשת תשומת לב (לדוגמה, חריגה מספי <span dir="ltr">S.M.A.R.T.</span>).</li>
+<li dir="rtl"><strong><span dir="ltr">Unhealthy</span>:</strong> הדיסק במצב קריטי ועלול לקרוס.</li>
+</ul>
+<hr>
+<h3 dir="rtl">שלב 2: ניתוח ושחזור כוננים לוגיים</h3>
+<p dir="rtl">לאחר בדיקת המצב הפיזי, נעבור למבנה הלוגי – כוננים ומערכת קבצים.</p>
+<h4 dir="rtl">מידע על כוננים לוגיים</h4>
+<p dir="rtl">הפקודה <span dir="ltr"><code>Get-Volume</code></span> מציגה את כל הכוננים המותקנים במערכת.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-Volume | Format-Table DriveLetter, FileSystem, HealthStatus, SizeRemaining, Size
+</code></pre>
+<p dir="rtl">שדות מפתח:</p>
+<ul dir="rtl">
+<li dir="rtl"><span dir="ltr"><code>DriveLetter</code></span> — אות הכונן (<span dir="ltr">C</span>, <span dir="ltr">D</span> וכו').</li>
+<li dir="rtl"><span dir="ltr"><code>FileSystem</code></span> — סוג מערכת הקבצים (<span dir="ltr">NTFS</span>, <span dir="ltr">ReFS</span>, <span dir="ltr">FAT32</span>).</li>
+<li dir="rtl"><span dir="ltr"><code>HealthStatus</code></span> — מצב הכונן.</li>
+<li dir="rtl"><span dir="ltr"><code>SizeRemaining</code></span> ו-<span dir="ltr"><code>Size</code></span> — שטח פנוי ושטח כולל.</li>
+</ul>
+<h4 dir="rtl">בדיקה ושחזור כונן (אנלוגי ל-<span dir="ltr"><code>chkdsk</code></span>)</h4>
+<p dir="rtl">הפקודה <span dir="ltr"><code>Repair-Volume</code></span> – זוהי תחליף מודרני לכלי השירות <span dir="ltr"><code>chkdsk</code></span>.</p>
+<p dir="rtl"><strong>1. בדיקת כונן ללא תיקונים (סריקה בלבד)</strong></p>
+<p dir="rtl">מצב זה בטוח לביצוע במערכת פועלת, הוא רק מחפש שגיאות.</p>
+<pre class="line-numbers"><code class="language-powershell">Repair-Volume -DriveLetter C -Scan
+</code></pre>
+<p dir="rtl"><strong>2. סריקה מלאה ותיקון שגיאות</strong></p>
+<p dir="rtl">מצב זה אנלוגי ל-<span dir="ltr"><code>chkdsk C: /f</code></span>. הוא נועל את הכונן בזמן הפעולה, ולכן עבור כונן מערכת תידרש הפעלה מחדש.</p>
+<pre class="line-numbers"><code class="language-powershell">Repair-Volume -DriveLetter C -OfflineScanAndFix
+</code></pre>
+<blockquote>
+<p dir="rtl">❗️ <strong>חשוב:</strong> אם אתם מפעילים פקודה זו עבור כונן המערכת (<span dir="ltr">C:</span>), <span dir="ltr">PowerShell</span> יתזמן בדיקה בהפעלה הבאה של המערכת. כדי להפעיל אותה מיד, הפעילו מחדש את המחשב.</p>
+</blockquote>
+<p dir="rtl"><strong>דוגמה:</strong> בדקו ותקנו אוטומטית את כל הכוננים שמצבם שונה מ-<span dir="ltr"><code>Healthy</code></span>.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-Volume | Where-Object {$_.HealthStatus -ne 'Healthy'} | ForEach-Object {
+    Write-Host "מתקן כונן $($_.DriveLetter)..."
+    Repair-Volume -DriveLetter $_.DriveLetter -OfflineScanAndFix
+}
+</code></pre>
+<hr>
+<h3 dir="rtl">שלב 3: אבחון מעמיק ו-<span dir="ltr">S.M.A.R.T.</span></h3>
+<p dir="rtl">אם בדיקות בסיסיות לא גילו בעיות, אך נותרו חשדות, ניתן לחפור עמוק יותר.</p>
+<h4 dir="rtl">ניתוח יומני מערכת</h4>
+<p dir="rtl">שגיאות בתת-מערכת הדיסקים נרשמות לעיתים קרובות ביומן המערכת של <span dir="ltr">Windows</span>.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-WinEvent -LogName System | Where-Object {$_.Message -like "*disk*"} | Select-Object -First 20
+</code></pre>
+<p dir="rtl">לחיפוש מדויק יותר ניתן לסנן לפי מקור האירוע:</p>
+<pre class="line-numbers"><code class="language-powershell">Get-WinEvent -ProviderName 'Microsoft-Windows-DiskDiagnostic' -MaxEvents 10
+</code></pre>
+<h4 dir="rtl">בדיקת סטטוס <span dir="ltr">S.M.A.R.T.</span></h4>
+<p dir="rtl"><span dir="ltr">S.M.A.R.T.</span> (<span dir="ltr">Self-Monitoring, Analysis and Reporting Technology</span>) – טכנולוגיה לאבחון עצמי של דיסקים. <span dir="ltr">PowerShell</span> מאפשר לקבל נתונים אלו.</p>
+<p dir="rtl"><strong>שיטה 1: שימוש ב-<span dir="ltr">WMI</span> (לתאימות)</strong></p>
+<pre class="line-numbers"><code class="language-powershell">Get-WmiObject -Namespace "root\wmi" -Class MSStorageDriver_FailurePredictStatus
+</code></pre>
+<p dir="rtl">אם <span dir="ltr"><code>PredictFailure = True</code></span>, הדיסק מנבא כשל קרוב. זהו אות להחלפה מיידית.</p>
+<p dir="rtl"><strong>שיטה 2: גישה מודרנית באמצעות מודולי <span dir="ltr">CIM</span> ו-<span dir="ltr">Storage</span></strong></p>
+<p dir="rtl">דרך מודרנית ומפורטת יותר – להשתמש בפקודה <span dir="ltr"><code>Get-StorageReliabilityCounter</code></span>.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-PhysicalDisk | Get-StorageReliabilityCounter | Select-Object PhysicalDisk, Wear, Temperature, ReadErrorsTotal, WriteErrorsTotal
+</code></pre>
+<p dir="rtl">פקודה זו מספקת מידע יקר ערך, כגון בלאי (רלוונטי ל-<span dir="ltr">SSD</span>), טמפרטורה ומספר שגיאות קריאה/כתיבה.</p>
+<hr>
+<h3 dir="rtl">תרחישים מעשיים למנהל מערכת</h3>
+<p dir="rtl">הנה כמה דוגמאות מוכנות למשימות יומיומיות.</p>
+<p dir="rtl"><strong>1. קבלת דוח קצר על תקינות כל הדיסקים הפיזיים.</strong></p>
+<pre class="line-numbers"><code class="language-powershell">Get-PhysicalDisk | Format-Table DeviceID, FriendlyName, MediaType, HealthStatus, OperationalStatus
+</code></pre>
+<p dir="rtl"><strong>2. יצירת דוח <span dir="ltr">CSV</span> על שטח פנוי בכל הכוננים.</strong></p>
+<pre class="line-numbers"><code class="language-powershell">Get-Volume | Select-Object DriveLetter, FileSystemLabel, @{N='Size(GB)';E={[math]::Round($_.Size / 1GB, 2)}}, @{N='FreeSpace(GB)';E={[math]::Round($_.SizeRemaining / 1GB, 2)}} | Export-Csv -Path C:\Reports\DiskSpace.csv -NoTypeInformation -Encoding UTF8
+</code></pre>
+<p dir="rtl"><strong>3. מצאו את כל המחיצות בדיסק ספציפי (לדוגמה, דיסק 0).</strong></p>
+<pre class="line-numbers"><code class="language-powershell">Get-Partition -DiskNumber 0
+</code></pre>
+<p dir="rtl"><strong>4. הפעלת אבחון דיסק מערכת עם הפעלה מחדש לאחר מכן.</strong></p>
+<pre class="line-numbers"><code class="language-powershell">Repair-Volume -DriveLetter C -OfflineScanAndFix
+Restart-Computer -Force
+</code></pre>

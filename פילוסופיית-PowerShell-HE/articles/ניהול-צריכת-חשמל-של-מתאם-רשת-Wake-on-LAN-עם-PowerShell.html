@@ -1,0 +1,57 @@
+<h2 dir="rtl">ניהול צריכת חשמל של מתאם רשת <span dir="ltr">Wake-on-LAN</span> עם <span dir="ltr">PowerShell</span>.</h2>
+<p dir="rtl">מדריך מפורט להגדרת <span dir="ltr">Wake-on-LAN</span> באמצעות <span dir="ltr">PowerShell</span>, הכולל פקודות בסיסיות ופתרון בעיות נפוצות הנובעות מהבדלים במנהלי התקנים של מתאמי רשת.</p>
+<h4 dir="rtl">שלב 1: זיהוי התקן.</h4>
+<p dir="rtl">לפני הגדרת <span dir="ltr">Wake-on-LAN</span> (<span dir="ltr">WOL</span>) עבור מתאם רשת, יש לזהות במדויק עם איזה התקן אנו עובדים. לשם כך, נשתמש בפקודת <span dir="ltr">PowerShell</span> המחפשת התקנים לפי חלק משמם (לדוגמה, "<span dir="ltr">Realtek</span>" או "<span dir="ltr">Intel</span>").</p>
+<pre class="line-numbers"><code class="language-powershell">Get-PnpDevice | Where-Object { $_.FriendlyName -like "*Realtek*" } | Select-Object FriendlyName, Status, Class, InstanceId
+</code></pre>
+<p dir="rtl"><img src="../assets/manage-wol/1.png" alt="1"></p>
+<p dir="rtl">פקודה זו אומרת למערכת:<br>
+&gt; "הצג לי את כל ההתקנים ששמם מכיל את המילה «<span dir="ltr">Realtek</span>», והצג טבלה עם ארבע עמודות עבורם: שם מלא, סטטוס, מחלקה ומזהה מערכת."</p>
+<ol dir="rtl">
+<li dir="rtl"><strong><span dir="ltr"><code>Get-PnpDevice</code></span></strong>: מאחזר רשימה מלאה של כל התקני <span dir="ltr">Plug-and-Play</span>.</li>
+<li dir="rtl"><strong><span dir="ltr"><code>|</code></span> (צינור)</strong>: מעביר את הרשימה הלאה.</li>
+<li dir="rtl"><strong><span dir="ltr"><code>Where-Object { ... }</code></span></strong>: מסנן את הרשימה, ומשאיר התקנים ששמם (<span dir="ltr"><code>FriendlyName</code></span>) מכיל "<span dir="ltr">Realtek</span>".</li>
+<li dir="rtl"><strong><span dir="ltr"><code>|</code></span> (צינור)</strong>: מעביר את הרשימה המסוננת.</li>
+<li dir="rtl"><strong><span dir="ltr"><code>Select-Object ...</code></span></strong>: מעצב את הפלט, ומציג רק את המאפיינים הדרושים.</li>
+</ol>
+<p dir="rtl"><em>מוצאים את ההתקן הרצוי ולוקחים את הראשון מהרשימה</em></p>
+<pre class="line-numbers"><code class="language-powershell">$device = Get-PnpDevice | Where-Object { $_.FriendlyName -like "*Realtek*" } | Select-Object -First 1
+
+*רושמים את מאפייניו למשתנים*
+
+$DeviceName = $device.FriendlyName
+$InstanceId = $device.InstanceId
+$pmKey = "HKLM:\SYSTEM\CurrentControlSet\Enum\$InstanceId\Device Parameters"
+</code></pre>
+<h4 dir="rtl">שלב 2: הרשאה גלובלית להפעלה</h4>
+<p dir="rtl">הפקודה <span dir="ltr"><code>powercfg</code></span> נותנת להתקן הרשאה "רשמית" מ-<span dir="ltr">Windows</span> להעיר את המערכת.</p>
+<pre class="line-numbers"><code class="language-powershell">powercfg -deviceenablewake $DeviceName
+</code></pre>
+<p dir="rtl">פקודה זו שקולה לסימון התיבה "אפשר להתקן זה להעיר את המחשב ממצב שינה".</p>
+<p dir="rtl">פעולתה ההפוכה – השבתה:</p>
+<pre class="line-numbers"><code class="language-powershell">powercfg -devicedisablewake $DeviceName
+</code></pre>
+<h4 dir="rtl">שלב 3: הגדרת מנהל התקן.</h4>
+<p dir="rtl">הגדרות <span dir="ltr">WOL</span> נמצאות בפרמטרים של מנהל ההתקן עצמו, המאוחסנים ברישום.<br>
+כדי לסמן את התיבה **"אפשר רק לחבילת קסם להעיר את המחשב ממצב שינה"**,<br>
+נשתמש בפקודה <span dir="ltr"><code>Set-ItemProperty</code></span>.</p>
+<pre class="line-numbers"><code class="language-powershell"># מגדירים את המאפיין
+Set-ItemProperty -Path $pmKey -Name "*WakeOnMagicPacket" -Value 1
+</code></pre>
+<p dir="rtl">פעולה הפוכה – השבתת <span dir="ltr">WOL</span> (<span dir="ltr"><code>Value 0</code></span>):</p>
+<pre class="line-numbers"><code class="language-powershell">Set-ItemProperty -Path $pmKey -Name "*WakeOnMagicPacket" -Value 0
+</code></pre>
+<blockquote>
+<p dir="rtl"><strong>בעיה</strong> שם פרמטר זה עשוי להשתנות בין יצרנים שונים. לדוגמה, עבור **<span dir="ltr">Intel</span>** זה <span dir="ltr"><code>*WakeOnMagicPacket</code></span>, ועבור **<span dir="ltr">Realtek</span>** – <span dir="ltr"><code>WakeOnMagicPacket</code></span> (ללא <span dir="ltr"><code>*</code></span>). אם ההגדרה אינה מיושמת, בדקו את השם הנכון באמצעות הפקודה <span dir="ltr"><code>Get-ItemProperty -Path $pmKey</code></span> והשתמשו בו.</p>
+</blockquote>
+<h3 dir="rtl">שלב 4: הגדרה סופית באמצעות <span dir="ltr">CIM</span></h3>
+<p dir="rtl">כדי לוודא שהגדרות ניהול צריכת החשמל יושמו כהלכה, נשתמש בתקן המודרני **<span dir="ltr">CIM</span>** (<span dir="ltr">Common Information Model</span>).</p>
+<pre class="line-numbers"><code class="language-powershell"># מוצאים את אובייקט ה-CIM המשויך להתקן שלנו
+$adapterCim = Get-CimInstance -Namespace root\wmi -ClassName MSPower_DeviceEnable | Where-Object { $_.InstanceName -like "*$($instanceId.Split('\')[-1])*" }
+
+# מיישמים עליו שינויים
+if ($adapterCim) {
+    Set-CimInstance -CimInstance $adapterCim -Property @{ Enable = $true }
+}
+</code></pre>
+<p dir="rtl"><img src="../assets/manage-wol/1.png" alt="1"></p>

@@ -1,0 +1,238 @@
+<h2 dir="rtl">בואו נשלב בינה מלאכותית ב-<span dir="ltr">PowerShell</span>. חלק שני: מאתר המפרטים</h2>
+<p dir="rtl">בפעם הקודמת ראינו כיצד אנו יכולים לתקשר עם מודל <span dir="ltr">Gemini</span> דרך ממשק שורת הפקודה באמצעות <span dir="ltr">PowerShell</span>. במאמר זה אראה כיצד להפיק תועלת מהידע שלנו. נהפוך את הקונסולה שלנו למדריך עזר אינטראקטיבי שיקבל מזהה רכיב (מותג, דגם, קטגוריה, מספר חלק וכו') כקלט, ויחזיר טבלה אינטראקטיבית עם מאפיינים שהתקבלו ממודל <span dir="ltr">Gemini</span>.</p>
+<p dir="rtl">מהנדסים, מפתחים ומומחים אחרים נתקלים בצורך לברר פרמטרים מדויקים, למשל, של לוח אם, מפסק חשמל בלוח חשמל, או מתג רשת. מדריך העזר שלנו יהיה תמיד בהישג יד ועל פי בקשה יאסוף מידע, יבהיר פרמטרים באינטרנט ויחזיר את הטבלה הרצויה. בטבלה ניתן לבחור את הפרמטר/ים הדרושים ובמידת הצורך להמשיך בחיפוש מעמיק יותר. בעתיד נלמד כיצד להעביר את התוצאה דרך צינור עיבוד נוסף: ייצוא לטבלת <span dir="ltr">Excel</span>, גיליון <span dir="ltr">Google</span>, אחסון במסד נתונים או העברה לתוכנה אחרת. במקרה של כשל, המודל ימליץ אילו פרמטרים יש לברר. עם זאת, ראו בעצמכם:</p>
+<p dir="rtl"><a href="https://github.com/user-attachments/assets/0e6690c1-5d49-4c75-89fc-ede2c7642c5f">וידאו</a></p>
+<video width="600" controls>
+  <source src="https://github.com/user-attachments/assets/0e6690c1-5d49-4c75-89fc-ede2c7642c5f" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<h2 dir="rtl">כיצד פועל מאתר המפרטים מבוסס <span dir="ltr">AI</span>: מההפעלה ועד לתוצאה</h2>
+<p dir="rtl">בואו נעקוב אחר מחזור החיים המלא של הסקריפט שלנו - מה קורה מרגע ההפעלה ועד לקבלת התוצאות.</p>
+<h2 dir="rtl">אתחול: הכנה לעבודה</h2>
+<p dir="rtl">הסקריפט מקבל את הפרמטר <span dir="ltr"><code>$Model</code></span> עם אימות - ניתן לבחור '<span dir="ltr"><code>gemini-2.5-flash</code></span>' (ברירת מחדל, מודל מהיר) או '<span dir="ltr"><code>gemini-2.5-pro</code></span>' (חזק יותר). עם ההפעלה, הסקריפט מגדיר תחילה את סביבת העבודה. הוא מגדיר את מפתח ה-<span dir="ltr">API</span> לגישה ל-<span dir="ltr">Gemini AI</span>, מגדיר את התיקיה הנוכחית כספריית הבסיס, ויוצר מבנה לאחסון קבצים. עבור כל סשן, נוצר קובץ עם חותמת זמן, לדוגמה, <span dir="ltr"><code>ai_session_2025-08-26_14-30-15.jsonl</code></span>. זוהי היסטוריית הדיאלוג.</p>
+<p dir="rtl">לאחר מכן המערכת בודקת שכל הכלים הדרושים מותקנים. היא מחפשת את <span dir="ltr">Gemini CLI</span> במערכת, בודקת קיומם של קבצי תצורה בתיקיית <span dir="ltr"><code>.gemini/</code></span>. קובץ <span dir="ltr"><code>GEMINI.md</code></span> חשוב במיוחד - הוא מכיל את הפרומפט המערכתי למודל ונטען אוטומטית על ידי <span dir="ltr">Gemini CLI</span> בעת ההפעלה. זהו המיקום הסטנדרטי להוראות מערכת. קובץ <span dir="ltr"><code>ShowHelp.md</code></span> עם מידע עזר נבדק גם הוא. אם חסר משהו קריטי, הסקריפט מזהיר את המשתמש או מסיים את פעולתו.</p>
+<h2 dir="rtl">הפעלת מצב אינטראקטיבי</h2>
+<p dir="rtl">לאחר אתחול מוצלח, הסקריפט מציג הודעת קבלת פנים המציינת את המודל שנבחר ("מאתר מפרטי <span dir="ltr">AI</span>. מודל: '<span dir="ltr"><code>gemini-2.5-flash</code></span>'."), את הנתיב לקובץ הסשן, והוראות לפקודות. לאחר מכן הוא עובר למצב אינטראקטיבי - מציג הנחיה וממתין לקלט מהמשתמש. ההנחיה נראית כמו <span dir="ltr"><code>🤖AI :) &gt; </code></span> ומשתנה ל-<span dir="ltr"><code>🤖AI [בחירה פעילה] :) &gt; </code></span> כאשר למערכת יש נתונים לניתוח.</p>
+<h2 dir="rtl">עיבוד קלט משתמש</h2>
+<p dir="rtl">כל קלט משתמש נבדק תחילה עבור פקודות שירות באמצעות הפונקציה <span dir="ltr"><code>Command-Handler</code></span>. פונקציה זו מזהה פקודות <span dir="ltr"><code>?</code></span> (עזרה מקובץ <span dir="ltr">ShowHelp.md</span>), <span dir="ltr"><code>history</code></span> (הצגת היסטוריית סשן), <span dir="ltr"><code>clear</code></span> ו-<span dir="ltr"><code>clear-history</code></span> (ניקוי קובץ היסטוריה), <span dir="ltr"><code>gemini help</code></span> (עזרה <span dir="ltr">CLI</span>), <span dir="ltr"><code>exit</code></span> ו-<span dir="ltr"><code>quit</code></span> (יציאה). אם זו פקודת שירות, היא מבוצעת מיד ללא פנייה ל-<span dir="ltr">AI</span>, והלולאה ממשיכה.</p>
+<p dir="rtl">אם זו שאילתה רגילה, המערכת מתחילה ליצור את ההקשר לשליחה ל-<span dir="ltr">Gemini</span>. היא קוראת את כל היסטוריית הסשן הנוכחי מקובץ <span dir="ltr">JSONL</span> (אם קיים), מוסיפה בלוק עם נתונים מהבחירה הקודמת (אם יש בחירה פעילה), ומשלבת את כל זה עם שאילתת המשתמש החדשה לפרומפט מובנה עם סעיפים "היסטוריית דיאלוג", "נתונים מהבחירה" ו"משימה חדשה". לאחר השימוש, נתוני הבחירה מאופסים.</p>
+<h2 dir="rtl">אינטראקציה עם בינה מלאכותית</h2>
+<p dir="rtl">הפרומפט שנוצר נשלח ל-<span dir="ltr">Gemini</span> דרך שורת הפקודה באמצעות הקריאה <span dir="ltr"><code>&amp; gemini -m $Model -p $Prompt 2&gt;&amp;1</code></span>. המערכת לוכדת את כל הפלט (כולל שגיאות דרך <span dir="ltr"><code>2&gt;&amp;1</code></span>), בודקת את קוד ההחזרה, ומנקה את התוצאה מהודעות שירות של <span dir="ltr">CLI</span> ("איסוף נתונים מושבת" ו"טעינת אישורים שמורים"). אם מתרחשת שגיאה בשלב זה, המשתמש מקבל אזהרה, אך הסקריפט ממשיך לפעול.</p>
+<h2 dir="rtl">עיבוד תגובת <span dir="ltr">AI</span></h2>
+<p dir="rtl">התגובה שהתקבלה מה-<span dir="ltr">AI</span> מנסה להתפרש כ-<span dir="ltr">JSON</span> על ידי המערכת. תחילה, היא מחפשת בלוק קוד בפורמט <span dir="ltr"><code>```json...```</code></span>, מחלצת את התוכן ומנסה לנתח אותו. אם אין בלוק כזה, היא מנתחת את כל התגובה. עם ניתוח מוצלח, הנתונים מוצגים בטבלת <span dir="ltr"><code>Out-ConsoleGridView</code></span> אינטראקטיבית עם הכותרת "בחר שורות לשאילתה הבאה (אישור) או סגור (ביטול)" ובחירה מרובה. אם <span dir="ltr">JSON</span> אינו מזוהה (שגיאת ניתוח), התגובה מוצגת כטקסט רגיל בצבע כחול.</p>
+<h2 dir="rtl">עבודה עם בחירת נתונים</h2>
+<p dir="rtl">כאשר המשתמש בוחר שורות בטבלה ולוחץ אישור, המערכת מבצעת מספר פעולות. תחילה, נקראת הפונקציה <span dir="ltr"><code>Show-SelectionTable</code></span>, המנתחת את מבנה הנתונים שנבחרו: אם אלו אובייקטים עם מאפיינים, היא קובעת את כל השדות הייחודיים ומציגה את הנתונים באמצעות <span dir="ltr"><code>Format-Table</code></span> עם התאמה אוטומטית של גודל וגלישה. אם אלו ערכים פשוטים, היא מציגה אותם כרשימה ממוספרת. לאחר מכן היא מציגה את ספירת הפריטים שנבחרו ואת ההודעה "הבחירה נשמרה. הוסף את השאילתה הבאה שלך (לדוגמה, 'השווה אותם')".</p>
+<p dir="rtl">הנתונים שנבחרו מומרים ל-<span dir="ltr">JSON</span> דחוס עם עומק קינון של 10 רמות ונשמרים במשתנה <span dir="ltr"><code>$selectionContextJson</code></span> לשימוש בשאילתות <span dir="ltr">AI</span> הבאות.</p>
+<h2 dir="rtl">שמירת היסטוריה</h2>
+<p dir="rtl">כל זוג "שאילתת משתמש - תגובת <span dir="ltr">AI</span>" נשמר בקובץ היסטוריה בפורמט <span dir="ltr">JSONL</span>. זה מבטיח המשכיות דיאלוג - ה-<span dir="ltr">AI</span> "זוכר" את כל השיחה הקודמת ויכול להתייחס לנושאים שנדונו בעבר.</p>
+<h2 dir="rtl">המחזור נמשך</h2>
+<p dir="rtl">לאחר עיבוד השאילתה, המערכת חוזרת להמתין לקלט חדש. אם למשתמש יש בחירה פעילה, הדבר משתקף בהנחיית שורת הפקודה. המחזור נמשך עד שהמשתמש מזין פקודת יציאה.</p>
+<h2 dir="rtl">דוגמה מעשית לעבודה</h2>
+<p dir="rtl">תארו לעצמכם שהמשתמש מפעיל את הסקריפט ומזין "<span dir="ltr">RTX 4070 Ti Super</span>":</p>
+<ul dir="rtl">
+<li dir="rtl"><strong>הכנת הקשר:</strong> המערכת לוקחת את הפרומפט המערכתי מהקובץ, מוסיפה היסטוריה (כרגע ריקה), ושאילתה חדשה.</li>
+<li dir="rtl"><strong>פנייה ל-<span dir="ltr">AI</span>:</strong> הפרומפט המלא נשלח ל-<span dir="ltr">Gemini</span> עם בקשה למצוא מאפייני כרטיס מסך.</li>
+<li dir="rtl"><strong>אחזור נתונים:</strong> ה-<span dir="ltr">AI</span> מחזיר <span dir="ltr">JSON</span> עם מערך של אובייקטים המכילים מידע על דגמי <span dir="ltr">RTX 4070 Ti Super</span> שונים.</li>
+<li dir="rtl"><strong>טבלה אינטראקטיבית:</strong> המשתמש רואה טבלה עם יצרנים, מאפיינים ומחירים, ובוחר 2-3 דגמים מעניינים.</li>
+<li dir="rtl"><strong>הצגת הבחירה:</strong> טבלה עם הדגמים שנבחרו מופיעה בקונסולה, וההנחיה משתנה ל-<span dir="ltr"><code>[בחירה פעילה]</code></span>.</li>
+<li dir="rtl"><strong>שאילתה מבהירה:</strong> המשתמש מקליד "השווה ביצועי משחקים".</li>
+<li dir="rtl"><strong>ניתוח הקשרי:</strong> ה-<span dir="ltr">AI</span> מקבל גם את השאילתה המקורית, גם את הדגמים שנבחרו, וגם את השאלה החדשה - מספק השוואה מפורטת של כרטיסים ספציפיים אלו.</li>
+</ul>
+<h2 dir="rtl">סיום עבודה</h2>
+<p dir="rtl">עם הזנת <span dir="ltr"><code>exit</code></span> או <span dir="ltr"><code>quit</code></span>, הסקריפט מסיים את פעולתו כהלכה, לאחר ששמר את כל היסטוריית הסשן לקובץ. המשתמש יכול לחזור לדיאלוג זה בכל עת על ידי הצגת תוכן הקובץ המתאים בתיקיית <span dir="ltr"><code>.chat_history</code></span>.</p>
+<p dir="rtl">כל הלוגיקה המורכבת הזו מוסתרת מהמשתמש מאחורי ממשק שורת פקודה פשוט. האדם פשוט שואל שאלות ומקבל תשובות מובנות, והמערכת לוקחת על עצמה את כל העבודה של שמירת הקשר, ניתוח נתונים וניהול מצב הדיאלוג.</p>
+<hr>
+<h2 dir="rtl">שלב 1: הגדרה</h2>
+<pre class="line-numbers"><code class="language-powershell"># --- שלב 1: הגדרה ---
+$env:GEMINI_API_KEY = "AIzaSyCbq8bkt5Xr2hlE-73MIXFpdFYH-rLBd0k"
+if (-not $env:GEMINI_API_KEY) { Write-Error "..."; return }
+
+$scriptRoot = Get-Location
+# --- שינוי: שם המשתנה שונה ---
+$HistoryDir = Join-Path $scriptRoot ".gemini/.chat_history"
+# --- סוף שינוי ---
+$timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+$historyFileName = "ai_session_$timestamp.jsonl"
+$historyFilePath = Join-Path $HistoryDir $historyFileName
+</code></pre>
+<p dir="rtl"><strong>מטרת השורות:</strong></p>
+<ul dir="rtl">
+<li dir="rtl"><span dir="ltr"><code>$env:GEMINI_API_KEY = "..."</code></span> - מגדיר את מפתח ה-<span dir="ltr">API</span> לגישה ל-<span dir="ltr">Gemini AI</span>.</li>
+<li dir="rtl"><span dir="ltr"><code>if (-not $env:GEMINI_API_KEY)</code></span> - בודק את קיומו של המפתח, מסיים את הסקריפט אם הוא חסר.</li>
+<li dir="rtl"><span dir="ltr"><code>$scriptRoot = Get-Location</code></span> - מקבל את ספריית העבודה הנוכחית.</li>
+<li dir="rtl"><span dir="ltr"><code>$HistoryDir = Join-Path...</code></span> - יוצר את הנתיב לתיקיה לאחסון היסטוריית דיאלוגים (<span dir="ltr"><code>.gemini/.chat_history</code></span>).</li>
+<li dir="rtl"><span dir="ltr"><code>$timestamp = Get-Date...</code></span> - יוצר חותמת זמן בפורמט <span dir="ltr"><code>2025-08-26_14-30-15</code></span>.</li>
+<li dir="rtl"><span dir="ltr"><code>$historyFileName = "ai_session_$timestamp.jsonl"</code></span> - מייצר שם קובץ סשן ייחודי.</li>
+<li dir="rtl"><span dir="ltr"><code>$historyFilePath = Join-Path...</code></span> - יוצר את הנתיב המלא לקובץ היסטוריית הסשן הנוכחי.</li>
+</ul>
+<h2 dir="rtl">בדיקת סביבה - מה צריך להיות מותקן</h2>
+<pre class="line-numbers"><code class="language-powershell"># --- שלב 2: בדיקת סביבה ---
+try { Get-Command gemini -ErrorAction Stop | Out-Null } 
+catch { Write-Error "הפקודה 'gemini' לא נמצאה..."; return }
+
+if (-not (Test-Path (Join-Path $scriptRoot ".gemini/GEMINI.md"))) { 
+    Write-Warning "קובץ הפרומפט המערכתי .gemini/GEMINI.md לא נמצא..." 
+}
+if (-not (Test-Path (Join-Path $scriptRoot ".gemini/ShowHelp.md"))) { 
+    Write-Warning "קובץ העזרה .gemini/ShowHelp.md לא נמצא..." 
+}
+</code></pre>
+<p dir="rtl"><strong>מה נבדק:</strong></p>
+<ul dir="rtl">
+<li dir="rtl">נוכחות <strong><span dir="ltr">Gemini CLI</span></strong> במערכת - הסקריפט לא יעבוד בלעדיו.</li>
+<li dir="rtl">קובץ <strong><span dir="ltr">GEMINI.md</span></strong> - מכיל את הפרומפט המערכתי (הוראות ל-<span dir="ltr">AI</span>).</li>
+<li dir="rtl">קובץ <strong><span dir="ltr">ShowHelp.md</span></strong> - עזרה למשתמש (פקודת <span dir="ltr"><code>?</code></span>).</li>
+</ul>
+<h2 dir="rtl">פונקציה ראשית לאינטראקציה עם <span dir="ltr">AI</span></h2>
+<pre class="line-numbers"><code class="language-powershell">function Invoke-GeminiPrompt {
+    param([string]$Prompt, [string]$Model)
+    try {
+        $output = &amp; gemini -m $Model -p $Prompt 2&gt;&amp;1
+        if (-not $?) { $output | ForEach-Object { Write-Warning $_.ToString() }; return $null }
+        
+        $outputString = ($output -join [Environment]::NewLine).Trim()
+        $cleanedOutput = $outputString -replace "(?m)^Data collection is disabled\.`r?`n" , ""
+        $cleanedOutput = $cleanedOutput -replace "(?m)^Loaded cached credentials\.`r?`n", ""
+        
+        return $cleanedOutput.Trim()
+    }
+    catch { Write-Error "שגיאה קריטית בקריאה ל-Gemini CLI: $_"; return $null }
+}
+</code></pre>
+<p dir="rtl"><strong>משימות הפונקציה:</strong></p>
+<ul dir="rtl">
+<li dir="rtl">קוראת ל-<span dir="ltr">Gemini CLI</span> עם המודל והפרומפט שצוינו.</li>
+<li dir="rtl">לוכדת את כל הפלטים (כולל שגיאות).</li>
+<li dir="rtl">מנקה את התוצאה מהודעות שירות של <span dir="ltr">CLI</span>.</li>
+<li dir="rtl">מחזירה תגובת <span dir="ltr">AI</span> נקייה או <span dir="ltr"><code>$null</code></span> במקרה של שגיאה.</li>
+</ul>
+<h2 dir="rtl">פונקציות לניהול היסטוריה</h2>
+<pre class="line-numbers"><code class="language-powershell">function Add-History { 
+    param([string]$UserPrompt, [string]$ModelResponse)
+    if (-not (Test-Path $HistoryDir)) { New-Item -Path $HistoryDir -ItemType Directory | Out-Null }
+    @{ user = $UserPrompt } | ConvertTo-Json -Compress | Add-Content -Path $historyFilePath
+    @{ model = $ModelResponse } | ConvertTo-Json -Compress | Add-Content -Path $historyFilePath
+}
+
+function Show-History {
+    if (-not (Test-Path $historyFilePath)) { Write-Host "היסטוריית הסשן הנוכחי ריקה." -ForegroundColor Yellow; return }
+    Write-Host "`n--- היסטוריית סשן נוכחי ---" -ForegroundColor Cyan
+    Get-Content -Path $historyFilePath
+    Write-Host "------------------------------------`n" -ForegroundColor Cyan
+}
+
+function Clear-History {
+    if (Test-Path $historyFilePath) {
+        Remove-Item -Path $historyFilePath -Force -ErrorAction Stop
+        Write-Host "היסטוריית הסשן הנוכחי ($historyFileName) נמחקה." -ForegroundColor Yellow
+    }
+}
+</code></pre>
+<p dir="rtl"><strong>מטרה:</strong></p>
+<ul dir="rtl">
+<li dir="rtl"><span dir="ltr"><code>Add-History</code></span> - שומר זוגות "שאלה-תשובה" בפורמט <span dir="ltr">JSONL</span>.</li>
+<li dir="rtl"><span dir="ltr"><code>Show-History</code></span> - מציג את תוכן קובץ ההיסטוריה.</li>
+<li dir="rtl"><span dir="ltr"><code>Clear-History</code></span> - מוחק את קובץ היסטוריית הסשן הנוכחי.</li>
+</ul>
+<h2 dir="rtl">פונקציה להצגת נתונים נבחרים</h2>
+<pre class="line-numbers"><code class="language-powershell">function Show-SelectionTable {
+    param([array]$SelectedData)
+    
+    if ($null -eq $SelectedData -or $SelectedData.Count -eq 0) { return }
+    
+    Write-Host "`n--- נתונים נבחרים ---" -ForegroundColor Yellow
+    
+    # קבל את כל המאפיינים הייחודיים מהאובייקטים שנבחרו
+    $allProperties = @()
+    foreach ($item in $SelectedData) {
+        if ($item -is [PSCustomObject]) {
+            $properties = $item | Get-Member -MemberType Properties | Select-Object -ExpandProperty Name
+            $allProperties = $allProperties + $properties | Sort-Object -Unique
+        }
+    }
+    
+    # הצג טבלה או רשימה
+    if ($allProperties.Count -gt 0) {
+        $SelectedData | Format-Table -Property $allProperties -AutoSize -Wrap
+    } else {
+        for ($i = 0; $i -lt $SelectedData.Count; $i++) {
+            Write-Host "[$($i + 1)] $($SelectedData[$i])" -ForegroundColor White
+        }
+    }
+    
+    Write-Host "-------------------------" -ForegroundColor Yellow
+    Write-Host "פריטים נבחרו: $($SelectedData.Count)" -ForegroundColor Magenta
+}
+</code></pre>
+<p dir="rtl"><strong>משימת הפונקציה:</strong></p>
+<ul dir="rtl">
+<li dir="rtl">לאחר בחירת פריטים ב-<span dir="ltr"><code>Out-ConsoleGridView</code></span>, היא מציגה אותם בקונסולה כטבלה מסודרת, כך שהמשתמש יוכל לראות בדיוק מה נבחר.</li>
+</ul>
+<h2 dir="rtl">לולאת עבודה ראשית</h2>
+<pre class="line-numbers"><code class="language-powershell">while ($true) {
+    # הצגת הנחיה עם אינדיקציה למצב
+    if ($selectionContextJson) {
+        Write-Host -NoNewline -ForegroundColor Green "🤖AI [בחירה פעילה] :) &gt; "
+    } else {
+        Write-Host -NoNewline -ForegroundColor Green "🤖AI :) &gt; "
+    }
+    
+    $UserPrompt = Read-Host
+    
+    # טיפול בפקודות שירות
+    $commandResult = Command-Handler -Command $UserPrompt
+    if ($commandResult -eq 'break') { break }
+    if ($commandResult -eq 'continue') { continue }
+    
+    # יצירת הפרומפט המלא עם הקשר
+    $fullPrompt = @"
+### היסטוריית דיאלוג (הקשר)
+$historyContent
+
+### נתונים מהבחירה (לניתוח)
+$selectionContextJson
+
+### משימה חדשה
+$UserPrompt
+"@
+    
+    # קריאה ל-AI ועיבוד התגובה
+    $ModelResponse = Invoke-GeminiPrompt -Prompt $fullPrompt -Model $Model
+    
+    # ניסיון לנתח JSON ולהציג טבלה אינטראקטיבית
+    try {
+        $jsonObject = $jsonToParse | ConvertFrom-Json
+        $gridSelection = $jsonObject | Out-ConsoleGridView -Title "בחר שורות..." -OutputMode Multiple
+        
+        if ($null -ne $gridSelection) {
+            Show-SelectionTable -SelectedData $gridSelection
+            $selectionContextJson = $gridSelection | ConvertTo-Json -Compress -Depth 10
+        }
+    }
+    catch {
+        Write-Host $ModelResponse -ForegroundColor Cyan
+    }
+    
+    Add-History -UserPrompt $UserPrompt -ModelResponse $ModelResponse
+}
+</code></pre>
+<p dir="rtl"><strong>תכונות עיקריות:</strong></p>
+<ul dir="rtl">
+<li dir="rtl">מחוון <span dir="ltr"><code>[בחירה פעילה]</code></span> מראה שיש נתונים לניתוח.</li>
+<li dir="rtl">כל שאילתה כוללת את כל היסטוריית הדיאלוג לשמירת הקשר.</li>
+<li dir="rtl">ה-<span dir="ltr">AI</span> מקבל גם את ההיסטוריה וגם את הנתונים שנבחרו על ידי המשתמש.</li>
+<li dir="rtl">התוצאה מנסה להיות מוצגת כטבלה אינטראקטיבית.</li>
+<li dir="rtl">אם ניתוח <span dir="ltr">JSON</span> נכשל, מוצג טקסט רגיל.</li>
+</ul>
+<h2 dir="rtl">מבנה קבצי עבודה</h2>
+<p dir="rtl">הסקריפט יוצר את המבנה הבא:</p>
+<pre><code>├── Find-Spec.ps1
+├── .gemini/
+│   ├── GEMINI.md              # פרומפט מערכתי ל-AI
+│   ├── ShowHelp.md            # עזרה למשתמש
+│   └── .chat_history/         # תיקיה עם היסטוריית סשנים
+│       ├── ai_session_2025-08-26_10-15-30.jsonl
+│       └── ai_session_2025-08-26_14-22-45.jsonl
+</code></pre>
+<p dir="rtl">קובץ <span dir="ltr"><code>GEMINI.md</code></span> בתיקיית <span dir="ltr"><code>.gemini/</code></span> הוא המיקום הסטנדרטי לפרומפט המערכתי עבור <span dir="ltr">Gemini CLI</span>. בכל הפעלה, המודל טוען אוטומטית הוראות מקובץ זה, מה שמגדיר את התנהגותו ופורמט התגובות שלו.</p>
+<p dir="rtl">בחלק הבא, נבחן את תוכן קבצי התצורה ודוגמאות שימוש מעשיות.</p>

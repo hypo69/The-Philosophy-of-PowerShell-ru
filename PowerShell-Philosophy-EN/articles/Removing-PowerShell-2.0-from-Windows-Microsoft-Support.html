@@ -1,0 +1,36 @@
+<h2>B-bye, PowerShell 2.0.</h2>
+<h3>Microsoft Finally Says Goodbye to PowerShell 2.0 in Windows</h3>
+<p><strong><code>Microsoft Corporation</code> has announced the complete removal of the deprecated <code>Windows PowerShell 2.0</code> component from <code>Windows 11</code> and <code>Windows Server 2025</code> operating systems, starting August 2025. This step is part of a global strategy to enhance security, simplify the <code>PowerShell</code> ecosystem, and eliminate legacy code.</strong></p>
+<p><code>Windows PowerShell 2.0</code>, first introduced in <code>Windows 7</code>, was officially deprecated in 2017 but remained available as an optional component to ensure backward compatibility. Now, <code>Microsoft</code> is taking a decisive step, completely excluding it from future releases.</p>
+<p><strong>Timeline of Changes</strong></p>
+<p>The removal process will occur in stages:</p>
+<ul>
+<li><strong>July 2025:</strong> <code>PowerShell 2.0</code> has already been removed from <code>Windows Insider</code> preview builds.</li>
+<li><strong>August 2025:</strong> The component will be removed from <code>Windows 11</code>, version <code>24H2</code>.</li>
+<li><strong>September 2025:</strong> <code>PowerShell 2.0</code> will be excluded from <code>Windows Server 2025</code>.</li>
+</ul>
+<p>All subsequent releases of these operating systems will ship without <code>PowerShell 2.0</code>.</p>
+<p><strong>Why is <code>PowerShell 2.0</code> being phased out?</strong></p>
+<p>The primary reason for removal is security considerations. <code>PowerShell 2.0</code> lacks key security features introduced in later versions, such as:</p>
+<ul>
+<li>Integration with the <code>Anti-Malware Scan Interface</code> (<code>AMSI</code>).</li>
+<li>Enhanced script block logging.</li>
+<li><code>Constrained Language Mode</code>.</li>
+</ul>
+<p>These omissions made <code>PowerShell 2.0</code> an attractive target for attackers who could use it to bypass modern security systems. Additionally, removing the deprecated component will allow <code>Microsoft</code> to reduce code base complexity and simplify support for the <code>PowerShell</code> ecosystem.</p>
+<p><strong>What does this mean for users and administrators?</strong></p>
+<p>For most users, this change will go unnoticed, as modern <code>PowerShell</code> versions, such as <code>PowerShell 5.1</code> and <code>PowerShell 7.x</code>, remain available and fully supported. However, organizations and developers using outdated scripts or software that explicitly depend on <code>PowerShell 2.0</code> need to take action.</p>
+<p><strong>Transition Recommendations</strong></p>
+<p><code>Microsoft</code> strongly recommends:</p>
+<ul>
+<li><strong>Migrate scripts and tools to newer <code>PowerShell</code> versions.</strong> <code>PowerShell 5.1</code> provides high backward compatibility with almost all commands and modules. <code>PowerShell 7.x</code> offers cross-platform capabilities and many modern features.</li>
+<li><strong>Update or replace outdated software.</strong> If an old application or installer requires <code>PowerShell 2.0</code>, a newer version of the product must be found. This also applies to some <code>Microsoft</code> server products (<code>Exchange</code>, <code>SharePoint</code>, <code>SQL</code>) for which updated versions are available that work with modern <code>PowerShell</code>.</li>
+</ul>
+<p><strong>Affected <code>Windows</code> Versions</strong></p>
+<p>The removal of <code>PowerShell 2.0</code> will affect the following operating system versions:</p>
+<ul>
+<li><code>Windows 11</code> (<code>Home</code>, <code>Pro</code>, <code>Enterprise</code>, <code>Education</code>, <code>SE</code>, <code>Multi-Session</code>, <code>IoT Enterprise</code>) version <code>24H2</code>.</li>
+<li><code>Windows Server 2025</code>.</li>
+</ul>
+<p>Earlier versions of <code>Windows 11</code>, such as <code>23H2</code>, will apparently retain <code>PowerShell 2.0</code> as an optional component.</p>
+<p>This step by <code>Microsoft</code> marks the end of an era in <code>Windows</code> administration, emphasizing the company's commitment to a more secure and modern computing environment.</p>
