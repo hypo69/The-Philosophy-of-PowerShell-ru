@@ -1,0 +1,235 @@
+<h2>Intégrons l'IA dans PowerShell. Partie Deux : Le Chercheur de Spécifications</h2>
+<p>La dernière fois, nous avons vu comment interagir avec le modèle Gemini via l'interface de ligne de commande en utilisant <code>PowerShell</code>. Dans cet article, je vais vous montrer comment tirer parti de nos connaissances. Nous transformerons notre console en un guide de référence interactif qui prendra un identifiant de composant (marque, modèle, catégorie, numéro de pièce, etc.) en entrée et renverra un tableau interactif avec les spécifications obtenues du modèle Gemini.</p>
+<p>Les ingénieurs, développeurs et autres spécialistes sont souvent confrontés à la nécessité de connaître les paramètres exacts, par exemple, d'une carte mère, d'un disjoncteur dans un tableau électrique ou d'un commutateur réseau. Notre guide de référence sera toujours à portée de main et, sur demande, recueillera des informations, clarifiera les paramètres sur Internet et renverra le tableau souhaité. Dans le tableau, vous pourrez sélectionner le ou les paramètres nécessaires et, si besoin, poursuivre une recherche plus approfondie. Plus tard, nous apprendrons à transmettre le résultat via le pipeline pour un traitement ultérieur : exportation vers une feuille de calcul <code>Excel</code> ou <code>Google</code>, stockage dans une base de données ou transfert vers un autre programme. En cas d'échec, le modèle conseillera quels paramètres doivent être clarifiés. Mais voyez par vous-même :</p>
+<p><a href="https://github.com/user-attachments/assets/0e6690c1-5d49-4c75-89fc-ede2c7642c5f">vidéo</a></p>
+<video width="600" controls>
+  <source src="https://github.com/user-attachments/assets/0e6690c1-5d49-4c75-89fc-ede2c7642c5f" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<h2>Comment fonctionne le Chercheur de Spécifications alimenté par l'IA : du lancement au résultat</h2>
+<p>Traçons le cycle de vie complet de notre script – ce qui se passe depuis le moment de son lancement jusqu'à l'obtention des résultats.</p>
+<h2>Initialisation : Préparation au travail</h2>
+<p>Le script accepte un paramètre <code>$Model</code> avec validation – vous pouvez choisir '<code>gemini-2.5-flash</code>' (le modèle rapide par défaut) ou '<code>gemini-2.5-pro</code>' (plus puissant). Au lancement, le script configure d'abord l'environnement de travail. Il définit la clé <code>API</code> pour l'accès à <code>Gemini AI</code>, définit le dossier actuel comme répertoire de base et crée une structure pour le stockage des fichiers. Pour chaque session, un fichier avec un horodatage est créé, par exemple, <code>ai_session_2025-08-26_14-30-15.jsonl</code>. C'est l'historique du dialogue.</p>
+<p>Ensuite, le système vérifie que tous les outils nécessaires sont installés. Il recherche le <code>CLI Gemini</code> dans le système et vérifie les fichiers de configuration dans le dossier <code>.gemini/</code>. Le fichier <code>GEMINI.md</code> est particulièrement important – il contient le prompt système pour le modèle et est automatiquement chargé par le <code>CLI Gemini</code> au démarrage. C'est l'emplacement standard pour les instructions système. Le fichier <code>ShowHelp.md</code>, qui contient des informations d'aide, est également vérifié. Si quelque chose de critique est manquant, le script avertit l'utilisateur ou se termine.</p>
+<h2>Démarrage du mode interactif</h2>
+<p>Après une initialisation réussie, le script affiche un message de bienvenue indiquant le modèle sélectionné ("Chercheur de Spécifications <code>AI</code>. Modèle : '<code>gemini-2.5-flash</code>'."), le chemin vers le fichier de session et les instructions pour les commandes. Il entre ensuite en mode interactif – il affiche une invite et attend la saisie de l'utilisateur. L'invite ressemble à <code>🤖AI :) > </code> et change en <code>🤖AI [Sélection active] :) > </code> lorsque le système a des données à analyser.</p>
+<h2>Traitement de la saisie utilisateur</h2>
+<p>Chaque saisie utilisateur est d'abord vérifiée pour les commandes de service par la fonction <code>Command-Handler</code>. Cette fonction reconnaît les commandes comme <code>?</code> (aide du fichier <code>ShowHelp.md</code>), <code>history</code> (afficher l'historique de session), <code>clear</code> et <code>clear-history</code> (effacer le fichier d'historique), <code>gemini help</code> (aide <code>CLI</code>), et <code>exit</code> et <code>quit</code> (quitter). S'il s'agit d'une commande de service, elle est exécutée immédiatement sans contacter l'<code>IA</code>, et la boucle continue.</p>
+<p>S'il s'agit d'une requête régulière, le système commence à construire le contexte à envoyer à <code>Gemini</code>. Il lit l'historique complet de la session actuelle à partir du fichier <code>JSONL</code> (s'il existe), ajoute un bloc avec des données de la sélection précédente (s'il y a une sélection active), et combine tout cela avec la nouvelle requête utilisateur dans un prompt structuré avec les sections "HISTORIQUE DU DIALOGUE", "DONNÉES DE LA SÉLECTION" et "NOUVELLE TÂCHE". Après utilisation, les données de sélection sont effacées.</p>
+<h2>Interaction avec l'Intelligence Artificielle</h2>
+<p>Le prompt formé est envoyé à <code>Gemini</code> via la ligne de commande avec l'appel <code>& gemini -m $Model -p $Prompt 2>&1</code>. Le système capture toutes les sorties (y compris les erreurs via <code>2>&1</code>), vérifie le code de retour et nettoie le résultat des messages de service <code>CLI</code> ("La collecte de données est désactivée" et "Identifiants mis en cache chargés"). Si une erreur se produit à ce stade, l'utilisateur reçoit un avertissement, mais le script continue de s'exécuter.</p>
+<h2>Traitement de la réponse de l'IA</h2>
+<p>Le système tente d'interpréter la réponse reçue de l'<code>IA</code> comme du <code>JSON</code>. D'abord, il recherche un bloc de code au format <code>```json...```</code>, extrait le contenu et essaie de le parser. S'il n'y a pas un tel bloc, il parse la réponse entière. Si le parsing est réussi, les données sont affichées dans un tableau interactif <code>Out-ConsoleGridView</code> avec le titre "Sélectionner les lignes pour la prochaine requête (OK) ou fermer (Annuler)" et la sélection multiple activée. Si le <code>JSON</code> n'est pas reconnu (erreur de parsing), la réponse est affichée en texte brut en bleu.</p>
+<h2>Travailler avec la sélection de données</h2>
+<p>Lorsque l'utilisateur sélectionne des lignes dans le tableau et clique sur <code>OK</code>, le système effectue plusieurs actions. Tout d'abord, la fonction <code>Show-SelectionTable</code> est appelée, qui analyse la structure des données sélectionnées : s'il s'agit d'objets avec des propriétés, elle identifie tous les champs uniques et affiche les données à l'aide de <code>Format-Table</code> avec ajustement automatique de la taille et retour à la ligne. S'il s'agit de valeurs simples, elle les affiche sous forme de liste numérotée. Elle affiche ensuite un compteur des éléments sélectionnés et le message "Sélection enregistrée. Ajoutez votre prochaine requête (par exemple, 'comparez-les')."</p>
+<p>Les données sélectionnées sont converties en <code>JSON</code> compressé avec une profondeur d'imbrication de 10 niveaux et enregistrées dans la variable <code>$selectionContextJson</code> pour être utilisées dans les requêtes ultérieures à l'<code>IA</code>.</p>
+<h2>Maintien de l'historique</h2>
+<p>Chaque paire "requête utilisateur - réponse <code>IA</code>" est enregistrée dans le fichier d'historique au format <code>JSONL</code>. Cela assure la continuité du dialogue – l'<code>IA</code> "se souvient" de toute la conversation précédente et peut se référer à des sujets précédemment discutés.</p>
+<h2>Le cycle continue</h2>
+<p>Après avoir traité la requête, le système revient à l'attente d'une nouvelle saisie. Si l'utilisateur a une sélection active, cela se reflète dans l'invite de la ligne de commande. Le cycle continue jusqu'à ce que l'utilisateur entre une commande de sortie.</p>
+<h2>Exemple pratique de fonctionnement</h2>
+<p>Imaginez qu'un utilisateur exécute le script et entre "<code>RTX 4070 Ti Super</code>" :</p>
+<ul>
+<li><strong>Préparation du contexte :</strong> Le système prend le prompt système du fichier, ajoute l'historique (actuellement vide) et la nouvelle requête.</li>
+<li><strong>Requête <code>IA</code> :</strong> Le prompt complet est envoyé à <code>Gemini</code> avec une demande de trouver les spécifications des cartes graphiques.</li>
+<li><strong>Récupération des données :</strong> L'<code>IA</code> renvoie un <code>JSON</code> avec un tableau d'objets contenant des informations sur différents modèles de <code>RTX 4070 Ti Super</code>.</li>
+<li><strong>Tableau interactif :</strong> L'utilisateur voit un tableau avec les fabricants, les spécifications et les prix, et sélectionne 2-3 modèles intéressants.</li>
+<li><strong>Affichage de la sélection :</strong> Un tableau avec les modèles sélectionnés apparaît dans la console, et l'invite passe à <code>[Sélection active]</code>.</li>
+<li><strong>Affiner la requête :</strong> L'utilisateur tape "comparez leurs performances de jeu".</li>
+<li><strong>Analyse contextuelle :</strong> L'<code>IA</code> reçoit la requête initiale, les modèles sélectionnés et la nouvelle question, fournissant une comparaison détaillée de ces cartes spécifiques.</li>
+</ul>
+<h2>Arrêt</h2>
+<p>Lorsque <code>exit</code> ou <code>quit</code> est saisi, le script se termine correctement, après avoir enregistré tout l'historique de la session dans un fichier. L'utilisateur peut revenir à ce dialogue à tout moment en consultant le contenu du fichier correspondant dans le dossier <code>.chat_history</code>.</p>
+<p>Toute cette logique complexe est cachée à l'utilisateur derrière une interface de ligne de commande simple. La personne pose simplement des questions et reçoit des réponses structurées, tandis que le système prend en charge tout le travail de maintien du contexte, d'analyse des données et de gestion de l'état du dialogue.</p>
+<hr>
+<h2>Étape 1 : Configuration</h2>
+<pre class="line-numbers"><code class="language-powershell"># --- Étape 1 : Configuration ---
+$env:GEMINI_API_KEY = "AIzaSyCbq8bkt5Xr2hlE-73MIXFpdFYH-rLBd0k"
+if (-not $env:GEMINI_API_KEY) { Write-Error "..."; return }
+
+$scriptRoot = Get-Location
+# --- CHANGEMENT : Variable renommée ---
+$HistoryDir = Join-Path $scriptRoot ".gemini/.chat_history"
+# --- FIN DU CHANGEMENT ---
+$timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+$historyFileName = "ai_session_$timestamp.jsonl"
+$historyFilePath = Join-Path $HistoryDir $historyFileName
+</code></pre>
+<p><strong>Objectif des lignes :</strong></p>
+<ul>
+<li><code>$env:GEMINI_API_KEY = "..."</code> - définit la clé <code>API</code> pour l'accès à <code>Gemini AI</code>.</li>
+<li><code>if (-not $env:GEMINI_API_KEY)</code> - vérifie la présence de la clé et termine le script si elle est manquante.</li>
+<li><code>$scriptRoot = Get-Location</code> - obtient le répertoire de travail actuel.</li>
+<li><code>$HistoryDir = Join-Path...</code> - forme le chemin vers le dossier de stockage de l'historique des dialogues (<code>.gemini/.chat_history</code>).</li>
+<li><code>$timestamp = Get-Date...</code> - crée un horodatage au format <code>2025-08-26_14-30-15</code>.</li>
+<li><code>$historyFileName = "ai_session_$timestamp.jsonl"</code> - génère un nom de fichier de session unique.</li>
+<li><code>$historyFilePath = Join-Path...</code> - crée le chemin complet vers le fichier d'historique de la session actuelle.</li>
+</ul>
+<h2>Vérification de l'environnement - Ce qui doit être installé</h2>
+<pre class="line-numbers"><code class="language-powershell"># --- Étape 2 : Vérification de l'environnement ---
+try { Get-Command gemini -ErrorAction Stop | Out-Null } 
+catch { Write-Error "La commande 'gemini' est introuvable..."; return }
+
+if (-not (Test-Path (Join-Path $scriptRoot ".gemini/GEMINI.md"))) { 
+    Write-Warning "Le fichier de prompt système .gemini/GEMINI.md est introuvable..." 
+}
+if (-not (Test-Path (Join-Path $scriptRoot ".gemini/ShowHelp.md"))) { 
+    Write-Warning "Le fichier d'aide .gemini/ShowHelp.md est introuvable..." 
+}
+</code></pre>
+<p><strong>Ce qui est vérifié :</strong></p>
+<ul>
+<li>La présence de <strong><code>Gemini CLI</code></strong> dans le système - le script ne fonctionnera pas sans lui.</li>
+<li>Le fichier <strong><code>GEMINI.md</code></strong> - contient le prompt système (instructions pour l'<code>IA</code>).</li>
+<li>Le fichier <strong><code>ShowHelp.md</code></strong> - aide utilisateur (la commande <code>?</code>).</li>
+</ul>
+<h2>Fonction principale pour interagir avec l'IA</h2>
+<pre class="line-numbers"><code class="language-powershell">function Invoke-GeminiPrompt {
+    param([string]$Prompt, [string]$Model)
+    try {
+        $output = & gemini -m $Model -p $Prompt 2>&1
+        if (-not $?) { $output | ForEach-Object { Write-Warning $_.ToString() }; return $null }
+        
+        $outputString = ($output -join [Environment]::NewLine).Trim()
+        $cleanedOutput = $outputString -replace "(?m)^Data collection is disabled\.`r?`n" , ""
+        $cleanedOutput = $cleanedOutput -replace "(?m)^Loaded cached credentials\.`r?`n", ""
+        
+        return $cleanedOutput.Trim()
+    }
+    catch { Write-Error "Erreur critique lors de l'appel de Gemini CLI : $_"; return $null }
+}
+</code></pre>
+<p><strong>Tâches de la fonction :</strong></p>
+<ul>
+<li>Appelle le <code>CLI Gemini</code> avec le modèle et le prompt spécifiés.</li>
+<li>Capture toutes les sorties (y compris les erreurs).</li>
+<li>Nettoie le résultat des messages de service <code>CLI</code>.</li>
+<li>Renvoie la réponse <code>IA</code> propre ou <code>$null</code> en cas d'erreur.</li>
+</ul>
+<h2>Fonctions de gestion de l'historique</h2>
+<pre class="line-numbers"><code class="language-powershell">function Add-History { 
+    param([string]$UserPrompt, [string]$ModelResponse)
+    if (-not (Test-Path $HistoryDir)) { New-Item -Path $HistoryDir -ItemType Directory | Out-Null }
+    @{ user = $UserPrompt } | ConvertTo-Json -Compress | Add-Content -Path $historyFilePath
+    @{ model = $ModelResponse } | ConvertTo-Json -Compress | Add-Content -Path $historyFilePath
+}
+
+function Show-History {
+    if (-not (Test-Path $historyFilePath)) { Write-Host "L'historique de la session actuelle est vide." -ForegroundColor Yellow; return }
+    Write-Host "`n--- Historique de la session actuelle ---" -ForegroundColor Cyan
+    Get-Content -Path $historyFilePath
+    Write-Host "------------------------------------`n" -ForegroundColor Cyan
+}
+
+function Clear-History {
+    if (Test-Path $historyFilePath) {
+        Remove-Item -Path $historyFilePath -Force -ErrorAction Stop
+        Write-Host "L'historique de la session actuelle ($historyFileName) a été supprimé." -ForegroundColor Yellow
+    }
+}
+</code></pre>
+<p><strong>Objectif :</strong></p>
+<ul>
+<li><code>Add-History</code> - enregistre les paires "question-réponse" au format <code>JSONL</code>.</li>
+<li><code>Show-History</code> - affiche le contenu du fichier d'historique.</li>
+<li><code>Clear-History</code> - supprime le fichier d'historique de la session actuelle.</li>
+</ul>
+<h2>Fonction d'affichage des données sélectionnées</h2>
+<pre class="line-numbers"><code class="language-powershell">function Show-SelectionTable {
+    param([array]$SelectedData)
+    
+    if ($null -eq $SelectedData -or $SelectedData.Count -eq 0) { return }
+    
+    Write-Host "`n--- DONNÉES SÉLECTIONNÉES ---" -ForegroundColor Yellow
+    
+    # Obtenir toutes les propriétés uniques des objets sélectionnés
+    $allProperties = @()
+    foreach ($item in $SelectedData) {
+        if ($item -is [PSCustomObject]) {
+            $properties = $item | Get-Member -MemberType Properties | Select-Object -ExpandProperty Name
+            $allProperties = $allProperties + $properties | Sort-Object -Unique
+        }
+    }
+    
+    # Afficher un tableau ou une liste
+    if ($allProperties.Count -gt 0) {
+        $SelectedData | Format-Table -Property $allProperties -AutoSize -Wrap
+    } else {
+        for ($i = 0; $i -lt $SelectedData.Count; $i++) {
+            Write-Host "[$($i + 1)] $($SelectedData[$i])" -ForegroundColor White
+        }
+    }
+    
+    Write-Host "-------------------------" -ForegroundColor Yellow
+    Write-Host "Éléments sélectionnés : $($SelectedData.Count)" -ForegroundColor Magenta
+}
+</code></pre>
+<p><strong>Tâche de la fonction :</strong> Après avoir sélectionné des éléments dans <code>Out-ConsoleGridView</code>, elle les affiche dans la console sous forme de tableau soigné, afin que l'utilisateur puisse voir exactement ce qui a été choisi.</p>
+<h2>Boucle de travail principale</h2>
+<pre class="line-numbers"><code class="language-powershell">while ($true) {
+    # Afficher l'invite avec l'indicateur d'état
+    if ($selectionContextJson) {
+        Write-Host -NoNewline -ForegroundColor Green "🤖AI [Sélection active] :) > "
+    } else {
+        Write-Host -NoNewline -ForegroundColor Green "🤖AI :) > "
+    }
+    
+    $UserPrompt = Read-Host
+    
+    # Gérer les commandes de service
+    $commandResult = Command-Handler -Command $UserPrompt
+    if ($commandResult -eq 'break') { break }
+    if ($commandResult -eq 'continue') { continue }
+    
+    # Former le prompt complet avec le contexte
+    $fullPrompt = @"
+### HISTORIQUE DU DIALOGUE (CONTEXTE)
+$historyContent
+
+### DONNÉES DE LA SÉLECTION (POUR ANALYSE)
+$selectionContextJson
+
+### NOUVELLE TÂCHE
+$UserPrompt
+"@
+    
+    # Appeler l'IA et traiter la réponse
+    $ModelResponse = Invoke-GeminiPrompt -Prompt $fullPrompt -Model $Model
+    
+    # Essayer de parser le JSON et afficher le tableau interactif
+    try {
+        $jsonObject = $jsonToParse | ConvertFrom-Json
+        $gridSelection = $jsonObject | Out-ConsoleGridView -Title "Sélectionner les lignes..." -OutputMode Multiple
+        
+        if ($null -ne $gridSelection) {
+            Show-SelectionTable -SelectedData $gridSelection
+            $selectionContextJson = $gridSelection | ConvertTo-Json -Compress -Depth 10
+        }
+    }
+    catch {
+        Write-Host $ModelResponse -ForegroundColor Cyan
+    }
+    
+    Add-History -UserPrompt $UserPrompt -ModelResponse $ModelResponse
+}
+</code></pre>
+<p><strong>Caractéristiques clés :</strong></p>
+<ul>
+<li>L'indicateur <code>[Sélection active]</code> montre qu'il y a des données à analyser.</li>
+<li>Chaque requête inclut l'historique complet du dialogue pour maintenir le contexte.</li>
+<li>L'<code>IA</code> reçoit à la fois l'historique et les données sélectionnées par l'utilisateur.</li>
+<li>Le résultat est tenté d'être affiché sous forme de tableau interactif.</li>
+<li>Si le parsing <code>JSON</code> échoue, le texte brut est affiché.</li>
+</ul>
+<h2>Structure des fichiers de travail</h2>
+<p>Le script crée la structure suivante :</p>
+<pre><code>├── Find-Spec.ps1
+├── .gemini/
+│   ├── GEMINI.md              # Prompt système pour l'IA
+│   ├── ShowHelp.md            # Aide utilisateur
+│   └── .chat_history/         # Dossier avec l'historique des sessions
+│       ├── ai_session_2025-08-26_10-15-30.jsonl
+│       └── ai_session_2025-08-26_14-22-45.jsonl
+</code></pre>
+<p>Le fichier <code>GEMINI.md</code> dans le dossier <code>.gemini/</code> est l'emplacement standard pour le prompt système pour le <code>CLI Gemini</code>. À chaque exécution, le modèle charge automatiquement les instructions de ce fichier, ce qui définit son comportement et le format de ses réponses.</p>
+<p>Dans la partie suivante, nous examinerons le contenu des fichiers de configuration et des exemples d'utilisation pratique.</p>

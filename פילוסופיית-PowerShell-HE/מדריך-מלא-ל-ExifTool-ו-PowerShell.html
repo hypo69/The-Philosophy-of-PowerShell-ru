@@ -1,145 +1,107 @@
-# מדריך מלא ל-ExifTool ו-PowerShell
+<h2 dir="rtl">מדריך מלא ל-<span dir="ltr">ExifTool</span> ו-<span dir="ltr">PowerShell</span></h2>
+<p dir="rtl">בכל פעם שאתם מצלמים תמונה, המצלמה שלכם רושמת לקובץ לא רק את התמונה עצמה, אלא גם מידע שירות: דגם המצלמה והעדשה, תאריך ושעת הצילום, מהירות תריס, צמצם, <span dir="ltr">ISO</span>, קואורדינטות <span dir="ltr">GPS</span>. נתונים אלו נקראים **<span dir="ltr">EXIF (Exchangeable Image File Format)</span>**.</p>
+<p dir="rtl">אף של-<span dir="ltr">PowerShell</span> יש כלים מובנים לקריאת חלק מהמטא-נתונים, הם מוגבלים. כדי לגשת ל**כל** המידע, נדרש כלי מיוחד. במאמר זה אשתמש ב-**<span dir="ltr">ExifTool</span>**.</p>
+<p dir="rtl">**<span dir="ltr">ExifTool</span>** הוא כלי עזר חינמי, חוצה פלטפורמות, בקוד פתוח, שנכתב על ידי פיל הארווי. הוא נחשב לסטנדרט הזהב לקריאה, כתיבה ועריכה של מטא-נתונים במגוון רחב של פורמטים (תמונות, אודיו, וידאו, <span dir="ltr">PDF</span> ועוד). <span dir="ltr">ExifTool</span> מכיר אלפי תגים ממאות יצרני מכשירים, מה שהופך אותו לכלי המקיף ביותר בקטגוריה שלו.</p>
+<h3 dir="rtl">הורדה והגדרה נכונה</h3>
+<p dir="rtl">לפני כתיבת קוד כלשהו, יש להכין את כלי העזר עצמו.</p>
+<ol dir="rtl">
+<li dir="rtl">היכנסו ל**אתר הרשמי של <span dir="ltr">ExifTool</span>: <a href="https://exiftool.org/"><span dir="ltr">https://exiftool.org/</span></a>**. בעמוד הראשי, מצאו והורידו את **"<span dir="ltr">Windows Executable</span>"**.</li>
+<li dir="rtl">
+<p dir="rtl"><strong>שינוי שם (שלב קריטי!):</strong> הקובץ שהורדתם ייקרא <span dir="ltr"><code>exiftool(-k).exe</code></span>. זו לא מקריות.</p>
+<p dir="rtl">שנו את שמו ל-**<span dir="ltr"><code>exiftool.exe</code></span>**, כדי **לבטל את מצב ה"השהיה"**, המיועד למשתמשים המפעילים את התוכנה בלחיצה כפולה.</p>
+</li>
+<li dir="rtl">
+<p dir="rtl"><strong>אחסון:</strong> יש לכם שתי אפשרויות עיקריות היכן לאחסן את <span dir="ltr"><code>exiftool.exe</code></span>.</p>
+<ul dir="rtl">
+<li dir="rtl"><strong>אפשרות 1 (פשוטה): באותה תיקיה כמו הסקריפט שלכם.</strong> זו הדרך הקלה ביותר. סקריפט ה-<span dir="ltr">PowerShell</span> שלכם תמיד יוכל למצוא את כלי העזר, מכיוון שהוא נמצא בסמוך. אידיאלי לסקריפטים ניידים שאתם מעבירים ממחשב למחשב.</li>
+<li dir="rtl"><strong>אפשרות 2 (מומלצת לשימוש תכוף): בתיקיה מתוך משתנה המערכת <span dir="ltr"><code>PATH</code></span>.</strong> משתנה <span dir="ltr"><code>PATH</code></span> הוא רשימת ספריות שבהן <span dir="ltr">Windows</span> ו-<span dir="ltr">PowerShell</span> מחפשים אוטומטית קבצי הפעלה.<br>
+אתם יכולים ליצור תיקיה (לדוגמה, <span dir="ltr"><code>C:\Tools</code></span>), לשים בה את <span dir="ltr"><code>exiftool.exe</code></span> ולהוסיף את <span dir="ltr"><code>C:\Tools</code></span> למשתנה המערכת <span dir="ltr"><code>PATH</code></span>.<br>
+לאחר מכן תוכלו להפעיל את <span dir="ltr"><code>exiftool.exe</code></span> מכל תיקיה בכל קונסולה.</li>
+</ul>
+</li>
+</ol>
+<p dir="rtl">סקריפטים להוספה ל-<span dir="ltr"><code>$PATH</code></span>:<br>
+הוספת ספרייה ל-<span dir="ltr"><code>PATH</code></span> עבור המשתמש הנוכחי<br>
+הוספת ספרייה ל-<span dir="ltr"><code>PATH</code></span> המערכתי עבור כל המשתמשים</p>
+<hr>
+<h2 dir="rtl"><span dir="ltr">PowerShell</span> ותוכניות חיצוניות</h2>
+<p dir="rtl">כדי להשתמש ב-<span dir="ltr">ExifTool</span> ביעילות, יש לדעת כיצד <span dir="ltr">PowerShell</span> מפעיל קבצי <span dir="ltr"><code>.exe</code></span> חיצוניים.<br>
+הדרך הנכונה והאמינה ביותר להפעלת תוכניות חיצוניות היא **אופרטור הקריאה <span dir="ltr"><code>&amp;</code></span> (אמפרסנד)**.<br>
+<span dir="ltr">PowerShell</span> יחזיר שגיאה במקרה שנתיב התוכנית מכיל רווחים. לדוגמה, <span dir="ltr"><code>C:\My Tools\exiftool.exe</code></span>.<br>
+<span dir="ltr"><code>&amp;</code></span> (אמפרסנד) אומר ל-<span dir="ltr">PowerShell</span>: "הטקסט שאחרי בגרשיים, – זהו הנתיב לקובץ ההפעלה. הפעל אותו, וכל מה שאחריו, – אלו הארגומנטים שלו".</p>
+<pre class="line-numbers"><code class="language-powershell"># תחביר נכון
+&amp; "C:\Path With Spaces\program.exe" "argument 1" "argument 2"
+</code></pre>
+<p dir="rtl">תמיד השתמשו ב-<span dir="ltr"><code>&amp;</code></span>, כאשר אתם עובדים עם נתיבים לתוכניות במשתנים או נתיבים שעשויים להכיל רווחים.</p>
+<hr>
+<h2 dir="rtl">טריקים מעשיים: <span dir="ltr">ExifTool</span> + <span dir="ltr">PowerShell</span></h2>
+<p dir="rtl">כעת נשלב את הידע שלנו.</p>
+<h3 dir="rtl">דוגמה מס' 1: חילוץ בסיסי וצפייה אינטראקטיבית</h3>
+<p dir="rtl">הדרך הפשוטה ביותר לקבל את כל הנתונים מתמונה ולבחון אותם – היא לבקש אותם בפורמט <span dir="ltr">JSON</span> ולהעביר אותם ל-<span dir="ltr"><code>Out-ConsoleGridView</code></span>.</p>
+<pre class="line-numbers"><code class="language-powershell">$photoPath = "D:\Photos\IMG_1234.JPG"
 
-בכל פעם שאתה מצלם תמונה, המצלמה שלך מקליטה לקובץ לא רק את התמונה עצמה, אלא גם מידע שירות: דגם המצלמה והעדשה, תאריך ושעת הצילום, מהירות תריס, צמצם, ISO, קואורדינטות GPS. נתונים אלה נקראים **EXIF (Exchangeable Image File Format)**.
-
-למרות של-PowerShell יש כלים מובנים לקריאת מטא-נתונים מסוימים, הם מוגבלים. כדי לגשת ל**כל** המידע, יש צורך בכלי מיוחד.
-במאמר זה, אני משתמש ב-**ExifTool**.
-
-
-**ExifTool** הוא כלי עזר חינמי, חוצה פלטפורמות, בקוד פתוח, שנכתב על ידי פיל הארווי. הוא נחשב לסטנדרט הזהב לקריאה, כתיבה ועריכה של מטא-נתונים במגוון רחב של פורמטים של קבצים (תמונות, אודיו, וידאו, PDF ועוד). ExifTool מכיר אלפי תגים ממאות יצרני מכשירים, מה שהופך אותו לכלי המקיף ביותר מסוגו.
-
-### הורדה והגדרה נכונה
-
-לפני כתיבת קוד, עליך להכין את כלי העזר עצמו.
-
-1.  עבור לאתר **הרישמי של ExifTool: [https://exiftool.org/](https://exiftool.org/)**. בעמוד הראשי, מצא והורד את ה-**"Windows Executable"**.
-
-2.  **שינוי שם (שלב קריטי חשוב!):** הקובץ שהורדת ייקרא `exiftool(-k).exe`. זו לא מקריות.
-
-שנה את שמו ל-**`exiftool.exe`** כדי **לבטל את מצב ה"השהיה"**, המיועד למשתמשים המפעילים את התוכנית בלחיצה כפולה.
->
-
-3.  **אחסון:** יש לך שתי אפשרויות עיקריות היכן לאחסן את `exiftool.exe`.
-    *   **אפשרות 1 (פשוטה): באותה תיקייה כמו הסקריפט שלך.** זו הדרך הקלה ביותר. סקריפט ה-PowerShell שלך תמיד יוכל למצוא את כלי העזר, מכיוון שהוא נמצא בקרבת מקום. אידיאלי עבור סקריפטים ניידים שאתה מעביר ממחשב למחשב.
-    *   **אפשרות 2 (מומלצת לשימוש תכוף): בתיקייה ממשתנה המערכת `PATH`.** משתנה `PATH` הוא רשימה של ספריות שבהן Windows ו-PowerShell מחפשים אוטומטית קבצי הפעלה. 
-    אתה יכול ליצור תיקייה (לדוגמה, `C:\Tools`), לשים שם את `exiftool.exe`, ולהוסיף את `C:\Tools` למשתנה המערכת `PATH`. 
-    לאחר מכן, תוכל לקרוא ל-`exiftool.exe` מכל תיקייה בכל קונסולה.
-
-
-סקריפטים להוספה ל-$PATH:
-הוספת תיקייה ל-PATH עבור המשתמש הנוכחי
-הוספת תיקייה ל-SYSTEM PATH עבור כל המשתמשים
-
----
-
-## PowerShell ותוכניות חיצוניות
-
-כדי להשתמש ב-ExifTool ביעילות, עליך לדעת כיצד PowerShell מריץ קבצי `.exe` חיצוניים.
-הדרך הנכונה והאמינה ביותר להפעלת תוכניות חיצוניות היא **אופרטור הקריאה `&` (אמפרסנד)**.
-PowerShell יחזיר שגיאה במקרה שנתיב התוכנית מכיל רווחים. לדוגמה, `C:\My Tools\program.exe`.
-`&` (אמפרסנד)** אומר ל-PowerShell: "הטקסט שאחרי במרכאות, הוא הנתיב לקובץ ההפעלה. הפעל אותו, וכל מה שאחריו - אלה הארגומנטים שלו".
-
-```powershell
-# תחביר נכון
-& "C:\Path With Spaces\program.exe" "argument 1" "argument 2"
-```
-
-השתמש תמיד ב-`&` כאשר אתה עובד עם נתיבי תוכניות במשתנים או נתיבים שעשויים להכיל רווחים.
-
----
-
-## טריקים מעשיים: ExifTool + PowerShell
-
-כעת נשלב את הידע שלנו.
-
-### דוגמה מס' 1: חילוץ בסיסי וצפייה אינטראקטיבית
-
-הדרך הקלה ביותר לקבל את כל הנתונים מתמונה ולבחון אותם היא לבקש אותם בפורמט JSON ולהעביר אותם ל-`Out-ConsoleGridView`.
-
-```powershell
-$photoPath = "D:\Photos\IMG_1234.JPG"
-
-# 1. הפעל את exiftool עם המתג -json לפלט מובנה
-# 2. המר טקסט JSON לאובייקט PowerShell
-#    קרא ל-exiftool.exe ישירות, ללא משתנה ואופרטור קריאה &.
+# 1. מפעילים את exiftool עם המתג -json לפלט מובנה
+# 2. ממירים את טקסט ה-JSON לאובייקט PowerShell
+#    מפעילים את exiftool.exe ישירות, ללא משתנה ואופרטור קריאה &amp;.
 $exifObject = exiftool.exe -json $photoPath | ConvertFrom-Json
 
-# 3. המר את האובייקט ה"רחב" לטבלת "פרמטר-ערך" נוחה
+# 3. הופכים את האובייקט ה"רחב" לטבלת "פרמטר-ערך" נוחה
 $reportData = $exifObject.psobject.Properties | Select-Object Name, Value
 
-# 4. הצג את התוצאה בחלון אינטראקטיבי לניתוח
+# 4. מציגים את התוצאה בחלון אינטראקטיבי לניתוח
 $reportData | Out-ConsoleGridView -Title "מטא-נתונים של קובץ: $($photoPath | Split-Path -Leaf)"
-```
-
-קוד זה יפתח חלון אינטראקטיבי שבו תוכל למיין נתונים לפי שם פרמטר או ערך, וגם לסנן אותם פשוט על ידי התחלת הקלדה. זה נוח להפליא למציאת המידע הדרוש במהירות.
-
-### דוגמה מס' 2: יצירת דוח נקי ושליחה ל"התקנים" שונים
-
-`Out-ConsoleGridView` הוא רק ההתחלה. אתה יכול לכוון נתונים מעובדים לכל מקום באמצעות cmdlets אחרים של `Out-*`.
-
-נניח שיש לנו נתונים במשתנה `$reportData` מהדוגמה הקודמת.
-
-#### **א) שליחה לקובץ CSV עבור Excel**
-```powershell
-$reportData | Export-Csv -Path "C:\Reports\photo_exif.csv" -NoTypeInformation -Encoding UTF8
-```
-הפקודה `Export-Csv` יוצרת קובץ מובנה באופן מושלם שניתן לפתוח ב-Excel או ב-Google Sheets.
-
-#### **ב) שליחה לקובץ טקסט**
-```powershell
-# לעיצוב יפה, השתמש תחילה ב-Format-Table
+</code></pre>
+<p dir="rtl">קוד זה יפתח חלון אינטראקטיבי שבו תוכלו למיין נתונים לפי שם פרמטר או ערך, ולסנן אותם, פשוט על ידי התחלת הקלדת טקסט. זה נוח להפליא למציאת מידע נחוץ במהירות.</p>
+<h3 dir="rtl">דוגמה מס' 2: יצירת דוח נקי ושליחה ל"התקנים" שונים</h3>
+<p dir="rtl"><code>Out-ConsoleGridView</code> – זו רק ההתחלה. אתם יכולים להפנות נתונים מעובדים לכל מקום, באמצעות פקודות <span dir="ltr"><code>Out-*</code></span> אחרות.</p>
+<p dir="rtl">נניח שיש לנו נתונים במשתנה <span dir="ltr"><code>$reportData</code></span> מהדוגמה הקודמת.</p>
+<h4 dir="rtl">**א) שליחה לקובץ <span dir="ltr">CSV</span> עבור <span dir="ltr">Excel</span>**</h4>
+<pre class="line-numbers"><code class="language-powershell">$reportData | Export-Csv -Path "C:\Reports\photo_exif.csv" -NoTypeInformation -Encoding UTF8
+</code></pre>
+<p dir="rtl">הפקודה <span dir="ltr"><code>Export-Csv</code></span> יוצרת קובץ מובנה באופן מושלם שניתן לפתוח ב-<span dir="ltr">Excel</span> או ב-<span dir="ltr">Google Sheets</span>.</p>
+<h4 dir="rtl">**ב) שליחה לקובץ טקסט**</h4>
+<pre class="line-numbers"><code class="language-powershell"># לעיצוב יפה, השתמשו תחילה ב-Format-Table
 $reportData | Format-Table -AutoSize | Out-File -FilePath "C:\Reports\photo_exif.txt"
-```
-הפקודה `Out-File` תשמור לקובץ עותק טקסט מדויק של מה שאתה רואה בקונסולה.
-
-#### **ג) שליחה ללוח הגזירים**
-רוצה להדביק נתונים במהירות לדוא"ל או לצ'אט? השתמש ב-`Out-Clipboard`.
-```powershell
-$reportData | Format-Table -AutoSize | Out-String | Out-Clipboard
-```
-
-כעת תוכל ללחוץ `Ctrl+V` בכל עורך טקסט ולהדביק טבלה מעוצבת בצורה מסודרת.
-
-### דוגמה מס' 3: קבלת נתונים ספציפיים לשימוש בסקריפט
-
-לעתים קרובות אינך זקוק לכל הדוח, אלא רק לערך אחד או שניים. מכיוון ש-$exifObject הוא אובייקט PowerShell רגיל, תוכל לגשת בקלות למאפייניו.
-
-```powershell
+</code></pre>
+<p dir="rtl">הפקודה <span dir="ltr"><code>Out-File</code></span> תשמור לקובץ עותק טקסט מדויק של מה שאתם רואים בקונסולה.</p>
+<h4 dir="rtl">**ג) שליחה ללוח הגזירים**</h4>
+<p dir="rtl">רוצים להדביק נתונים במהירות למייל או לצ'אט? השתמשו ב-<span dir="ltr"><code>Out-Clipboard</code></span>.</p>
+<pre class="line-numbers"><code class="language-powershell">$reportData | Format-Table -AutoSize | Out-String | Out-Clipboard
+</code></pre>
+<p dir="rtl">כעת תוכלו ללחוץ <span dir="ltr"><code>Ctrl+V</code></span> בכל עורך טקסט ולהדביק טבלה מעוצבת בקפידה.</p>
+<h3 dir="rtl">דוגמה מס' 3: קבלת נתונים ספציפיים לשימוש בסקריפט</h3>
+<p dir="rtl">לעתים קרובות אינכם זקוקים לכל הדוח, אלא רק לערך אחד או שניים. מכיוון ש-<span dir="ltr"><code>$exifObject</code></span> – זהו אובייקט <span dir="ltr">PowerShell</span> רגיל, תוכלו לגשת בקלות למאפייניו.</p>
+<pre class="line-numbers"><code class="language-powershell">
 
 $photoPath = "D:\Photos\IMG_1234.JPG"
 
-# קרא ל-exiftool.exe ישירות לפי שם.
-# PowerShell ימצא אותו אוטומטית באחת מהתיקיות המפורטות ב-PATH.
+# מפעילים את exiftool.exe ישירות לפי שם.
+# PowerShell ימצא אותו אוטומטית באחת מהתיקיות, המפורטות ב-PATH.
 $exifObject = exiftool.exe -json $photoPath | ConvertFrom-Json
 
-# 1. צור אובייקט PowerShell אחד עם שמות מאפיינים ברורים.
+# 1. יוצרים אובייקט PowerShell אחד עם שמות מאפיינים מובנים.
 #    זה דומה ליצירת רשומה מובנית.
-$reportObject = [PSCustomObject]@{
+$reportObject = [PSCustomObject]@{ 
     "מצלמה"           = $exifObject.Model
     "תאריך צילום"      = $exifObject.DateTimeOriginal
     "רגישות" = $exifObject.ISO
-    "שם קובץ"        = $exifObject.FileName # הוסף שם קובץ להקשר
+    "שם קובץ"        = $exifObject.FileName # נוסיף את שם הקובץ להקשר
 }
 
-# 2. הצג אובייקט זה בחלון אינטראקטיבי.
+# 2. מציגים את האובייקט הזה בחלון אינטראקטיבי.
 #    Out-GridView תיצור אוטומטית עמודות משמות המאפיינים.
 $reportObject | Out-ConsoleGridView -Title "מטא-נתונים של קובץ: $(Split-Path $photoPath -Leaf)"
-```
-
-גישה זו היא הבסיס לכל אוטומציה רצינית, כגון שינוי שמות קבצים על בסיס תאריך הצילום, מיון תמונות לפי דגם מצלמה, או הוספת סימני מים עם מידע חשיפה.
-
-### דוגמה מס' 4: חילוץ מטא-נתונים בקבוצות מתיקייה
-
-לפעמים צריך לנתח לא רק תמונה אחת, אלא תיקייה שלמה של תמונות.
-
-```powershell
-# ציין רק את תיקיית התמונות.
+</code></pre>
+<p dir="rtl">גישה זו היא הבסיס לכל אוטומציה רצינית, כגון שינוי שמות קבצים על בסיס תאריך הצילום, מיון תמונות לפי דגם מצלמה או הוספת סימני מים עם מידע על חשיפה.</p>
+<h3 dir="rtl">דוגמה מס' 4: חילוץ אצווה של מטא-נתונים מתיקיה</h3>
+<p dir="rtl">לפעמים צריך לנתח לא תמונה אחת, אלא תיקיה שלמה עם תמונות.</p>
+<pre class="line-numbers"><code class="language-powershell"># מציינים רק את תיקיית התמונות.
 $photoFolder = "D:\Photos"
 
-# קרא ל-exiftool.exe ישירות. אין צורך במשתנה עבור הנתיב ובאופרטור &.
+# מפעילים את exiftool.exe ישירות. משתנה לנתיב ואופרטור &amp; אינם נחוצים.
 $allExif = exiftool.exe -json "$photoFolder\*.jpg" | ConvertFrom-Json
 
-# המר לפורמט נוח 
+# הופכים לתצוגה נוחה 
 $report = foreach ($photo in $allExif) {
     [PSCustomObject]@{
         # --- נתונים בסיסיים על הקובץ והמצלמה ---
@@ -155,7 +117,7 @@ $report = foreach ($photo in $allExif) {
         Aperture       = $photo.Aperture
         FocalLength    = $photo.FocalLength           # אורך מוקד (לדוגמה, "50.0 mm")
         ExposureMode   = $photo.ExposureProgram       # מצב צילום (לדוגמה, "Manual", "Aperture Priority")
-        Flash          = $photo.Flash                 # מידע אם הפלאש הופעל
+        Flash          = $photo.Flash                 # מידע האם הפלאש הופעל
         
         # --- GPS ונתוני תמונה ---
         GPSPosition    = $photo.GPSPosition           # קואורדינטות GPS כמחרוזת אחת (אם קיימות)
@@ -163,51 +125,34 @@ $report = foreach ($photo in $allExif) {
     }
 }
 
-# הצג נתונים בטבלה אינטראקטיבית בקונסולה
-$report | Out-ConsoleGridView -Title "דוח סיכום לתיקייה: $photoFolder"
-```
-
-💡 אתה מקבל טבלה מסודרת עבור כל התיקייה בבת אחת.
-
----
-
-### דוגמה מס' 5: חיפוש רקורסיבי בתיקיות משנה
-
-ExifTool יודע לחפש קבצים בכל תיקיות המשנה באמצעות המתג `-r`.
-
-```powershell
-& $exifToolPath -r -json "D:\Photos" | ConvertFrom-Json |
+# מציגים נתונים בטבלה אינטראקטיבית בקונסולה
+$report | Out-ConsoleGridView -Title "דוח סיכום לתיקיה: $photoFolder"
+</code></pre>
+<p dir="rtl">💡 אתם מקבלים טבלה מסודרת לכל התיקיה בבת אחת.</p>
+<hr>
+<h3 dir="rtl">דוגמה מס' 5: חיפוש רקורסיבי בתיקיות משנה</h3>
+<p dir="rtl"><span dir="ltr">ExifTool</span> יודע לחפש קבצים בכל תיקיות המשנה בעצמו בעת שימוש במתג <span dir="ltr"><code>-r</code></span>.</p>
+<pre class="line-numbers"><code class="language-powershell">&amp; $exifToolPath -r -json "D:\Photos" | ConvertFrom-Json |
     Select-Object FileName, Model, DateTimeOriginal |
     Export-Csv "C:\Reports\all_photos_recursive.csv" -NoTypeInformation -Encoding UTF8
-```
-
----
-
-### דוגמה מס' 6: שינוי שמות קבצים לפי תאריך צילום
-
-זהו אחד מתרחישי האוטומציה הפופולריים ביותר — קבצים מקבלים שמות לפי תאריך/שעת הצילום.
-
-```powershell
-$exifToolPath = "C:\Tools\exiftool.exe"
+</code></pre>
+<hr>
+<h3 dir="rtl">דוגמה מס' 6: שינוי שמות קבצים לפי תאריך צילום</h3>
+<p dir="rtl">זהו אחד מתרחישי האוטומציה הפופולריים ביותר – קבצים מקבלים שמות לפי תאריך/שעת הצילום.</p>
+<pre class="line-numbers"><code class="language-powershell">$exifToolPath = "C:\Tools\exiftool.exe"
 $photoFolder = "D:\Photos"
 
-# שנה שם לפורמט YYYY-MM-DD_HH-MM-SS.jpg
-& $exifToolPath -r -d "%Y-%m-%d_%H-%M-%S.%%e" "-FileName<DateTimeOriginal" $photoFolder
-```
-
-💡 *ExifTool יחליף אוטומטית את סיומת הקובץ המקורית באמצעות `%%e`.*
-
----
-
-### דוגמה מס' 7: חילוץ קואורדינטות GPS בלבד
-
-שימושי אם אתה רוצה לבנות מפה מהתמונות שלך.
-
-```powershell
-# 1. ציין את הנתיב לתיקיית התמונות שלך
+# נשנה שם לפורמט YYYY-MM-DD_HH-MM-SS.jpg
+&amp; $exifToolPath -r -d "%Y-%m-%d_%H-%M-%S.%%e" "-FileName&lt;DateTimeOriginal" $photoFolder
+</code></pre>
+<p dir="rtl">💡 *<span dir="ltr">ExifTool</span> יכניס אוטומטית את סיומת הקובץ המקורית באמצעות <span dir="ltr"><code>%%e</code></span>.*</p>
+<hr>
+<h3 dir="rtl">דוגמה מס' 7: חילוץ קואורדינטות <span dir="ltr">GPS</span> בלבד</h3>
+<p dir="rtl">שימושי אם אתם רוצים לבנות מפה מהתמונות שלכם.</p>
+<pre class="line-numbers"><code class="language-powershell"># 1. ציינו את הנתיב לתיקיה עם התמונות שלכם
 $photoFolder = "E:\DCIM\Camera"
 
-# 2. רשום את התגים שאנו צריכים: שם קובץ ושלושה תגי GPS.
+# 2. מפרטים את התגים שאנו צריכים: שם קובץ ושלושה תגי GPS.
 #    זה הופך את השאילתה למהירה הרבה יותר מאשר אם היינו מאחזרים את כל התגים.
 $tagsToExtract = @(
     "-SourceFile", # SourceFile עדיף על FileName, מכיוון שהוא בדרך כלל מכיל את הנתיב המלא
@@ -216,120 +161,85 @@ $tagsToExtract = @(
     "-GPSAltitude"
 )
 
-# 3. קרא ל-exiftool.exe ישירות (מכיוון שהוא ב-PATH).
+# 3. מפעילים את exiftool.exe ישירות (מכיוון שהוא ב-PATH).
 #    המתג -r מחפש קבצים בכל תיקיות המשנה.
-#    המר את התוצאה ישירות מ-JSON.
+#    התוצאה מומרת מיד מ-JSON.
 $allExifData = exiftool.exe -r -json $tagsToExtract $photoFolder | ConvertFrom-Json
 
-# 4. סנן את התוצאות: השאר רק את האובייקטים שיש להם קו רוחב וקו אורך.
+# 4. מסננים את התוצאות: משאירים רק את האובייקטים שיש להם קו רוחב וקו אורך.
 $filesWithGps = $allExifData | Where-Object { $_.GPSLatitude -and $_.GPSLongitude }
 
-# 5. בדוק אם בכלל נמצאו קבצים עם נתוני GPS
+# 5. בודקים אם בכלל נמצאו קבצים עם נתוני GPS
 if ($filesWithGps) {
-    # 6. צור דוח יפה מהנתונים המסוננים.
-    #    השתמש ב-Select-Object כדי לשנות שמות עמודות ולעצב.
+    # 6. יוצרים דוח יפה מהנתונים המסוננים.
+    #    משתמשים ב-Select-Object לשינוי שמות עמודות ועיצוב.
     $report = $filesWithGps | Select-Object @{Name="שם קובץ"; Expression={Split-Path $_.SourceFile -Leaf}},
                                              @{Name="קו רוחב"; Expression={$_.GPSLatitude}},
                                              @{Name="קו אורך"; Expression={$_.GPSLongitude}},
                                              @{Name="גובה"; Expression={if ($_.GPSAltitude) { "$($_.GPSAltitude) מ" } else { "N/A" }}}
     
-    # 7. הצג את הדוח הסופי בטבלת קונסולה אינטראקטיבית.
-    $report | Out-ConsoleGridView -Title "קבצים עם נתוני GPS בתיקייה: $photoFolder"
+    # 7. מציגים את הדוח הסופי בטבלה אינטראקטיבית בקונסולה.
+    $report | Out-ConsoleGridView -Title "קבצים עם נתוני GPS בתיקיה: $photoFolder"
 
 } else {
-    # אם לא נמצא דבר, הודע למשתמש בנימוס.
-    Write-Host "לא נמצאו קבצים עם נתוני GPS בתיקייה '$photoFolder'." -ForegroundColor Yellow
+    # אם לא נמצא דבר, מודיעים על כך בנימוס.
+    Write-Host "קבצים עם נתוני GPS בתיקיה '$photoFolder' לא נמצאו." -ForegroundColor Yellow
 }
-```
-
----
-
-### דוגמה מס' 8: הסרה המונית של כל נתוני ה-GPS (לצורך פרטיות)
-
-```powershell
-# הסר את כל תגי ה-GPS מ-JPG ו-PNG
-& $exifToolPath -r -overwrite_original -gps:all= "D:\Photos"
-```
-
-💡 *פעולה זו בלתי הפיכה, לכן גבה לפני הביצוע.*
-
----
-
-### דוגמה מס' 9: המרת זמן צילום לזמן מקומי
-
-לפעמים תמונות צולמו באזור זמן אחר. ExifTool יכול להזיז את התאריך.
-
-```powershell
-# הזז זמן ב-+3 שעות
-& $exifToolPath "-AllDates+=3:0:0" "D:\Photos\IMG_*.JPG"
-```
-
----
-
-### דוגמה מס' 10: קבלת רשימה של כל דגמי המצלמות הייחודיים בתיקייה
-
-```powershell
-$models = & $exifToolPath -r -Model -s3 "D:\Photos" | Sort-Object -Unique
+</code></pre>
+<hr>
+<h3 dir="rtl">דוגמה מס' 8: מחיקה המונית של כל נתוני <span dir="ltr">GPS</span> (לצורך פרטיות)</h3>
+<pre class="line-numbers"><code class="language-powershell"># נמחק את כל תגי ה-GPS מקבצי JPG ו-PNG
+&amp; $exifToolPath -r -overwrite_original -gps:all= "D:\Photos"
+</code></pre>
+<p dir="rtl">💡 *פעולה זו בלתי הפיכה, לכן גבו את הקבצים לפני הביצוע.*</p>
+<hr>
+<h3 dir="rtl">דוגמה מס' 9: המרת זמן צילום לזמן מקומי</h3>
+<p dir="rtl">לפעמים תמונות צולמו באזור זמן אחר. <span dir="ltr">ExifTool</span> יכול להזיז את התאריך.</p>
+<pre class="line-numbers"><code class="language-powershell"># מזיזים את הזמן ב-3 שעות
+&amp; $exifToolPath "-AllDates+=3:0:0" "D:\Photos\IMG_*.JPG"
+</code></pre>
+<hr>
+<h3 dir="rtl">דוגמה מס' 10: קבלת רשימה של כל דגמי המצלמות הייחודיים בתיקיה</h3>
+<pre class="line-numbers"><code class="language-powershell">$models = &amp; $exifToolPath -r -Model -s3 "D:\Photos" | Sort-Object -Unique
 $models | ForEach-Object { Write-Host "דגם: $_" }
-```
-
----
-
-### דוגמה מס' 11: הצגת תגים נחוצים בלבד בצורת טבלה
-
-```powershell
-& $exifToolPath -T -Model -DateTimeOriginal -ISO -Aperture -ShutterSpeed "D:\Photos\IMG_1234.JPG"
-```
-
-`-T` מוציא פלט בפורמט טבלאי, מופרד בטאבים — נוח לעיבוד נוסף.
-
----
-
-### דוגמה מס' 12: בדיקת נוכחות GPS במערך קבצים גדול
-
-```powershell
-$files = & $exifToolPath -r -if "$gpslatitude" -p '$FileName' "D:\Photos"
+</code></pre>
+<hr>
+<h3 dir="rtl">דוגמה מס' 11: הצגת תגים נחוצים בלבד בפורמט טבלאי</h3>
+<pre class="line-numbers"><code class="language-powershell">&amp; $exifToolPath -T -Model -DateTimeOriginal -ISO -Aperture -ShutterSpeed "D:\Photos\IMG_1234.JPG"
+</code></pre>
+<p dir="rtl"><span dir="ltr"><code>-T</code></span> מציג פלט בפורמט טבלאי, מופרד בטאבים – נוח לעיבוד נוסף.</p>
+<hr>
+<h3 dir="rtl">דוגמה מס' 12: בדיקת נוכחות <span dir="ltr">GPS</span> במערך גדול של קבצים</h3>
+<pre class="line-numbers"><code class="language-powershell">$files = &amp; $exifToolPath -r -if "$gpslatitude" -p '$FileName' "D:\Photos"
 Write-Host "קבצים עם GPS:"
 $files
-```
+</code></pre>
+<hr>
+<h3 dir="rtl">דוגמה מס' 13: העתקת מטא-נתונים מקובץ אחד לאחר</h3>
+<pre class="line-numbers"><code class="language-powershell"># 1. בוחרים קובץ ייחוס
+$sourceFile = Get-ChildItem "D:\Photos" -Filter "*.jpg" | Out-ConsoleGridView -Title "בחרו קובץ ייחוס"
 
----
-
-### דוגמה מס' 13: העתקת מטא-נתונים מקובץ אחד לאחר
-
-```powershell
-# 1. בחר קובץ מקור
-$sourceFile = Get-ChildItem "D:\Photos" -Filter "*.jpg" | Out-ConsoleGridView -Title "בחר קובץ מקור"
-
-# 2. אם נבחר מקור, בחר קבצי יעד
+# 2. אם קובץ ייחוס נבחר, בוחרים קבצי יעד
 if ($sourceFile) {
-    $targetFiles = Get-ChildItem "D:\Photos\New" -Filter "*.jpg" | Out-ConsoleGridView -Title "בחר קבצי יעד להעתקת מטא-נתונים" -OutputMode Multiple
+    $targetFiles = Get-ChildItem "D:\Photos\New" -Filter "*.jpg" | Out-ConsoleGridView -Title "בחרו קבצי יעד להעתקת מטא-נתונים" -OutputMode Multiple
     
-    # 3. אם נבחרו יעדים, בצע העתקה
+    # 3. אם קבצי יעד נבחרו, מבצעים את ההעתקה
     if ($targetFiles) {
-        & exiftool.exe -TagsFromFile $sourceFile.FullName ($targetFiles.FullName)
+        &amp; exiftool.exe -TagsFromFile $sourceFile.FullName ($targetFiles.FullName)
         Write-Host "מטא-נתונים הועתקו מ-$($sourceFile.Name) ל-$($targetFiles.Count) קבצים."
     }
 }
-```
-
----
-
-### דוגמה מס' 14: שמירת מטא-נתונים מקוריים ל-JSON נפרד לפני שינוי
-
-```powershell
-$backupPath = "C:\Reports\metadata_backup.json"
-& $exifToolPath -r -json "D:\Photos" | Out-File -Encoding UTF8 $backupPath
-```
-
----
-
-### דוגמה מס' 15: שימוש ב-PowerShell למיון תמונות אוטומטי לפי תאריך
-
-```powershell
-$photos = Get-ChildItem "D:\Photos" -Filter *.jpg -Recurse
+</code></pre>
+<hr>
+<h3 dir="rtl">דוגמה מס' 14: שמירת מטא-נתונים מקוריים לקובץ <span dir="ltr">JSON</span> נפרד לפני שינוי</h3>
+<pre class="line-numbers"><code class="language-powershell">$backupPath = "C:\Reports\metadata_backup.json"
+&amp; $exifToolPath -r -json "D:\Photos" | Out-File -Encoding UTF8 $backupPath
+</code></pre>
+<hr>
+<h3 dir="rtl">דוגמה מס' 15: שימוש ב-<span dir="ltr">PowerShell</span> למיון אוטומטי של תמונות לפי תאריך</h3>
+<pre class="line-numbers"><code class="language-powershell">$photos = Get-ChildItem "D:\Photos" -Filter *.jpg -Recurse
 foreach ($photo in $photos) {
-    $meta = & $exifToolPath -json $photo.FullName | ConvertFrom-Json
+    $meta = &amp; $exifToolPath -json $photo.FullName | ConvertFrom-Json
     $date = Get-Date $meta.DateTimeOriginal -ErrorAction SilentlyContinue
     if ($date) {
         $targetFolder = "D:\Sorted\{0:yyyy}\{0:MM}" -f $date
@@ -337,19 +247,13 @@ foreach ($photo in $photos) {
         Move-Item $photo.FullName -Destination $targetFolder
     }
 }
-```
+</code></pre>
+<hr>
+<h3 dir="rtl">דוגמה 16: מציאת כל דגמי המצלמות הייחודיים באוסף</h3>
+<p dir="rtl">אף שניתן לעשות זאת בשורה אחת, הצגה ב-<span dir="ltr"><code>GridView</code></span> מאפשרת להעתיק מיד את שם הדגם הרצוי.</p>
+<pre class="line-numbers"><code class="language-powershell"># המתג -s3 מציג רק ערכים, -Model - את שם התג
+$uniqueModels = &amp; exiftool.exe -r -Model -s3 "D:\Photos" | Sort-Object -Unique
 
----
-
-
-### דוגמה 16: מציאת כל דגמי המצלמות הייחודיים באוסף
-
-למרות שניתן לעשות זאת בשורה אחת, הצגה ב-`GridView` מאפשרת להעתיק מיד את שם הדגם הרצוי.
-
-```powershell
-# המתג -s3 מוציא רק ערכים, -Model - שם תג
-$uniqueModels = & exiftool.exe -r -Model -s3 "D:\Photos" | Sort-Object -Unique
-
-# הצג ב-GridView לצפייה והעתקה קלה
+# מציגים ב-GridView לצפייה והעתקה נוחות
 $uniqueModels | Out-ConsoleGridView -Title "דגמי מצלמות ייחודיים באוסף"
-```
+</code></pre>

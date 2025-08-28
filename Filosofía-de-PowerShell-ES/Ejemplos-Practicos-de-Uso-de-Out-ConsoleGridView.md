@@ -1,34 +1,34 @@
-<h3>**Ejemplos prácticos de uso de Out-ConsoleGridView**</h3>
+### **Ejemplos prácticos de uso de Out-ConsoleGridView**
 
-En el capítulo anterior, nos familiarizamos con <code>Out-ConsoleGridView</code>, una potente herramienta para la manipulación interactiva de datos directamente en la terminal. Si no sabe de qué estoy hablando, le recomiendo que lo lea primero.
-Este artículo está completamente dedicado a él. No repetiré la teoría, sino que pasaré directamente a la práctica y mostraré 10 escenarios en los que este cmdlet puede ahorrar mucho tiempo a un administrador de sistemas o a un usuario avanzado.
+En el capítulo anterior, nos familiarizamos con `Out-ConsoleGridView`, una potente herramienta para el trabajo interactivo con datos directamente en el terminal. Si no sabe de qué se trata, le recomiendo que lo lea primero.
+Este artículo está completamente dedicado a ello. No repetiré la teoría, sino que pasaré directamente a la práctica y mostraré 10 escenarios en los que este cmdlet puede ahorrar mucho tiempo a un administrador de sistemas o a un usuario avanzado.
 
-<code>Out-ConsoleGridView</code> no es solo un "visor". Es un **filtro de objetos interactivo** en medio de su canalización.
+`Out-ConsoleGridView` no es solo un "visor". Es un **filtro de objetos interactivo** en medio de su tubería.
 
 **Requisitos previos:**
 *   PowerShell 7.2 o posterior.
-*   Módulo <code>Microsoft.PowerShell.ConsoleGuiTools</code> instalado. Si aún no lo ha instalado:
+*   Módulo `Microsoft.PowerShell.ConsoleGuiTools` instalado. Si aún no lo ha instalado:
     ```powershell
     Install-Module Microsoft.PowerShell.ConsoleGuiTools -Scope CurrentUser
     ```
 
 ---
 
-<h3>10 ejemplos prácticos</h3>
-<h4>Ejemplo 1: Terminación interactiva de procesos</h4>
+### 10 ejemplos prácticos
 
-Tarea clásica: encontrar y terminar varios procesos "colgados" o innecesarios.
+#### Ejemplo 1: Terminación interactiva de procesos
+
+Una tarea clásica: encontrar y terminar varios procesos "colgados" o innecesarios.
 
 ```powershell
-# Seleccionar procesos de forma interactiva
+# Seleccionar procesos en modo interactivo
 $procsToStop = Get-Process | Sort-Object -Property CPU -Descending | Out-ConsoleGridView -OutputMode Multiple
 
-# Si se seleccionó algo, pasar los objetos para su terminación
+# Si se seleccionó algo, pasar los objetos para la terminación
 if ($procsToStop) {
     $procsToStop | Stop-Process -WhatIf
 }
 ```
-
 
 [1](https://github.com/user-attachments/assets/9d17f7d3-6efb-4069-a5f4-829e7e63b63f)
 
@@ -38,13 +38,13 @@ if ($procsToStop) {
 </video>
 
 1.  `Get-Process` recupera todos los procesos en ejecución.
-2.  `Sort-Object` los ordena por uso de CPU, de modo que los que más "consumen recursos" estén en la parte superior.
+2.  `Sort-Object` los ordena por uso de CPU, de modo que los más "consumidores de recursos" estén en la parte superior.
 3.  `Out-ConsoleGridView` muestra la tabla. Puede escribir `chrome` o `notepad` para filtrar instantáneamente la lista y seleccionar los procesos deseados con la tecla `Espacio`.
 4.  Después de presionar `Enter`, los **objetos** de proceso seleccionados se pasan a la variable `$procsToStop` y luego a `Stop-Process`.
 
-<h4>Ejemplo 2: Gestión de servicios de Windows</h4>
+#### Ejemplo 2: Gestión de servicios de Windows
 
-Necesita reiniciar rápidamente varios servicios relacionados con una aplicación (por ejemplo, SQL Server).
+¿Necesita reiniciar rápidamente varios servicios relacionados con una aplicación (por ejemplo, SQL Server)?
 
 ```powershell
 $services = Get-Service | Out-ConsoleGridView -OutputMode Multiple -Title "Seleccionar servicios para reiniciar"
@@ -63,15 +63,15 @@ if ($services) {
 
 1.  Obtiene una lista de todos los servicios.
 2.  Dentro de `Out-ConsoleGridView`, escribe `sql` en el filtro e inmediatamente ve todos los servicios relacionados con SQL Server.
-3.  Selecciona los necesarios y presiona `Enter`. Los objetos de los servicios seleccionados se pasan para reiniciar.
+3.  Selecciona los deseados y presiona `Enter`. Los objetos de servicio seleccionados se pasan para reiniciar.
 
-<h4>Ejemplo 3: Limpiar la carpeta "Descargas" de archivos grandes</h4>
+#### Ejemplo 3: Limpieza de la carpeta "Descargas" de archivos grandes
 
 Con el tiempo, la carpeta "Descargas" se llena de archivos innecesarios. Busquemos y eliminemos los más grandes.
 
 ```powershell
 
-# --- PASO 1: Configurar la ruta al directorio 'Downloads' 
+# --- PASO 1: Configurar la ruta al directorio 'Downloads' ---
 $DownloadsPath = "E:\Users\user\Downloads" # <--- CAMBIE ESTA LÍNEA A SU RUTA
 ===========================================================================
 
@@ -82,9 +82,9 @@ if ([string]::IsNullOrEmpty($DownloadsPath) -or (-not (Test-Path -Path $Download
 }
 
 # --- PASO 2: Informar al usuario y recopilar datos ---
-Write-Host "Iniciando el escaneo de la carpeta '$DownloadsPath'. Esto puede llevar algún tiempo..." -ForegroundColor Cyan
+Write-Host "Iniciando escaneo de la carpeta '$DownloadsPath'. Esto puede llevar algún tiempo..." -ForegroundColor Cyan
 
-$files = Get-ChildItem -Path $DownloadsPath -File -Recurse -ErrorAction SilentlyContinue | 
+$files = Get-ChildItem -Path $DownloadsPath -File -Recurse -ErrorAction SilentlyContinue | \
     Sort-Object -Property Length -Descending
 
 # --- PASO 3: Comprobar si hay archivos y llamar a la ventana interactiva ---
@@ -93,7 +93,7 @@ if ($files) {
     
     $filesToShow = $files | Select-Object FullName, @{Name="SizeMB"; Expression={[math]::Round($_.Length / 1MB, 2)}}, LastWriteTime
     
-    $filesToDelete = $filesToShow | Out-ConsoleGridView -OutputMode Multiple -Title "Seleccionar los archivos a eliminar de '$DownloadsPath'"
+    $filesToDelete = $filesToShow | Out-ConsoleGridView -OutputMode Multiple -Title "Seleccionar archivos para eliminar de '$DownloadsPath'"
 
     # --- PASO 4: Procesar la selección del usuario ---
     if ($filesToDelete) {
@@ -117,14 +117,13 @@ if ($files) {
   Your browser does not support the video tag.
 </video>
 
-
 1.  Obtenemos todos los archivos, los ordenamos por tamaño y usamos `Select-Object` para crear una columna `SizeMB` conveniente.
 2.  En `Out-ConsoleGridView`, verá una lista ordenada donde puede seleccionar fácilmente archivos `.iso` o `.zip` antiguos y grandes.
 3.  Después de la selección, sus rutas completas se pasan a `Remove-Item`.
 
-<h4>Ejemplo 4: Agregar usuarios a un grupo de Active Directory</h4>
+#### Ejemplo 4: Agregar usuarios a un grupo de Active Directory
 
-Una cosa indispensable para los administradores de AD.
+Una herramienta indispensable para los administradores de AD.
 
 ```powershell
 # Obtener usuarios del departamento de Marketing
@@ -138,15 +137,13 @@ if ($usersToAdd) {
 }
 ```
 
-En lugar de introducir manualmente los nombres de usuario, obtiene una lista conveniente donde puede encontrar y seleccionar rápidamente a los empleados necesarios por apellido o nombre de usuario.
-
+En lugar de ingresar manualmente los nombres de usuario, obtiene una lista conveniente donde puede encontrar y seleccionar rápidamente a los empleados deseados por apellido o nombre de usuario.
 
 ---
 
+#### Ejemplo 5: Averiguar qué programas están usando Internet en este momento
 
-### Ejemplo 5: Averiguar qué programas están usando internet en este momento
-
-Una de las tareas comunes: "¿Qué programa está ralentizando internet?" o "¿Quién está enviando datos a dónde?". Con `Out-ConsoleGridView`, puede obtener una respuesta clara e interactiva.
+Una de las tareas comunes: "¿Qué programa está ralentizando Internet?" o "¿Quién está enviando datos a dónde?". Con `Out-ConsoleGridView`, puede obtener una respuesta clara e interactiva.
 
 **Dentro de la tabla:**
 *   **Escriba `chrome` o `msedge`** en el campo de filtro para ver todas las conexiones activas de su navegador.
@@ -154,7 +151,7 @@ Una de las tareas comunes: "¿Qué programa está ralentizando internet?" o "¿Q
 
 ```powershell
 # Obtener todas las conexiones TCP activas
-$connections = Get-NetTCPConnection -State Established | 
+$connections = Get-NetTCPConnection -State Established | \
     Select-Object RemoteAddress, RemotePort, OwningProcess, @{Name="ProcessName"; Expression={(Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).ProcessName}}
 
 # Mostrar en una tabla interactiva para análisis
@@ -174,20 +171,18 @@ $connections | Out-ConsoleGridView -Title "Conexiones a Internet activas"
 
 ---
 
+#### Ejemplo 6: Análisis de instalaciones de software y actualizaciones
 
-
-### Ejemplo 6: Análisis de instalación y actualizaciones de software
-
-Buscaremos eventos de la fuente **"MsiInstaller"**. Es responsable de instalar, actualizar y desinstalar la mayoría de los programas (en formato `.msi`), así como muchos componentes de actualización de Windows.
+Buscaremos eventos de la fuente **"MsiInstaller"**. Es responsable de instalar, actualizar y desinstalar la mayoría de los programas (en formato `.msi`), así como muchos componentes de las actualizaciones de Windows.
 
 ```powershell
-# Encontrar los últimos 100 eventos del instalador de Windows (MsiInstaller)
+# Buscar los últimos 100 eventos del instalador de Windows (MsiInstaller)
 # Estos eventos están presentes en cualquier sistema
 $installEvents = Get-WinEvent -ProviderName 'MsiInstaller' -MaxEvents 100
 
-# Si se encuentran eventos, mostrarlos de forma conveniente
+# Si se encuentran eventos, mostrarlos en un formato conveniente
 if ($installEvents) {
-    $installEvents |
+    $installEvents | \
         # Seleccionar solo lo más útil: hora, mensaje e ID de evento
         # ID 11707 - instalación exitosa, ID 11708 - instalación fallida
         Select-Object TimeCreated, Id, Message |
@@ -201,10 +196,7 @@ if ($installEvents) {
 *   Puede filtrar la lista por nombre de programa (por ejemplo, `Edge` u `Office`) para ver todo su historial de actualizaciones.
 *   Puede ordenar por `Id` para encontrar instalaciones fallidas (`11708`).
 
-
----
-
-
+--- 
 
 #### Ejemplo 7: Desinstalación interactiva de programas
 
@@ -216,14 +208,14 @@ $registryPaths = @(
 )
 
 # Recopilar datos del registro, eliminando los componentes del sistema que no tienen nombre
-$installedPrograms = Get-ItemProperty $registryPaths |
-    Where-Object { $_.DisplayName -and $_.UninstallString } |
+$installedPrograms = Get-ItemProperty $registryPaths | \
+    Where-Object { $_.DisplayName -and $_.UninstallString } |\
     Select-Object DisplayName, DisplayVersion, Publisher, InstallDate |
     Sort-Object DisplayName
 
 # Si se encuentran programas, mostrarlos en una tabla interactiva
 if ($installedPrograms) {
-    $programsToUninstall = $installedPrograms | Out-ConsoleGridView -OutputMode Multiple -Title "Seleccionar los programas a desinstalar"
+    $programsToUninstall = $installedPrograms | Out-ConsoleGridView -OutputMode Multiple -Title "Seleccionar programas para desinstalar"
     
     if ($programsToUninstall) {
         Write-Host "Los siguientes programas serán desinstalados:" -ForegroundColor Yellow
@@ -249,32 +241,29 @@ if ($installedPrograms) {
 }
 ```
 
-
 ---
-
-
 
 Tiene toda la razón. El ejemplo de Active Directory no es adecuado para un usuario normal y requiere un entorno especial.
 
-Reemplacémoslo por un escenario mucho más universal y comprensible que demuestre perfectamente el poder de encadenar `Out-ConsoleGridView` y que será útil para cualquier usuario.
+Reemplacémoslo con un escenario mucho más universal y comprensible que demuestre perfectamente el poder de encadenar `Out-ConsoleGridView` y será útil para cualquier usuario.
 
 ---
 
 #### Ejemplo 8: Encadenamiento de `Out-ConsoleGridView`
 
-Esta es la técnica más potente. La salida de una sesión interactiva se convierte en la entrada de otra. **Tarea:** Seleccione una de sus carpetas de proyecto y luego seleccione archivos específicos de ella para crear un archivo ZIP.
+Esta es la técnica más potente. La salida de una sesión interactiva se convierte en la entrada de otra. **Tarea:** Seleccionar una de sus carpetas de proyecto y luego seleccionar archivos específicos de ella para crear un archivo ZIP.
 
 ```powershell
 # --- PASO 1: Encontrar universalmente la carpeta "Documentos" ---
 $SearchPath = [System.Environment]::GetFolderPath('MyDocuments')
 
 # --- PASO 2: Seleccionar interactivamente una carpeta de la ubicación especificada ---
-$selectedFolder = Get-ChildItem -Path $SearchPath -Directory |
+$selectedFolder = Get-ChildItem -Path $SearchPath -Directory | \
     Out-ConsoleGridView -Title "Seleccionar carpeta para archivar"
 
 if ($selectedFolder) {
     # --- PASO 3: Si se selecciona una carpeta, obtener sus archivos y seleccionar cuáles archivar ---
-    $filesToArchive = Get-ChildItem -Path $selectedFolder.FullName -File |
+    $filesToArchive = Get-ChildItem -Path $selectedFolder.FullName -File | \
         Out-ConsoleGridView -OutputMode Multiple -Title "Seleccionar archivos para archivar de '$($selectedFolder.Name)'"
 
     if ($filesToArchive) {
@@ -285,7 +274,7 @@ if ($selectedFolder) {
         $desktopPath = [System.Environment]::GetFolderPath('Desktop')
         $destinationPath = Join-Path -Path $desktopPath -ChildPath $archiveName
         
-        # Crear archivo
+        # Crear el archivo
         Compress-Archive -Path $filesToArchive.FullName -DestinationPath $destinationPath -WhatIf
         
         Write-Host "El archivo '$archiveName' se creará en su escritorio en la ruta '$destinationPath'." -ForegroundColor Green
@@ -293,14 +282,12 @@ if ($selectedFolder) {
 }
 ```
 
-
-1.  El primer `Out-ConsoleGridView` le muestra una lista de carpetas dentro de sus "Documentos". Puede encontrar rápidamente la que necesita escribiendo parte de su nombre y seleccionar **una** carpeta.
-2.  Si se selecciona una carpeta, el script abre inmediatamente un **segundo** `Out-ConsoleGridView`, que ahora muestra los **archivos dentro** de esa carpeta.
+1.  El primer `Out-ConsoleGridView` le muestra una lista de carpetas dentro de sus "Documentos". Puede encontrar rápidamente la deseada escribiendo parte de su nombre y seleccionando **una** carpeta.
+2.  Si se seleccionó una carpeta, el script abre inmediatamente un **segundo** `Out-ConsoleGridView`, que ahora muestra los **archivos dentro** de esa carpeta.
 3.  Selecciona **uno o más** archivos con la tecla `Espacio` y presiona `Enter`.
 4.  El script toma los archivos seleccionados y crea un archivo ZIP a partir de ellos en su escritorio.
 
-Esto transforma una tarea compleja de varios pasos (encontrar una carpeta, encontrar archivos en ella, copiar sus rutas, ejecutar el comando de archivo) en un proceso interactivo intuitivo de dos pasos.
-
+Esto convierte una tarea compleja de varios pasos (encontrar una carpeta, encontrar archivos en ella, copiar sus rutas, ejecutar el comando de archivo) en un proceso interactivo intuitivo de dos pasos.
 
 #### Ejemplo 9: Gestión de componentes opcionales de Windows
 
@@ -310,7 +297,7 @@ Esto transforma una tarea compleja de varios pasos (encontrar una carpeta, encon
 # Obtener solo los componentes habilitados
 $features = Get-WindowsOptionalFeature -Online | Where-Object { $_.State -eq 'Enabled' }
 
-$featuresToDisable = $features | Select-Object FeatureName, DisplayName |
+$featuresToDisable = $features | Select-Object FeatureName, DisplayName | \
     Out-ConsoleGridView -OutputMode Multiple -Title "Seleccionar componentes para deshabilitar"
 
 if ($featuresToDisable) {
@@ -319,12 +306,12 @@ if ($featuresToDisable) {
     Write-Host "Esta operación no admite el modo seguro -WhatIf."
     $featuresToDisable | Select-Object DisplayName
 
-    # Solicitar confirmación manual
+    # Solicitar confirmación manualmente
     $confirmation = Read-Host "¿Continuar? (s/n)"
     
     if ($confirmation -eq 's') {
         foreach($feature in $featuresToDisable){
-            Write-Host "Deshabilitando el componente '$($feature.DisplayName)'..." -ForegroundColor Yellow
+            Write-Host "Deshabilitando componente '$($feature.DisplayName)'..." -ForegroundColor Yellow
             Disable-WindowsOptionalFeature -Online -FeatureName $feature.FeatureName
         }
         Write-Host "Operación completada. Puede que se requiera un reinicio." -ForegroundColor Green
@@ -344,7 +331,7 @@ Detener rápidamente varias máquinas virtuales para el mantenimiento del host.
 # Obtener solo las VM en ejecución
 $vms = Get-VM | Where-Object { $_.State -eq 'Running' }
 
-$vmsToStop = $vms | Select-Object Name, State, Uptime |
+$vmsToStop = $vms | Select-Object Name, State, Uptime | \
     Out-ConsoleGridView -OutputMode Multiple -Title "Seleccionar VM para detener"
 
 if ($vmsToStop) {
@@ -352,6 +339,6 @@ if ($vmsToStop) {
 }
 ```
 
-Obtiene una lista de solo las máquinas en ejecución y puede seleccionar de forma interactiva las que deben apagarse de forma segura.
+Obtiene una lista de solo las máquinas en ejecución y puede seleccionar interactivamente las que deben apagarse de forma segura.
 
 ```
