@@ -1,0 +1,83 @@
+<h1 dir="rtl">כלי כימיה עבור <span dir="ltr">PowerShell</span> (עם <span dir="ltr">Gemini AI</span>)</h1>
+<p dir="rtl"><strong>כלי כימיה</strong> הוא מודול <span dir="ltr">PowerShell</span> המספק את הפקודה <code dir="ltr">Start-ChemistryExplorer</code> לחקירה אינטראקטיבית של יסודות כימיים באמצעות <span dir="ltr">Google Gemini AI</span>.</p>
+<p dir="rtl">כלי זה הופך את הקונסולה שלך למדריך חכם, המאפשר לך לשלוף רשימות של יסודות לפי קטגוריות, להציג אותם בטבלה נוחה לסינון (<code dir="ltr">Out-ConsoleGridView</code>) ולקבל מידע נוסף על כל אחד מהם.</p>
+<p dir="rtl">*(מומלץ להחליף באנימציית <span dir="ltr">GIF</span> אמיתית של פעולת הסקריפט)*</p>
+<h2 dir="rtl">🚀 התקנה והגדרה</h2>
+<h3 dir="rtl">דרישות קדם</h3>
+<ol dir="rtl">
+<li><strong><span dir="ltr">PowerShell 7.2+</span></strong>.</li>
+<li><strong><span dir="ltr">Node.js (LTS)</span>:</strong> <a href="https://nodejs.org/" dir="ltr">התקן מכאן</a>.</li>
+<li><strong><span dir="ltr">Google Gemini CLI</span>:</strong> ודא שה-<span dir="ltr">CLI</span> מותקן ומאומת.<pre class="line-numbers"><code class="language-powershell" dir="ltr"># 1. התקן Gemini CLI
+npm install -g @google/gemini-cli
+
+# 2. הפעלה ראשונה כדי להיכנס לחשבון Google
+gemini
+</code></pre>
+</li>
+</ol>
+<h3 dir="rtl">מדריך התקנה שלב אחר שלב</h3>
+<h4 dir="rtl">שלב 1: צור את מבנה התיקיות הנכון (חובה!)</h4>
+<p dir="rtl">זהו השלב החשוב ביותר. כדי ש-<span dir="ltr">PowerShell</span> יוכל למצוא את המודול שלך, הוא חייב להיות בתיקייה עם <strong>אותו שם בדיוק</strong> כמו המודול עצמו.</p>
+<ol dir="rtl">
+<li>מצא את תיקיית המודולים האישיים שלך ב-<span dir="ltr">PowerShell</span>.<pre class="line-numbers"><code class="language-powershell" dir="ltr"># פקודה זו תציג את הנתיב, בדרך כלל C:\Users\שםמשתמש\Documents\PowerShell\Modules\n$moduleBasePath = Split-Path $PROFILE.CurrentUserAllHosts
+$moduleBasePath
+</code></pre>
+</li>
+<li>צור בתוכה תיקייה עבור המודול שלנו בשם <code dir="ltr">Chemistry</code>.<pre class="line-numbers"><code class="language-powershell" dir="ltr">$modulePath = Join-Path $moduleBasePath "Chemistry"
+if (-not (Test-Path $modulePath)) {
+    New-Item -Path $modulePath -ItemType Directory
+}
+</code></pre>
+</li>
+<li>הורד והצב את הקבצים הבאים מהמאגר לתיקייה זו (<code dir="ltr">Chemistry</code>):
+<ul dir="rtl">
+<li><code dir="ltr">Chemistry.psm1</code> (קוד המודול הראשי)</li>
+<li><code dir="ltr">Chemistry.GEMINI.md</code> (קובץ הוראות <span dir="ltr">AI</span>)</li>
+<li><code dir="ltr">Chemistry.psd1</code> (קובץ מניפסט, אופציונלי אך מומלץ)</li>
+</ul>
+</li>
+</ol>
+<p dir="rtl">מבנה הקבצים הסופי שלך צריך להיראות כך:</p>
+<pre class="line-numbers"><code class="language-powershell" dir="ltr">...\Documents\PowerShell\Modules\
+└── Chemistry\                &lt;-- תיקיית מודול
+    ├── Chemistry.psd1        &lt;-- מניפסט (אופציונלי)
+    ├── Chemistry.psm1        &lt;-- קוד ראשי
+    └── Chemistry.GEMINI.md   &lt;-- הוראות AI
+</code></pre>
+<h4 dir="rtl">שלב 2: בטל חסימת קבצים</h4>
+<p dir="rtl">אם הורדת קבצים מהאינטרנט, <span dir="ltr">Windows</span> עשויה לחסום אותם. הפעל פקודה זו כדי לפתור את הבעיה:<pre class="line-numbers"><code class="language-powershell" dir="ltr">Get-ChildItem -Path $modulePath | Unblock-File
+</code></pre>
+</p>
+<h4 dir="rtl">שלב 3: ייבא ובדוק את המודול</h4>
+<p dir="rtl">הפעל מחדש את <span dir="ltr">PowerShell</span>. המודול אמור להיטען אוטומטית. כדי לוודא שהפקודה זמינה, הפעל:<pre class="line-numbers"><code class="language-powershell" dir="ltr">Get-Command -Module Chemistry
+</code></pre>
+</p>
+<p dir="rtl">הפלט אמור להיות:</p>
+<pre class="line-numbers"><code class="language-powershell" dir="ltr">CommandType     Name                    Version    Source
+-----------     ----                    -------    ------
+Function        Start-ChemistryExplorer 1.0.0      Chemistry
+</code></pre>
+<h2 dir="rtl">💡 שימוש</h2>
+<p dir="rtl">לאחר ההתקנה, פשוט הפעל את הפקודה בקונסולה שלך:<pre class="line-numbers"><code class="language-powershell" dir="ltr">Start-ChemistryExplorer
+</code></pre>
+</p>
+<p dir="rtl">הסקריפט יברך אותך ויבקש ממך להזין קטגוריה של יסודות כימיים.</p>
+<blockquote dir="rtl">
+<p><code dir="ltr">מפעיל את מדריך הכימאי האינטראקטיבי...</code><br><code dir="ltr">הזן קטגוריית יסודות (לדוגמה, 'גזים אצילים') או 'יציאה'</code><br><code dir="ltr">&gt; גזים אצילים</code></p>
+</blockquote>
+<p dir="rtl">לאחר מכן, יופיע חלון אינטראקטיבי <code dir="ltr">Out-ConsoleGridView</code> עם רשימת יסודות. בחר אחד מהם, ו-<span dir="ltr">Gemini</span> יספר לך עליו עובדות מעניינות.</p>
+<h2 dir="rtl">🛠️ פתרון בעיות</h2>
+<ul dir="rtl">
+<li><strong>שגיאה "מודול לא נמצא"</strong>:
+<ol dir="rtl">
+<li><strong>הפעל מחדש את <span dir="ltr">PowerShell</span>.</strong> זה פותר את הבעיה ב-90% מהמקרים.</li>
+<li>בדוק שוב את <strong>שלב 1</strong>. שם התיקייה (<code dir="ltr">Chemistry</code>) ושם הקובץ (<code dir="ltr">Chemistry.psm1</code> או <code dir="ltr">Chemistry.psd1</code>) חייבים להיות נכונים.</li>
+</ol>
+</li>
+<li><strong>הפקודה <code dir="ltr">Start-ChemistryExplorer</code> לא נמצאה לאחר הייבוא</strong>:
+<ol dir="rtl">
+<li>ודא שקובץ <code dir="ltr">Chemistry.psm1</code> שלך מכיל את השורה <code dir="ltr">Export-ModuleMember -Function Start-ChemistryExplorer</code> בסופו.</li>
+<li>אם אתה משתמש במניפסט (<code dir="ltr">.psd1</code>), ודא שהשדה <code dir="ltr">FunctionsToExport = 'Start-ChemistryExplorer'</code> מאוכלס בו.</li>
+</ol>
+</li>
+</ul>

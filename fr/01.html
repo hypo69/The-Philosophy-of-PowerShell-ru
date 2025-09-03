@@ -1,0 +1,645 @@
+<h2>Philosophie PowerShell.</h2>
+<h2>Partie 0.</h2>
+<p>Qu'y avait-il avant PowerShell ?
+En 1981, MS-DOS 1.0 est sorti avec l'interpréteur de commandes <code>COMMAND.COM</code>. Pour l'automatisation des tâches, on utilisait des <strong>fichiers batch (<code>.bat</code>)</strong> — de simples fichiers texte avec une séquence de commandes console. L'ascétisme étonnant de la ligne de commande par rapport aux systèmes compatibles POSIX où le <strong>shell Bourne (<code>sh</code>)</strong> existait déjà depuis 1979.</p>
+
+<h3>📅 État du marché des shells au moment de la sortie de **MS-DOS 1.0** (août 1981)</h3>
+
+<p>Voici un tableau récapitulatif des systèmes d'exploitation populaires de l'époque et de leur support de shell (<code>sh</code>, <code>csh</code>, etc.) :</p>
+
+<table>
+<thead>
+<tr>
+<th>Système d'exploitation</th>
+<th>Support de shell (<code>sh</code>, <code>csh</code>, etc.)</th>
+<th>Commentaire</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>UNIX Version 7 (V7)</strong></td>
+<td><code>sh</code></td>
+<td>Dernier UNIX classique de Bell Labs, largement distribué</td>
+</tr>
+<tr>
+<td><strong>UNIX/32V</strong></td>
+<td><code>sh</code>, <code>csh</code></td>
+<td>Version UNIX pour l'architecture VAX</td>
+</tr>
+<tr>
+<td><strong>4BSD / 3BSD</strong></td>
+<td><code>sh</code>, <code>csh</code></td>
+<td>Branche universitaire d'UNIX de Berkeley</td>
+</tr>
+<tr>
+<td><strong>UNIX System III</strong></td>
+<td><code>sh</code></td>
+<td>Première version commerciale d'AT&amp;T, prédécesseur de System V</td>
+</tr>
+<tr>
+<td><strong>Xenix (de Microsoft)</strong></td>
+<td><code>sh</code></td>
+<td>Version UNIX sous licence, vendue par Microsoft depuis 1980</td>
+</tr>
+<tr>
+<td><strong>IDRIS</strong></td>
+<td><code>sh</code></td>
+<td>OS de type UNIX pour PDP-11 et Intel</td>
+</tr>
+<tr>
+<td><strong>Coherent (Mark Williams)</strong></td>
+<td><code>sh</code> (similaire)</td>
+<td>Alternative UNIX peu coûteuse pour PC</td>
+</tr>
+<tr>
+<td><strong>CP/M (Digital Research)</strong></td>
+<td>❌ (Pas de <code>sh</code>, seulement CLI simple)</td>
+<td>Pas UNIX, OS le plus populaire pour les PC 8 bits</td>
+</tr>
+<tr>
+<td><strong>MS-DOS 1.0</strong></td>
+<td>❌ (seulement <code>COMMAND.COM</code>)</td>
+<td>Shell de commande minimale, pas de scripts ni de pipes</td>
+</tr>
+</tbody>
+</table>
+
+<hr />
+
+<h3>💡 Qu'est-ce que <code>sh</code>, <code>csh</code></h3>
+
+<ul>
+<li><code>sh</code> — <strong>Bourne Shell</strong>, l'interpréteur de scripts UNIX principal depuis 1977.</li>
+<li><code>csh</code> — <strong>C Shell</strong>, un shell amélioré avec une syntaxe similaire à C et des commodités pour le travail interactif.</li>
+<li>Ces shells <strong>supportaient les redirections, les pipes, les variables, les fonctions et les conditions</strong> — tout ce qui a fait d'UNIX un outil d'automatisation puissant.</li>
+</ul>
+
+<hr />
+
+<p>Microsoft s'est concentré sur les <strong>PC IBM 16 bits bon marché</strong>, qui avaient <strong>peu de mémoire</strong> (généralement 64–256 Ko), manquaient de multitâche et étaient destinés à un <strong>usage domestique et bureautique</strong>, et non à des serveurs. UNIX était cher, nécessitait une architecture complexe et de l'expertise, tandis que les comptables et les ingénieurs, et non les administrateurs système, avaient besoin d'un système d'exploitation rapide et simple.</p>
+
+<p>L'interface DOS, au lieu du <code>sh</code> complexe, présentait un seul fichier command.com avec un ensemble maigre de commandes internes (<a href="https://www.techgeekbuzz.com/blog/dos-commands/" target="_blank">dir, copy, del, etc.</a>) sans fonctions, boucles ou modules.</p>
+
+<p>Il y avait aussi des commandes externes — des fichiers exécutables séparés (.exe ou .com). Exemples : FORMAT.COM, XCOPY.EXE, CHKDSK.EXE, EDIT.COM.
+Les scripts d'exécution étaient écrits dans un fichier texte avec l'extension .bat (fichier batch).</p>
+
+<p>Exemples de fichiers de configuration :</p>
+
+<ul>
+<li>AUTOEXEC.BAT</li>
+</ul>
+
+<pre class="line-numbers"><code class="language-bash">:: ------------------------------------------------------------------------------
+:: AUTOEXEC.BAT — Configuration automatique et lancement de Windows 3.11
+:: Auteur : hypo69
+:: Année : environ 1993
+:: Objectif : Effectue l'initialisation de l'environnement DOS, charge les pilotes réseau et lance Windows 3.11
+:: ------------------------------------------------------------------------------
+@ECHO OFF
+
+:: Configuration de l'invite de commande
+PROMPT $p$g
+
+:: Configuration des variables d'environnement
+SET TEMP=C:\TEMP
+PATH=C:\DOS;C:\WINDOWS
+
+:: Chargement des pilotes et utilitaires en mémoire supérieure
+LH C:\DOS\SMARTDRV.EXE       :: Cache disque
+LH C:\DOS\MOUSE.COM          :: Pilote de souris
+
+:: Chargement des services réseau (pertinent pour Windows for Workgroups 3.11)
+IF EXIST C:\NET\NET.EXE LH C:\NET\NET START
+
+:: Lancement automatique de Windows
+WIN
+
+</code></pre>
+
+<ul>
+<li>CONFIG.SYS</li>
+</ul>
+
+<pre class="line-numbers"><code class="language-bash">:: ------------------------------------------------------------------------------
+:: CONFIG.SYS — Configuration de la mémoire et des pilotes DOS pour Windows 3.11
+:: Auteur : hypo69
+:: Année : environ 1993
+:: Objectif : Initialise les pilotes de mémoire, configure les paramètres système
+:: ------------------------------------------------------------------------------
+DEVICE=C:\DOS\HIMEM.SYS
+DEVICE=C:\DOS\EMM386.EXE NOEMS
+DOS=HIGH,UMB
+FILES=40
+BUFFERS=30
+DEVICEHIGH=C:\DOS\SETVER.EXE
+
+</code></pre>
+
+<p>Chez Microsoft, parallèlement à DOS, un nouveau noyau a commencé à être développé presque immédiatement.</p>
+
+<p>Le noyau <a href="https://www.wikiwand.com/ru/articles/Windows_NT" target="_blank"><strong>Windows NT</strong></a> (New Technology) est apparu pour la première fois avec la sortie du système d'exploitation :
+
+<blockquote>
+<p><strong>Windows NT 3.1 — 27 juillet 1993</strong></p>
+</blockquote>
+
+<hr />
+
+<ul>
+<li><strong>Le développement a commencé</strong> : en <strong>1988</strong> sous la direction de <strong>Dave Cutler</strong> (ancien ingénieur de DEC, créateur de VMS) dans le but de créer un système d'exploitation entièrement nouveau, sécurisé, portable et multitâche, non compatible avec MS-DOS au niveau du noyau.</li>
+<li><strong>NT 3.1</strong> — a été nommé ainsi pour souligner la compatibilité avec <strong>Windows 3.1</strong> au niveau de l'interface, mais avait une <strong>architecture complètement nouvelle</strong>.</li>
+</ul>
+
+<hr />
+
+<h4>🧠 Ce qu'a apporté le noyau NT :</h4>
+
+<table>
+<thead>
+<tr>
+<th>Caractéristique</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Architecture 32 bits</strong></td>
+<td>Contrairement à MS-DOS et Windows 3.x, qui étaient en 16 bits.</td>
+</tr>
+<tr>
+<td><strong>Multitâche</strong></td>
+<td>Véritable multitâche préemptif.</td>
+</tr>
+<tr>
+<td><strong>Mémoire protégée</strong></td>
+<td>Les programmes ne pouvaient pas corrompre la mémoire les uns des autres.</td>
+</tr>
+<tr>
+<td><strong>Modularité</strong></td>
+<td>Architecture de noyau multicouche : HAL, Executive, Kernel, pilotes.</td>
+</tr>
+<tr>
+<td><strong>Support multiplateforme</strong></td>
+<td>NT 3.1 fonctionnait sur x86, MIPS et Alpha.</td>
+</tr>
+<tr>
+<td><strong>Compatibilité POSIX</strong></td>
+<td>NT était livré avec un <strong>sous-système POSIX</strong>, certifié POSIX.1.</td>
+</tr>
+</tbody>
+</table>
+
+<hr />
+
+<h4>📜 Ligne de produits NT :</h4>
+
+<table>
+<thead>
+<tr>
+<th>Version NT</th>
+<th>Année</th>
+<th>Commentaire</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NT 3.1</td>
+<td>1993</td>
+<td>Première version de NT</td>
+</tr>
+<tr>
+<td>NT 3.5 / 3.51</td>
+<td>1994–1995</td>
+<td>Améliorations, optimisation</td>
+</tr>
+<tr>
+<td>NT 4.0</td>
+<td>1996</td>
+<td>Interface Windows 95, mais noyau NT</td>
+</tr>
+<tr>
+<td>Windows 2000</td>
+<td>2000</td>
+<td>NT 5.0</td>
+</tr>
+<tr>
+<td>Windows XP</td>
+<td>2001</td>
+<td>NT 5.1</td>
+</tr>
+<tr>
+<td>Windows Vista</td>
+<td>2007</td>
+<td>NT 6.0</td>
+</tr>
+<tr>
+<td>Windows 10</td>
+<td>2015</td>
+<td>NT 10.0</td>
+</tr>
+<tr>
+<td>Windows 11</td>
+<td>2021</td>
+<td>Aussi NT 10.0 (marketing 😊)</td>
+</tr>
+</tbody>
+</table>
+
+<hr />
+
+<p>Différence de capacités des systèmes d'exploitation :</p>
+
+<table>
+<thead>
+<tr>
+<th>Caractéristique</th>
+<th><strong>MS-DOS</strong> (1981)</th>
+<th><strong>Windows NT</strong> (1993)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type de système</strong></td>
+<td>Monolithique, monotâche</td>
+<td>Micro-noyau/hybride, multitâche</td>
+</tr>
+<tr>
+<td><strong>Bits</strong></td>
+<td>16 bits</td>
+<td>32 bits (avec support 64 bits à partir de NT 5.2 / XP x64)</td>
+</tr>
+<tr>
+<td><strong>Multitâche</strong></td>
+<td>❌ Absent (un processus à la fois)</td>
+<td>✅ Multitâche préemptif</td>
+</tr>
+<tr>
+<td><strong>Mémoire protégée</strong></td>
+<td>❌ Non</td>
+<td>✅ Oui (chaque processus dans son propre espace d'adressage)</td>
+</tr>
+<tr>
+<td><strong>Mode multi-utilisateur</strong></td>
+<td>❌ Non</td>
+<td>✅ Partiellement (dans NT Workstation/Server)</td>
+</tr>
+<tr>
+<td><strong>Compatibilité POSIX</strong></td>
+<td>❌ Non</td>
+<td>✅ Sous-système POSIX intégré dans NT 3.1–5.2</td>
+</tr>
+<tr>
+<td><strong>Portabilité du noyau</strong></td>
+<td>❌ x86 uniquement</td>
+<td>✅ x86, MIPS, Alpha, PowerPC</td>
+</tr>
+<tr>
+<td><strong>Pilotes</strong></td>
+<td>Accès direct au matériel</td>
+<td>Via HAL et pilotes en mode noyau</td>
+</tr>
+<tr>
+<td><strong>Niveau d'accès des applications</strong></td>
+<td>Applications = niveau système</td>
+<td>Niveau utilisateur / noyau séparés</td>
+</tr>
+<tr>
+<td><strong>Sécurité</strong></td>
+<td>❌ Absent</td>
+<td>✅ Modèle de sécurité : SID, ACL, jetons d'accès</td>
+</tr>
+<tr>
+<td><strong>Stabilité</strong></td>
+<td>❌ Dépendance d'un programme = crash OS</td>
+<td>✅ Isolation des processus, protection du noyau</td>
+</tr>
+</tbody>
+</table>
+
+<hr />
+
+<p>Mais il y avait un grand MAIS ! Les outils d'automatisation et d'administration n'ont pas reçu l'attention voulue avant 2002.</p>
+
+<hr />
+
+<p>Microsoft a utilisé des approches, des stratégies et des outils complètement différents pour l'administration. Tout cela était <strong>décousu</strong>, souvent orienté GUI et pas toujours automatisable.</p>
+
+<hr />
+
+<h5>📌 Liste de quelques outils :</h5>
+
+<table>
+<thead>
+<tr>
+<th>Outil</th>
+<th>Objectif</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cmd.exe</code></td>
+<td>Interpréteur de commandes amélioré (remplacement de <code>COMMAND.COM</code>)</td>
+</tr>
+<tr>
+<td><code>.bat</code>, <code>.cmd</code></td>
+<td>Scripts de ligne de commande</td>
+</tr>
+<tr>
+<td><strong>Windows Script Host (WSH)</strong></td>
+<td>Support de VBScript et JScript pour l'automatisation</td>
+</tr>
+<tr>
+<td><code>reg.exe</code></td>
+<td>Gestion du registre depuis la ligne de commande</td>
+</tr>
+<tr>
+<td><code>net.exe</code></td>
+<td>Travailler avec les utilisateurs, le réseau, les imprimantes</td>
+</tr>
+<tr>
+<td><code>sc.exe</code></td>
+<td>Gestion des services</td>
+</tr>
+<tr>
+<td><code>tasklist</code>, <code>taskkill</code></td>
+<td>Gestion des processus</td>
+</tr>
+<tr>
+<td><code>gpedit.msc</code></td>
+<td>Stratégie de groupe (locale)</td>
+</tr>
+<tr>
+<td><code>MMC</code></td>
+<td>Console avec des snap-ins pour la gestion</td>
+</tr>
+<tr>
+<td><code>WMI</code></td>
+<td>Accès aux informations système (via <code>wmic</code>, VBScript ou COM)</td>
+</tr>
+<tr>
+<td><code>WbemTest.exe</code></td>
+<td>GUI pour tester les requêtes WMI</td>
+</tr>
+<tr>
+<td><code>eventvwr</code></td>
+<td>Visionneuse des journaux d'événements</td>
+</tr>
+<tr>
+<td><code>perfmon</code></td>
+<td>Surveillance des ressources</td>
+</tr>
+</tbody>
+</table>
+
+<h5>🛠 Exemples d'automatisation :</h5>
+
+<ul>
+<li>Fichiers VBScript (`*.vbs`) pour l'administration des utilisateurs, des réseaux, des imprimantes et des services.</li>
+<li><code>WMIC</code> — interface en ligne de commande pour WMI (par exemple : `wmic process list brief`).
+<li>Scripts <code>.cmd</code> avec des appels à <code>net</code>, <code>sc</code>, <code>reg</code>, <code>wmic</code>, etc.</li>
+</ul>
+
+<hr />
+
+<h3>⚙️ Windows Scripting Host (WSH)</h3>
+
+<ul>
+<li>Apparu pour la première fois dans <strong>Windows 98</strong>, activement utilisé dans <strong>Windows 2000 et XP</strong>.</li>
+<li>Permettait d'exécuter des fichiers VBScript et JScript depuis la ligne de commande :
+
+  ```vbscript
+  Set objShell = WScript.CreateObject("WScript.Shell")
+  objShell.Run "notepad.exe"
+  ```
+
+<hr />
+<h2>Partie 1.</h2>
+
+<p>Ce n'est qu'en 2002 que la société a formulé le projet <a href="https://learn.microsoft.com/en-us/powershell/scripting/developer/monad-manifesto?view=powershell-7.5" target="_blank">Monad</a>, qui a ensuite évolué en PowerShell :</p>
+
+<p>Début du développement : environ en 2002</p>
+
+<p>Annonce publique : 2003, sous le nom de "Monad Shell"</p>
+
+<p>Premières versions bêta : apparues en 2005</p>
+
+<p>Version finale (PowerShell 1.0) : novembre 2006</p>
+
+<p>L'auteur et architecte en chef du projet Monad / PowerShell est Jeffrey Snover
+<a href="https://www.wikiwand.com/en/articles/Jeffrey_Snover" target="_blank"> (Jeffrey Snover)</a></p>
+
+<p>Aujourd'hui, PowerShell Core fonctionne sur
+<a href="https://github.com/PowerShell/PowerShell/blob/master/docs/building/windows-core.md" target="_blank">Windows</a>
+<a href="https://github.com/PowerShell/PowerShell/blob/master/docs/building/macos.md" target="_blank">macOS</a>
+<a href="https://github.com/PowerShell/PowerShell/blob/master/docs/building/linux.md" target="_blank">Linux</a></p>
+
+<p>Parallèlement, le framework .NET était en cours de développement, et PowerShell y a été profondément intégré ; dans les chapitres suivants, je montrerai des exemples.</p>
+
+<p>Et maintenant — le plus important !</p>
+
+<p>Le principal avantage de PowerShell par rapport aux shells de commande classiques est qu'il fonctionne avec des <em>objets</em>, et non du texte. Lorsque vous exécutez une commande, elle ne vous renvoie pas seulement du texte, mais un objet structuré (ou une collection d'objets) qui a des propriétés et des méthodes clairement définies.</p>
+
+<p>Voyez comment PowerShell surpasse les shells classiques grâce au **travail avec des objets**.</p>
+
+<h3>📁 Comment c'était : <code>dir</code> et analyse manuelle</h3>
+
+<p>Dans **CMD** (à la fois dans l'ancien <code>COMMAND.COM</code> et dans <code>cmd.exe</code>), la commande <code>dir</code> renvoie le résultat sous forme de texte brut. Exemple de sortie :
+
+```
+24.07.2025  21:15         1 428  my_script.js
+25.07.2025  08:01         3 980  report.html
+```
+
+<p>Supposons que vous vouliez extraire le **nom de fichier** et la **taille** de chaque fichier. Vous devrez analyser les lignes manuellement :
+<pre class="line-numbers"><code class="language-cmd">for /f "tokens=5,6" %a in ('dir ^| findstr /R "[0-9][0-9].[0-9][0-9].[0-9][0-9][0-9][0-9]"') do @echo %a %b
+</code></pre>
+
+<ul>
+<li>C'est terriblement difficile à lire, dépend de la locale, du format de date, de la police. Et se casse avec des espaces dans les noms.</li>
+</ul>
+
+<hr />
+
+<h3>✅ PowerShell : des objets au lieu du texte</h3>
+
+<h4>✔ Exemple simple et lisible :</h4>
+
+<pre class="line-numbers"><code class="language-powershell">Get-ChildItem | Select-Object Name, Length
+</code></pre>
+
+<p><strong>Résultat :</strong></p>
+
+<pre class="line-numbers"><code class="language-text">Name          Length
+----          ------
+my_script.js   1428
+report.html    3980
+</code></pre>
+
+<ul>
+<li><code>Get-ChildItem</code> renvoie un **tableau d'objets fichier/dossier**</li>
+<li><code>Select-Object</code> vous permet d'obtenir facilement les **propriétés** nécessaires</li>
+</ul>
+
+<hr />
+
+<h3>🔍 Que renvoie réellement <code>Get-ChildItem</code> ?</h3>
+
+<pre class="line-numbers"><code class="language-powershell">$item = Get-ChildItem -Path .\my_script.js
+$item | Get-Member
+</code></pre>
+
+<p><strong>Résultat :</strong></p>
+
+<pre class="line-numbers"><code class="language-text">TypeName: System.IO.FileInfo
+
+Name         MemberType     Definition
+----         ---------      ----------
+Length       Property       long Length {get;}
+Name         Property       string Name {get;}
+CreationTime Property       datetime CreationTime {get;set;}
+Delete       Method         void Delete()
+...
+</code></pre>
+
+<p>PowerShell renvoie des **objets de type <code>System.IO.FileInfo</code>**, qui ont :
+
+<ul>
+<li>🧱 Propriétés (<code>Name</code>, <code>Length</code>, <code>CreationTime</code>, <code>Extension</code>, …)</li>
+<li>🛠 Méthodes (<code>Delete()</code>, <code>CopyTo()</code>, <code>MoveTo()</code> etc.)</li>
+</ul>
+
+<p>Vous travaillez **avec des objets à part entière**, pas avec des chaînes de caractères.</p>
+
+<hr />
+
+<p>### Syntaxe "Verbe-Nom" :</p>
+
+<p>PowerShell utilise une **syntaxe de commande stricte et logique** :
+<code>Verbe-Nom</code></p>
+
+<table>
+<thead>
+<tr>
+<th>Verbe</th>
+<th>Ce qu'il fait</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Get-</code></td>
+<td>Obtenir</td>
+</tr>
+<tr>
+<td><code>Set-</code></td>
+<td>Définir</td>
+</tr>
+<tr>
+<td><code>New-</code></td>
+<td>Créer</td>
+</tr>
+<tr>
+<td><code>Remove-</code></td>
+<td>Supprimer</td>
+</tr>
+<tr>
+<td><code>Start-</code></td>
+<td>Démarrer</td>
+</tr>
+<tr>
+<td><code>Stop-</code></td>
+<td>Arrêter</td>
+</tr>
+</tbody>
+</table>
+
+<table>
+<thead>
+<tr>
+<th>Nom</th>
+<th>Sur quoi il travaille</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Process</code></td>
+<td>Processus</td>
+</tr>
+<tr>
+<td><code>Service</code></td>
+<td>Service</td>
+</tr>
+<tr>
+<td><code>Item</code></td>
+<td>Fichier/dossier</td>
+</tr>
+<tr>
+<td><code>EventLog</code></td>
+<td>Journaux d'événements</td>
+</tr>
+<tr>
+<td><code>Computer</code></td>
+<td>Ordinateur</td>
+</tr>
+</tbody>
+</table>
+
+<h4>🔄 Exemples:</h4>
+
+<table>
+<thead>
+<tr>
+<th>Ce qu'il faut faire</th>
+<th>Commande</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Obtenir les processus</td>
+<td><code>Get-Process</code></td>
+</tr>
+<tr>
+<td>Arrêter le service</td>
+<td><code>Stop-Service</code></td>
+</tr>
+<tr>
+<td>Créer un nouveau fichier</td>
+<td><code>New-Item</code></td>
+</tr>
+<tr>
+<td>Obtenir le contenu du dossier</td>
+<td><code>Get-ChildItem</code></td>
+</tr>
+<tr>
+<td>Supprimer le fichier</td>
+<td><code>Remove-Item</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>➡ Même si vous <strong>ne connaissez pas la commande exacte</strong>, vous pouvez la **deviner** par son sens — et vous aurez presque toujours raison.</p>
+
+<hr />
+
+<p>Le cmdlet <code>Get-Help</code> est votre principal assistant.</p>
+
+<ol>
+<li><strong>Obtenir de l'aide sur l'aide elle-même :</strong>
+<pre class="line-numbers"><code class="language-powershell">Get-Help Get-Help
+</code></pre>
+</li>
+<li><strong>Obtenir de l'aide de base sur la commande pour travailler avec les processus :</strong>
+<pre class="line-numbers"><code class="language-powershell">Get-Help Get-Process
+</code></pre>
+</li>
+<li><strong>Voir des exemples d'utilisation de cette commande :</strong>
+<pre class="line-numbers"><code class="language-powershell">Get-Help Get-Process -Examples
+</code></pre>
+<p>C'est un paramètre incroyablement utile qui fournit souvent des solutions prêtes à l'emploi pour vos tâches.</p>
+</li>
+<li><strong>Obtenir les informations les plus détaillées sur la commande :</strong>
+<pre class="line-numbers"><code class="language-powershell">Get-Help Get-Process -Full
+</code></pre>
+</li>
+</ol>
+
+<p>Dans la partie suivante : pipeline ou chaîne de commandes (PipeLines)</p>

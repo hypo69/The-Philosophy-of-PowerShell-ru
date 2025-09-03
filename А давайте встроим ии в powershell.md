@@ -1,2 +1,2 @@
 ## Серия 
-Все статьи серии собраны здесь [А давайте встроим ии в powershell]('https://github.com/hypo69/The-Philosophy-of-PowerShell-ru/tree/master/%D0%90%20%D0%B4%D0%B0%D0%B2%D0%B0%D0%B9%D1%82%D0%B5%20%D0%B2%D1%81%D1%82%D1%80%D0%BE%D0%B8%D0%BC%20%D0%B8%D0%B8%20%D0%B2%20powershell')
+Все статьи серии собраны здесь [А давайте встроим ии в powershell]('https://github.com/hypo69/The-Philosophy-of-PowerShell-ru/tree/master/ru/%D0%90%20%D0%B4%D0%B0%D0%B2%D0%B0%D0%B9%D1%82%D0%B5%20%D0%B2%D1%81%D1%82%D1%80%D0%BE%D0%B8%D0%BC%20%D0%B8%D0%B8%20%D0%B2%20powershell')

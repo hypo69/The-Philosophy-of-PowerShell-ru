@@ -1,0 +1,84 @@
+<h1>Chemistry Tools for PowerShell (with Gemini AI)</h1>
+<p><strong>Chemistry Tools</strong> is a PowerShell module that provides the <code>Start-ChemistryExplorer</code> command for interactive exploration of chemical elements using Google Gemini AI.</p>
+<p>This tool transforms your console into an intelligent reference, allowing you to query lists of elements by category, view them in a convenient filterable table (<code>Out-ConsoleGridView</code>) and obtain additional information about each.</p>
+<p>*(Recommended to replace with a real GIF animation of the script's operation)*</p>
+<h2>🚀 Installation and Setup</h2>
+<h3>Prerequisites</h3>
+<ol>
+<li><strong>PowerShell 7.2+</strong>.</li>
+<li><strong>Node.js (LTS):</strong> <a href="https://nodejs.org/">Install from here</a>.</li>
+<li><strong>Google Gemini CLI:</strong> Ensure the CLI is installed and authenticated.<pre class="line-numbers"><code class="language-powershell"># 1. Install Gemini CLI
+npm install -g @google/gemini-cli
+
+# 2. First run to log in to Google account
+gemini
+</code></pre>
+</li>
+</ol>
+<h3>Step-by-step installation guide</h3>
+<h4>Step 1: Create the correct folder structure (Mandatory!)</h4>
+<p>This is the most important step. For PowerShell to find your module, it must be in a folder with <strong>exactly the same name</strong> as the module itself.</p>
+<ol>
+<li>Find your personal PowerShell modules folder.<pre class="line-numbers"><code class="language-powershell"># This command will show the path, usually C:\Users\YourName\Documents\PowerShell\Modules\
+$moduleBasePath = Split-Path $PROFILE.CurrentUserAllHosts
+$moduleBasePath
+</code></pre>
+</li>
+<li>Create a folder for our module named <code>Chemistry</code> in it.<pre class="line-numbers"><code class="language-powershell">$modulePath = Join-Path $moduleBasePath "Chemistry"
+if (-not (Test-Path $modulePath)) {
+    New-Item -Path $modulePath -ItemType Directory
+}
+</code></pre>
+</li>
+<li>Download and place the following files from the repository into this folder (<code>Chemistry</code>):
+<ul>
+<li><code>Chemistry.psm1</code> (main module code)</li>
+<li><code>Chemistry.GEMINI.md</code> (AI instruction file)</li>
+<li><code>Chemistry.psd1</code> (manifest file, optional but recommended)</li>
+</ul>
+</li>
+</ol>
+<p>Your final file structure should look like this:</p>
+<pre class="line-numbers"><code class="language-powershell">...\Documents\PowerShell\Modules\
+└── Chemistry\                &lt;-- Module folder
+    ├── Chemistry.psd1        &lt;-- Manifest (optional)
+    ├── Chemistry.psm1        &lt;-- Main code
+    └── Chemistry.GEMINI.md   &lt;-- AI instructions
+</code></pre>
+<h4>Step 2: Unblock files</h4>
+<p>If you downloaded files from the internet, Windows might block them. Run this command to resolve the issue:<pre class="line-numbers"><code class="language-powershell">Get-ChildItem -Path $modulePath | Unblock-File
+</code></pre>
+</p>
+<h4>Step 3: Import and test the module</h4>
+<p>Restart PowerShell. The module should load automatically. To ensure the command is available, run:<pre class="line-numbers"><code class="language-powershell">Get-Command -Module Chemistry
+</code></pre>
+</p>
+<p>The output should be:</p>
+<pre class="line-numbers"><code class="language-powershell">CommandType     Name                    Version    Source
+-----------     ----                    -------    ------
+Function        Start-ChemistryExplorer 1.0.0      Chemistry
+</code></pre>
+<h2>💡 Usage</h2>
+<p>After installation, simply run the command in your console:<pre class="line-numbers"><code class="language-powershell">Start-ChemistryExplorer
+</code></pre>
+</p>
+<p>The script will greet you and prompt you to enter a category of chemical elements.</p>
+<blockquote>
+<p><code>Starting interactive chemist's reference...</code><br><code>Enter element category (e.g., 'noble gases') or 'exit'</code><br><code>&gt; noble gases</code></p>
+</blockquote>
+<p>After that, an interactive <code>Out-ConsoleGridView</code> window will appear with a list of elements. Select one of them, and Gemini will tell you interesting facts about it.</p>
+<h2>🛠️ Troubleshooting</h2>
+<ul>
+<li><strong>Error "module not found"</strong>:
+<ol>
+<li><strong>Restart PowerShell.</strong> This solves the problem in 90% of cases.</li>
+<li>Double-check <strong>Step 1</strong>. The folder name (<code>Chemistry</code>) and file name (<code>Chemistry.psm1</code> or <code>Chemistry.psd1</code>) must be correct.</li>
+</ol>
+</li>
+<li><strong>Command <code>Start-ChemistryExplorer</code> not found after import</strong>:
+<ol>
+<li>Ensure that your <code>Chemistry.psm1</code> file has the line <code>Export-ModuleMember -Function Start-ChemistryExplorer</code> at the end.</li>
+<li>If you are using a manifest (<code>.psd1</code>), ensure that the <code>FunctionsToExport = 'Start-ChemistryExplorer'</code> field is populated in it.</li>
+</ol>
+</li>
+</ul>

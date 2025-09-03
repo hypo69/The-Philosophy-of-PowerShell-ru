@@ -1,0 +1,84 @@
+<h3>סקריפט ביקורת רישום</h3>
+<p dir="rtl">סקריפט זה מבצע ארבע בדיקות מפתח:</p>
+<ol dir="rtl">
+<li><strong>הפעלה אוטומטית:</strong> מחפש תוכניות המופעלות עם המערכת במפתחות הרישום הפופולריים ביותר.</li>
+<li><strong>הגדרות אבטחה:</strong> בודק את מצב <span dir="ltr">UAC</span> (בקרת חשבון משתמש).</li>
+<li><strong>מידע מערכת:</strong> מציג את גרסת <span dir="ltr">Windows</span> ומידע חשוב אחר.</li>
+<li><strong>היסטוריית התקני <span dir="ltr">USB</span>:</strong> מציג מידע על כל התקני ה-<span dir="ltr">USB</span> שהתחברו אי פעם.</li>
+</ol>
+<p dir="rtl"><strong>חשוב:</strong> סקריפט זה עשוי לדרוש הרשאות מנהל מערכת כדי לפעול.</p>
+<p dir="rtl"><strong>פקודה שתוכל להשתמש בה ב-<span dir="ltr">Gemini CLI</span>:</strong></p>
+<pre class="line-numbers"><code class="language-powershell" dir="ltr">gemini-cli "כתוב סקריפט PowerShell לביקורת רישום מקיפה. הסקריפט צריך לבדוק הפעלה אוטומטית עבור HKLM ו-HKCU, מצב UAC, גרסת Windows והיסטוריית התקני USB מחוברים. הפלט צריך להיות מובנה וקל לקריאה."</code></pre>
+<p dir="rtl"><strong>דוגמה לסקריפט שנוצר:</strong></p>
+<pre class="line-numbers"><code class="language-powershell" dir="ltr">Write-Host "--- ביקורת רישום Windows מקיפה ---" -ForegroundColor Green
+Write-Host "הסקריפט בודק אזורי רישום מפתח עבור מידע מערכת ואבטחה." -ForegroundColor Cyan
+
+# 1. בדיקת תוכניות הפעלה אוטומטית
+Write-Host "`n[1] בדיקת תוכניות הפעלה אוטומטית" -ForegroundColor Yellow
+$autoRunPaths = @(
+    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+    "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run",
+    "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run"
+)
+
+foreach ($path in $autoRunPaths) {
+    if (Test-Path -Path $path) {
+        Write-Host "  - בדיקת מפתח: $path" -ForegroundColor Cyan
+        Get-ItemProperty -Path $path -ErrorAction SilentlyContinue | ForEach-Object {
+            $name = $_.PSChildName
+            $value = $_.$name
+            if ($value) {
+                Write-Host "    - שם: $name" -ForegroundColor Magenta
+                Write-Host "      נתיב:   $value" -ForegroundColor Magenta
+            }
+        }
+    }
+}
+
+
+# 2. בדיקת הגדרות אבטחה (UAC)
+Write-Host "`n[2] בדיקת הגדרות אבטחה" -ForegroundColor Yellow
+$uacStatus = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System").EnableLUA
+if ($uacStatus -eq 1) {
+    Write-Host "  - UAC (בקרת חשבון משתמש): מופעל" -ForegroundColor Green
+} else {
+    Write-Host "  - UAC (בקרת חשבון משתמש): מושבת" -ForegroundColor Red
+}
+
+
+# 3. קבלת מידע על גרסת Windows
+Write-Host "`n[3] מידע מערכת" -ForegroundColor Yellow
+$osInfo = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+Write-Host "  - גרסת מערכת הפעלה: $($osInfo.ProductName) $($osInfo.CurrentVersion)" -ForegroundColor Cyan
+Write-Host "  - בניית מערכת הפעלה: $($osInfo.BuildLabEx)" -ForegroundColor Cyan
+
+
+# 4. ביקורת היסטוריית חיבורי התקני USB
+Write-Host "`n[4] היסטוריית חיבורי התקני USB" -ForegroundColor Yellow
+Write-Host "  (דורש הרשאות מנהל מערכת)" -ForegroundColor Red
+try {
+    $usbDevices = Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Enum\USBSTOR\*"
+    if ($usbDevices.Count -gt 0) {
+        $usbDevices | ForEach-Object {
+            Write-Host "  - התקן: $($_.PSChildName)" -ForegroundColor Magenta
+            Write-Host "    תיאור: $($_.FriendlyName)" -ForegroundColor Magenta
+        }
+    } else {
+        Write-Host "  - התקני USB לא נמצאו ברישום." -ForegroundColor Green
+    }
+} catch {
+    Write-Host "  - שגיאה: לא ניתן לגשת למפתח התקן USB. הפעל את הסקריפט עם הרשאות מנהל מערכת." -ForegroundColor Red
+}
+
+
+Write-Host "`n--- ביקורת הושלמה ---" -ForegroundColor Green
+</code></pre>
+<h3 dir="rtl">איך זה עובד?</h3>
+<ul dir="rtl">
+<li><strong><code dir="ltr">Test-Path</code></strong>: לפני קריאת נתונים, הסקריפט בודק אם מפתח הרישום קיים. זה עוזר למנוע שגיאות.</li>
+<li><strong><code dir="ltr">Get-ItemProperty</code></strong>: הפקודה הראשית לקריאת ערכים ממפתחות רישום.</li>
+<li><strong>איטרציה בנתיבים</strong>: הסקריפט משתמש במערך <code dir="ltr">$autoRunPaths</code> כדי לעבור על כל מיקומי ההפעלה האוטומטית העיקריים, כולל תוכניות 32 סיביות במערכת 64 סיביות (<code dir="ltr">WOW6432Node</code>).</li>
+<li><strong>טיפול בשגיאות</strong>: בלוק <code dir="ltr">try...catch</code> משמש לטיפול נכון במצבים שבהם למשתמש אין זכויות גישה למפתחות רישום מסוימים, כגון היסטוריית התקני <span dir="ltr">USB</span>.</li>
+<li><strong>פלט מעוצב</strong>: באמצעות <code dir="ltr">Write-Host</code> וצבעים שונים, הסקריפט הופך את הדוח לויזואלי וקל יותר לקריאה.</li>
+</ul>
+<p dir="rtl">סקריפט זה הוא נקודת התחלה מצוינת לביקורת מעמיקה יותר. תוכל להוסיף לו בדיקות חדשות או לשמור את התוצאות לקובץ לצורך ניתוח מאוחר יותר.</p>

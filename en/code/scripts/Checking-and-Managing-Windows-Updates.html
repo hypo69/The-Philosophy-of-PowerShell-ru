@@ -1,0 +1,65 @@
+<p>Checking and managing Windows updates is an important task for maintaining system security and stability.<br>Unfortunately, standard PowerShell does not have built-in cmdlets for this. But there is an excellent third-party module called <strong><code>PSWindowsUpdate</code></strong>, which has become a kind of standard.</p>
+<p>With the help of Gemini CLI, we can generate a script that uses this module to perform all necessary operations.</p>
+<h3><strong>Step 1: Install the <code>PSWindowsUpdate</code> module</strong></h3>
+<p>Before running the script, you need to install this module. This is done once.</p>
+<p>Open PowerShell as an administrator and run the following command:</p>
+<pre class="line-numbers"><code class="language-powershell">Install-Module -Name PSWindowsUpdate
+</code></pre>
+<p>If you see an error that "PowerShellGet" is outdated, or a warning about a "trusted repository", just follow the instructions in the console. Most likely, you will need to confirm the installation.</p>
+<h3><strong>Step 2: Script for checking and installing updates</strong></h3>
+<p>After installing the module, you can use this script to check for updates and, if necessary, install them.</p>
+<p><strong>Scenario:</strong> You want to quickly check for new Windows updates and get a report.</p>
+<p><strong>Command you can use in Gemini CLI:</strong></p>
+<pre class="line-numbers"><code class="language-powershell">gemini-cli "Write a PowerShell script that uses the PSWindowsUpdate module. The script should check for available Windows updates, display a list of them, and then, if updates are found, prompt the user to install them."</code></pre>
+<p><strong>Example of a generated script:</strong></p>
+<pre class="line-numbers"><code class="language-powershell"># Requires -Module PSWindowsUpdate
+
+Write-Host "--- Checking and installing Windows updates ---" -ForegroundColor Green
+
+# 1. Check for available updates
+Write-Host "
+Checking for available updates..." -ForegroundColor Yellow
+$availableUpdates = Get-WUList
+
+if ($availableUpdates.Count -eq 0) {
+    Write-Host "
+No updates found. Your system is up to date." -ForegroundColor Green
+} else {
+    Write-Host "
+Found the following updates:" -ForegroundColor Yellow
+    $availableUpdates | Format-Table -AutoSize
+
+    # 2. Offer to install updates
+    $installChoice = Read-Host "
+Install found updates? (Y/N)"
+
+    if ($installChoice -eq 'Y' -or $installChoice -eq 'y') {
+        Write-Host "
+Starting update installation..." -ForegroundColor Yellow
+        
+        # Download and install updates
+        Install-WindowsUpdate -AcceptAll -AutoReboot
+        
+        Write-Host "
+Installation process completed. A reboot may be required." -ForegroundColor Green
+    } else {
+        Write-Host "
+Installation canceled. Updates will not be installed." -ForegroundColor Red
+    }
+}
+
+Write-Host "
+--- Completed ---" -ForegroundColor Green
+</code></pre>
+<h3>How it works?</h3>
+<ul>
+<li><strong><code>Get-WUList</code></strong>: This is a key cmdlet from the <code>PSWindowsUpdate</code> module. It searches for available updates just like the standard Windows Update Center.</li>
+<li><strong><code>Read-Host</code></strong>: This command allows the script to interact with you, prompting for confirmation before installing updates.</li>
+<li><strong><code>Install-WindowsUpdate -AcceptAll -AutoReboot</code></strong>: If you agree, this cmdlet starts the installation process.
+<ul>
+<li><code>-AcceptAll</code>: Automatically agrees to license agreements.</li>
+<li><code>-AutoReboot</code>: Automatically reboots the computer if necessary to complete the installation. You can remove this flag if you want to reboot manually.</li>
+</ul>
+</li>
+</ul>
+<p>This script gives you full control over the Windows update process, making it an excellent tool for system administration.</p>

@@ -1,0 +1,84 @@
+<h3>Script de auditoría del registro</h3>
+<p>Este script realiza cuatro comprobaciones clave:</p>
+<ol>
+<li><strong>Inicio automático:</strong> Busca programas que se inician con el sistema en las claves de registro más populares.</li>
+<li><strong>Configuración de seguridad:</strong> Comprueba el estado de UAC (Control de cuentas de usuario).</li>
+<li><strong>Información del sistema:</strong> Muestra la versión de Windows y otra información importante.</li>
+<li><strong>Historial de dispositivos USB:</strong> Muestra información sobre todos los dispositivos USB que se han conectado alguna vez.</li>
+</ol>
+<p><strong>Importante:</strong> Este script puede requerir privilegios de administrador para ejecutarse.</p>
+<p><strong>Comando que puede usar en Gemini CLI:</strong></p>
+<pre class="line-numbers"><code class="language-powershell">gemini-cli "Escriba un script de PowerShell para una auditoría completa del registro. El script debe comprobar el inicio automático para HKLM y HKCU, el estado de UAC, la versión de Windows y el historial de dispositivos USB conectados. La salida debe estar estructurada y ser fácil de leer."</code></pre>
+<p><strong>Ejemplo de script generado:</strong></p>
+<pre class="line-numbers"><code class="language-powershell">Write-Host "--- Auditoría completa del registro de Windows ---" -ForegroundColor Green
+Write-Host "El script comprueba las áreas clave del registro para obtener información del sistema y de seguridad." -ForegroundColor Cyan
+
+# 1. Comprobar programas de inicio automático
+Write-Host "`n[1] Comprobando programas de inicio automático" -ForegroundColor Yellow
+$autoRunPaths = @(
+    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+    "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run",
+    "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run"
+)
+
+foreach ($path in $autoRunPaths) {
+    if (Test-Path -Path $path) {
+        Write-Host "  - Comprobando clave: $path" -ForegroundColor Cyan
+        Get-ItemProperty -Path $path -ErrorAction SilentlyContinue | ForEach-Object {
+            $name = $_.PSChildName
+            $value = $_.$name
+            if ($value) {
+                Write-Host "    - Nombre: $name" -ForegroundColor Magenta
+                Write-Host "      Ruta:   $value" -ForegroundColor Magenta
+            }
+        }
+    }
+}
+
+
+# 2. Comprobar la configuración de seguridad (UAC)
+Write-Host "`n[2] Comprobando la configuración de seguridad" -ForegroundColor Yellow
+$uacStatus = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System").EnableLUA
+if ($uacStatus -eq 1) {
+    Write-Host "  - UAC (Control de cuentas de usuario): HABILITADO" -ForegroundColor Green
+} else {
+    Write-Host "  - UAC (Control de cuentas de usuario): DESHABILITADO" -ForegroundColor Red
+}
+
+
+# 3. Obtener información de la versión de Windows
+Write-Host "`n[3] Información del sistema" -ForegroundColor Yellow
+$osInfo = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+Write-Host "  - Versión del SO: $($osInfo.ProductName) $($osInfo.CurrentVersion)" -ForegroundColor Cyan
+Write-Host "  - Compilación del SO: $($osInfo.BuildLabEx)" -ForegroundColor Cyan
+
+
+# 4. Auditar el historial de conexión de dispositivos USB
+Write-Host "`n[4] Historial de conexión de dispositivos USB" -ForegroundColor Yellow
+Write-Host "  (Requiere privilegios de administrador)" -ForegroundColor Red
+try {
+    $usbDevices = Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Enum\USBSTOR\*"
+    if ($usbDevices.Count -gt 0) {
+        $usbDevices | ForEach-Object {
+            Write-Host "  - Dispositivo: $($_.PSChildName)" -ForegroundColor Magenta
+            Write-Host "    Descripción: $($_.FriendlyName)" -ForegroundColor Magenta
+        }
+    } else {
+        Write-Host "  - No se encontraron dispositivos USB en el registro." -ForegroundColor Green
+    }
+} catch {
+    Write-Host "  - Error: No se pudo acceder a la clave del dispositivo USB. Ejecute el script con privilegios de administrador." -ForegroundColor Red
+}
+
+
+Write-Host "`n--- Auditoría completada ---" -ForegroundColor Green
+</code></pre>
+<h3>¿Cómo funciona?</h3>
+<ul>
+<li><strong><code>Test-Path</code></strong>: Antes de leer los datos, el script comprueba si la clave del registro existe. Esto ayuda a evitar errores.</li>
+<li><strong><code>Get-ItemProperty</code></strong>: El cmdlet principal para leer valores de las claves del registro.</li>
+<li><strong>Iteración de rutas</strong>: El script utiliza la matriz <code>$autoRunPaths</code> para iterar a través de todas las ubicaciones principales de inicio automático, incluidos los programas de 32 bits en un sistema de 64 bits (<code>WOW6432Node</code>).</li>
+<li><strong>Manejo de errores</strong>: El bloque <code>try...catch</code> se utiliza para manejar correctamente las situaciones en las que el usuario no tiene derechos de acceso a ciertas claves del registro, como el historial de dispositivos USB.</li>
+<li><strong>Salida formateada</strong>: Usando <code>Write-Host</code> y diferentes colores, el script hace que el informe sea más visual y fácil de leer.</li>
+</ul>
+<p>Este script es un excelente punto de partida para una auditoría más profunda. Puede agregarle nuevas comprobaciones o guardar los resultados en un archivo para un análisis posterior.</p>

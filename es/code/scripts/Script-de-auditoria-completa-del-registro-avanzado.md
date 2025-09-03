@@ -1,0 +1,126 @@
+### Script de auditoría completa del registro avanzado
+
+Este script es más versátil y permite una auditoría más detallada. Todavía requiere privilegios de administrador para acceder a algunas claves.
+
+**Ejemplo de script generado:**
+
+```powershell
+Write-Host "--- Auditoría avanzada del registro de Windows ---" -ForegroundColor Green
+Write-Host "El script realiza una comprobación exhaustiva del sistema, la seguridad y la red." -ForegroundColor Cyan
+
+# 1. Comprobar programas de inicio automático
+Write-Host "`n[1] Comprobando programas de inicio automático" -ForegroundColor Yellow
+$autoRunPaths = @(
+    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+    "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run",
+    "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run"
+)
+foreach ($path in $autoRunPaths) {
+    if (Test-Path -Path $path) {
+        Write-Host "  - Comprobando clave: $path" -ForegroundColor Cyan
+        Get-ItemProperty -Path $path -ErrorAction SilentlyContinue | ForEach-Object {
+            $name = $_.PSChildName
+            $value = $_.$name
+            if ($value) {
+                Write-Host "    - Nombre: $name" -ForegroundColor Magenta
+                Write-Host "      Ruta:   $value" -ForegroundColor Magenta
+            }
+        }
+    }
+}
+
+---
+
+# 2. Comprobar la configuración de seguridad
+Write-Host "`n[2] Comprobando la configuración de seguridad" -ForegroundColor Yellow
+
+# Comprobar UAC
+$uacStatus = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System").EnableLUA
+if ($uacStatus -eq 1) {
+    Write-Host "  - UAC (Control de cuentas de usuario): HABILITADO" -ForegroundColor Green
+} else {
+    Write-Host "  - UAC (Control de cuentas de usuario): DESHABILITADO" -ForegroundColor Red
+}
+
+# Comprobar el estado de Windows Defender (estado real, no solo el registro)
+Write-Host "  - Windows Defender:" -ForegroundColor Cyan
+try {
+    $defenderStatus = Get-MpComputerStatus
+    $defenderRealtime = $defenderStatus.RealTimeProtectionEnabled
+    if ($defenderRealtime) {
+        Write-Host "    - Protección en tiempo real: HABILITADO" -ForegroundColor Green
+    } else {
+        Write-Host "    - Protección en tiempo real: DESHABILITADO" -ForegroundColor Red
+    }
+} catch {
+    Write-Host "    - No se pudo obtener el estado de Windows Defender. Es posible que se esté utilizando un antivirus de terceros." -ForegroundColor Yellow
+}
+
+---
+
+# 3. Información del sistema y rutas de carpetas
+Write-Host "`n[3] Información del sistema y rutas de carpetas del sistema" -ForegroundColor Yellow
+$osInfo = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+Write-Host "  - Versión del SO: $($osInfo.ProductName) $($osInfo.CurrentVersion)" -ForegroundColor Cyan
+Write-Host "  - Compilación del SO: $($osInfo.BuildLabEx)" -ForegroundColor Cyan
+
+$shellFolders = Get-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders"
+Write-Host "  - Ruta del escritorio: $($shellFolders.Desktop)" -ForegroundColor Cyan
+Write-Host "  - Ruta de documentos: $($shellFolders.Personal)" -ForegroundColor Cyan
+
+---
+
+# 4. Auditoría de la configuración de red
+Write-Host "`n[4] Auditoría de la configuración de red" -ForegroundColor Yellow
+
+# Comprobar la configuración de la caché DNS
+$dnsCache = Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\Dnscache\Parameters" -ErrorAction SilentlyContinue
+if ($dnsCache) {
+    Write-Host "  - TTL máximo de respuesta positiva de DNS: $($dnsCache.MaxCacheEntryTtlLimit) segundos" -ForegroundColor Cyan
+    Write-Host "  - TTL máximo de respuesta negativa de DNS: $($dnsCache.MaxNegativeCacheTtl) segundos" -ForegroundColor Cyan
+} else {
+    Write-Host "  - No se pudo obtener la configuración de la caché DNS." -ForegroundColor Red
+}
+
+# Comprobar la configuración del firewall
+try {
+    $firewallProfiles = Get-NetFirewallProfile
+    Write-Host "  - Estado del firewall:" -ForegroundColor Cyan
+    $firewallProfiles | Format-Table -AutoSize
+} catch {
+    Write-Host "  - No se pudo obtener el estado del firewall. Ejecute el script con privilegios de administrador." -ForegroundColor Red
+}
+
+# Comprobar DHCP para adaptadores de red
+Write-Host "  - Estado de DHCP para adaptadores de red:" -ForegroundColor Cyan
+Get-NetAdapter | ForEach-Object {
+    $adapter = $_
+    $ip = Get-NetIPConfiguration -InterfaceIndex $adapter.InterfaceIndex -ErrorAction SilentlyContinue
+    if ($ip) {
+        Write-Host "    - $($adapter.Name): $($ip.DhcpEnabled)" -ForegroundColor Cyan
+    }
+}
+
+---
+
+# 5. Auditoría del historial de conexión de dispositivos USB
+Write-Host "`n[5] Historial de conexión de dispositivos USB" -ForegroundColor Yellow
+Write-Host "  (Requiere privilegios de administrador)" -ForegroundColor Red
+try {
+    $usbDevices = Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Enum\USBSTOR\*"
+    if ($usbDevices.Count -gt 0) {
+        $usbDevices | ForEach-Object {
+            Write-Host "  - Dispositivo: $($_.PSChildName)" -ForegroundColor Magenta
+            Write-Host "    Descripción: $($_.FriendlyName)" -ForegroundColor Magenta
+        }
+    } else {
+        Write-Host "  - No se encontraron dispositivos USB en el registro." -ForegroundColor Green
+    }
+} catch {
+    Write-Host "  - Error: No se pudo acceder a la clave del dispositivo USB. Ejecute el script con privilegios de administrador." -ForegroundColor Red
+}
+
+Write-Host "`n--- Auditoría completada ---" -ForegroundColor Green
+
+Como puede ver, con PowerShell, puede obtener una imagen muy detallada del estado del sistema simplemente mirando en los lugares correctos del registro y utilizando los cmdlets apropiados. Si tiene otras ideas para comprobaciones, ¡hágamelo saber!
+```

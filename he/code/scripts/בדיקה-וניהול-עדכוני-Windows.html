@@ -1,0 +1,57 @@
+<p dir="rtl">בדיקה וניהול עדכוני <span dir="ltr">Windows</span> היא משימה חשובה לשמירה על אבטחת המערכת ויציבותה.<br>לרוע המזל, ל-<span dir="ltr">PowerShell</span> הסטנדרטי אין פקודות מובנות לכך. אבל יש מודול צד שלישי מצוין בשם <strong><code dir="ltr">PSWindowsUpdate</code></strong>, שהפך לסוג של סטנדרט.</p>
+<p dir="rtl">בעזרת <span dir="ltr">Gemini CLI</span>, אנו יכולים ליצור סקריפט המשתמש במודול זה לביצוע כל הפעולות הנדרשות.</p>
+<h3 dir="rtl"><strong>שלב 1: התקן את המודול <code dir="ltr">PSWindowsUpdate</code></strong></h3>
+<p dir="rtl">לפני הפעלת הסקריפט, עליך להתקין מודול זה. זה נעשה פעם אחת.</p>
+<p dir="rtl">פתח את <span dir="ltr">PowerShell</span> כמנהל מערכת והפעל את הפקודה הבאה:</p>
+<pre class="line-numbers"><code class="language-powershell" dir="ltr">Install-Module -Name PSWindowsUpdate
+</code></pre>
+<p dir="rtl">אם אתה רואה שגיאה ש"<span dir="ltr">PowerShellGet</span>" מיושן, או אזהרה לגבי "מאגר מהימן", פשוט עקוב אחר ההוראות בקונסולה. סביר להניח שתצטרך לאשר את ההתקנה.</p>
+<h3 dir="rtl"><strong>שלב 2: סקריפט לבדיקה והתקנת עדכונים</strong></h3>
+<p dir="rtl">לאחר התקנת המודול, תוכל להשתמש בסקריפט זה כדי לבדוק אם קיימים עדכונים, ובמידת הצורך, להתקין אותם.</p>
+<p dir="rtl"><strong>תרחיש:</strong> ברצונך לבדוק במהירות אם קיימים עדכוני <span dir="ltr">Windows</span> חדשים ולקבל דוח.</p>
+<p dir="rtl"><strong>פקודה שתוכל להשתמש בה ב-<span dir="ltr">Gemini CLI</span>:</strong></p>
+<pre class="line-numbers"><code class="language-powershell" dir="ltr">gemini-cli "כתוב סקריפט PowerShell המשתמש במודול PSWindowsUpdate. הסקריפט צריך לבדוק אם קיימים עדכוני Windows זמינים, להציג רשימה שלהם, ולאחר מכן, אם נמצאו עדכונים, לבקש מהמשתמש להתקין אותם."</code></pre>
+<p dir="rtl"><strong>דוגמה לסקריפט שנוצר:</strong></p>
+<pre class="line-numbers"><code class="language-powershell" dir="ltr"># Requires -Module PSWindowsUpdate
+
+Write-Host "--- בדיקה והתקנת עדכוני Windows ---" -ForegroundColor Green
+
+# 1. בדיקת זמינות עדכונים
+Write-Host "`nבדיקת עדכונים זמינים..." -ForegroundColor Yellow
+$availableUpdates = Get-WUList
+
+if ($availableUpdates.Count -eq 0) {
+    Write-Host "`nלא נמצאו עדכונים. המערכת שלך מעודכנת." -ForegroundColor Green
+} else {
+    Write-Host "`nנמצאו העדכונים הבאים:" -ForegroundColor Yellow
+    $availableUpdates | Format-Table -AutoSize
+
+    # 2. הצעה להתקנת עדכונים
+    $installChoice = Read-Host "`nהתקן עדכונים שנמצאו? (Y/N)"
+
+    if ($installChoice -eq 'Y' -or $installChoice -eq 'y') {
+        Write-Host "`nהפעלת התקנת עדכונים..." -ForegroundColor Yellow
+        
+        # הורדה והתקנת עדכונים
+        Install-WindowsUpdate -AcceptAll -AutoReboot
+        
+        Write-Host "`nתהליך ההתקנה הושלם. ייתכן שתידרש הפעלה מחדש." -ForegroundColor Green
+    } else {
+        Write-Host "`nההתקנה בוטלה. עדכונים לא יותקנו." -ForegroundColor Red
+    }
+}
+
+Write-Host "`n--- הושלם ---" -ForegroundColor Green
+</code></pre>
+<h3 dir="rtl">איך זה עובד?</h3>
+<ul dir="rtl">
+<li><strong><code dir="ltr">Get-WUList</code></strong>: זוהי פקודה מרכזית מהמודול <code dir="ltr">PSWindowsUpdate</code>. היא מחפשת עדכונים זמינים בדיוק כמו מרכז העדכונים הסטנדרטי של <span dir="ltr">Windows</span>.</li>
+<li><strong><code dir="ltr">Read-Host</code></strong>: פקודה זו מאפשרת לסקריפט ליצור אינטראקציה איתך, ולבקש אישור לפני התקנת עדכונים.</li>
+<li><strong><code dir="ltr">Install-WindowsUpdate -AcceptAll -AutoReboot</code></strong>: אם תסכים, פקודה זו תתחיל את תהליך ההתקנה.
+<ul>
+<li><code dir="ltr">-AcceptAll</code>: מסכים אוטומטית להסכמי רישיון.</li>
+<li><code dir="ltr">-AutoReboot</code>: מפעיל מחדש את המחשב באופן אוטומטי אם יש צורך בכך להשלמת ההתקנה. תוכל להסיר דגל זה אם ברצונך להפעיל מחדש ידנית.</li>
+</ul>
+</li>
+</ul>
+<p dir="rtl">סקריפט זה מעניק לך שליטה מלאה על תהליך עדכון <span dir="ltr">Windows</span>, מה שהופך אותו לכלי מצוין לניהול מערכת.</p>

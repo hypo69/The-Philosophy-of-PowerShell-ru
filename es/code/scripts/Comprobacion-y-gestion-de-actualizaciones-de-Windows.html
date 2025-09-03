@@ -1,0 +1,66 @@
+<p>La comprobación y gestión de las actualizaciones de Windows es una tarea importante para mantener la seguridad y estabilidad del sistema.<br>Desafortunadamente, PowerShell estándar no tiene cmdlets incorporados para esto. Pero existe un excelente módulo de terceros llamado <strong><code>PSWindowsUpdate</code></strong>, que se ha convertido en una especie de estándar.</p>
+<p>Con la ayuda de Gemini CLI, podemos generar un script que utiliza este módulo para realizar todas las operaciones necesarias.</p>
+<h3><strong>Paso 1: Instalar el módulo <code>PSWindowsUpdate</code></strong></h3>
+<p>Antes de ejecutar el script, debe instalar este módulo. Esto se hace una vez.</p>
+<p>Abra PowerShell como administrador y ejecute el siguiente comando:</p>
+<pre class="line-numbers"><code class="language-powershell">Install-Module -Name PSWindowsUpdate
+</code></pre>
+<p>Si ve un error de que "PowerShellGet" está obsoleto, o una advertencia sobre un "repositorio de confianza", simplemente siga las instrucciones en la consola. Lo más probable es que deba confirmar la instalación.</p>
+<h3><strong>Paso 2: Script para comprobar e instalar actualizaciones</strong></h3>
+<p>Después de instalar el módulo, puede usar este script para comprobar si hay actualizaciones y, si es necesario, instalarlas.</p>
+<p><strong>Escenario:</strong> Desea comprobar rápidamente si hay nuevas actualizaciones de Windows y obtener un informe.</p>
+<p><strong>Comando que puede usar en Gemini CLI:</strong></p>
+<pre class="line-numbers"><code class="language-powershell">gemini-cli "Escriba un script de PowerShell que utilice el módulo PSWindowsUpdate. El script debe comprobar si hay actualizaciones de Windows disponibles, mostrar una lista de ellas y, a continuación, si se encuentran actualizaciones, pedir al usuario que las instale." 
+</code></pre>
+<p><strong>Ejemplo de script generado:</strong></p>
+<pre class="line-numbers"><code class="language-powershell"># Requires -Module PSWindowsUpdate
+
+Write-Host "--- Comprobación e instalación de actualizaciones de Windows ---" -ForegroundColor Green
+
+# 1. Comprobar si hay actualizaciones disponibles
+Write-Host "
+Comprobando si hay actualizaciones disponibles..." -ForegroundColor Yellow
+$availableUpdates = Get-WUList
+
+if ($availableUpdates.Count -eq 0) {
+    Write-Host "
+No se encontraron actualizaciones. Su sistema está actualizado." -ForegroundColor Green
+} else {
+    Write-Host "
+Se encontraron las siguientes actualizaciones:" -ForegroundColor Yellow
+    $availableUpdates | Format-Table -AutoSize
+
+    # 2. Ofrecer instalar actualizaciones
+    $installChoice = Read-Host "
+¿Instalar las actualizaciones encontradas? (S/N)"
+
+    if ($installChoice -eq 'S' -or $installChoice -eq 's') {
+        Write-Host "
+Iniciando la instalación de actualizaciones..." -ForegroundColor Yellow
+        
+        # Descargar e instalar actualizaciones
+        Install-WindowsUpdate -AcceptAll -AutoReboot
+        
+        Write-Host "
+Proceso de instalación completado. Es posible que se requiera un reinicio." -ForegroundColor Green
+    } else {
+        Write-Host "
+Instalación cancelada. Las actualizaciones no se instalarán." -ForegroundColor Red
+    }
+}
+
+Write-Host "
+--- Completado ---" -ForegroundColor Green
+</code></pre>
+<h3>¿Cómo funciona?</h3>
+<ul>
+<li><strong><code>Get-WUList</code></strong>: Este es un cmdlet clave del módulo <code>PSWindowsUpdate</code>. Busca actualizaciones disponibles al igual que el Centro de actualizaciones de Windows estándar.</li>
+<li><strong><code>Read-Host</code></strong>: Este comando permite que el script interactúe con usted, solicitando confirmación antes de instalar las actualizaciones.</li>
+<li><strong><code>Install-WindowsUpdate -AcceptAll -AutoReboot</code></strong>: Si acepta, este cmdlet inicia el proceso de instalación.
+<ul>
+<li><code>-AcceptAll</code>: Acepta automáticamente los acuerdos de licencia.</li>
+<li><code>-AutoReboot</code>: Reinicia automáticamente el equipo si es necesario para completar la instalación. Puede eliminar esta bandera si desea reiniciar manualmente.</li>
+</ul>
+</li>
+</ul>
+<p>Este script le brinda control total sobre el proceso de actualización de Windows, lo que lo convierte en una excelente herramienta para la administración del sistema.</p>

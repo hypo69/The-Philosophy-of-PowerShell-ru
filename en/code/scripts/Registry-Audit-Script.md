@@ -1,0 +1,93 @@
+### Registry Audit Script
+
+This script performs four key checks:
+
+1.  **Autorun:** Searches for programs that start with the system in the most popular registry keys.
+2.  **Security Settings:** Checks the status of UAC (User Account Control).
+3.  **System Information:** Displays Windows version and other important information.
+4.  **USB Device History:** Shows information about all USB devices that have ever been connected.
+
+**Important:** This script may require administrator privileges to run.
+
+**Command you can use in Gemini CLI:**
+
+```powershell
+gemini-cli "Write a PowerShell script for comprehensive registry audit. The script should check autorun for HKLM and HKCU, UAC status, Windows version, and connected USB device history. The output should be structured and easy to read."
+```
+
+**Example of a generated script:**
+
+```powershell
+Write-Host "--- Comprehensive Windows Registry Audit ---" -ForegroundColor Green
+Write-Host "The script checks key registry areas for system and security information." -ForegroundColor Cyan
+
+# 1. Check autorun programs
+Write-Host "`n[1] Checking autorun programs" -ForegroundColor Yellow
+$autoRunPaths = @(
+    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+    "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run",
+    "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run"
+)
+
+foreach ($path in $autoRunPaths) {
+    if (Test-Path -Path $path) {
+        Write-Host "  - Checking key: $path" -ForegroundColor Cyan
+        Get-ItemProperty -Path $path -ErrorAction SilentlyContinue | ForEach-Object {
+            $name = $_.PSChildName
+            $value = $_.$name
+            if ($value) {
+                Write-Host "    - Name: $name" -ForegroundColor Magenta
+                Write-Host "      Path:   $value" -ForegroundColor Magenta
+            }
+        }
+    }
+}
+
+
+# 2. Check security settings (UAC)
+Write-Host "`n[2] Checking security settings" -ForegroundColor Yellow
+$uacStatus = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System").EnableLUA
+if ($uacStatus -eq 1) {
+    Write-Host "  - UAC (User Account Control): ENABLED" -ForegroundColor Green
+} else {
+    Write-Host "  - UAC (User Account Control): DISABLED" -ForegroundColor Red
+}
+
+
+# 3. Get Windows version information
+Write-Host "`n[3] System Information" -ForegroundColor Yellow
+$osInfo = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+Write-Host "  - OS Version: $($osInfo.ProductName) $($osInfo.CurrentVersion)" -ForegroundColor Cyan
+Write-Host "  - OS Build: $($osInfo.BuildLabEx)" -ForegroundColor Cyan
+
+
+# 4. Audit USB device connection history
+Write-Host "`n[4] USB device connection history" -ForegroundColor Yellow
+Write-Host "  (Requires administrator privileges)" -ForegroundColor Red
+try {
+    $usbDevices = Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Enum\USBSTOR\*"
+    if ($usbDevices.Count -gt 0) {
+        $usbDevices | ForEach-Object {
+            Write-Host "  - Device: $($_.PSChildName)" -ForegroundColor Magenta
+            Write-Host "    Description: $($_.FriendlyName)" -ForegroundColor Magenta
+        }
+    } else {
+        Write-Host "  - USB devices not found in registry." -ForegroundColor Green
+    }
+} catch {
+    Write-Host "  - Error: Could not access USB device key. Run the script with administrator privileges." -ForegroundColor Red
+}
+
+
+Write-Host "`n--- Audit completed ---" -ForegroundColor Green
+```
+
+### How it works?
+
+  * **`Test-Path`**: Before reading data, the script checks if the registry key exists. This helps avoid errors.
+  * **`Get-ItemProperty`**: The main cmdlet for reading values from registry keys.
+  * **Path Iteration**: The script uses the `$autoRunPaths` array to iterate through all main autorun locations, including 32-bit programs on a 64-bit system (`WOW6432Node`).
+  * **Error Handling**: The `try...catch` block is used to correctly handle situations where the user does not have access rights to certain registry keys, such as USB device history.
+  * **Formatted Output**: Using `Write-Host` and different colors, the script makes the report more visual and easy to read.
+
+This script is an excellent starting point for a deeper audit. You can add new checks to it or save the results to a file for later analysis.
