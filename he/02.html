@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>פילוסופיית PowerShell. חלק 2: צינור (Pipeline), משתנים, Get-Member, קובץ *.ps1 וייצוא תוצאות</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #0056b3;
+        }
+        pre {
+            background-color: #eee;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: "Courier New", Courier, monospace;
+            background-color: #e0e0e0;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: right; /* For RTL text in table headers/data */
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 10px 0;
+        }
+        .important-note {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffeeba;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>פילוסופיית PowerShell.</h1>
+    <h2>חלק 2: צינור (Pipeline), משתנים, Get-Member, קובץ *.ps1 וייצוא תוצאות</h2>
+    <p class="important-note"><strong>❗ חשוב:</strong><br>אני כותב על PS7 (PowerShell 7). הוא שונה מ-PS5 (PowerShell 5). החל מהגרסה השביעית, PowerShell הפך לחוצה פלטפורמות. בגלל זה, התנהגותן של פקודות מסוימות השתנתה.</p>
+    <p>בחלק הראשון קבענו עיקרון מפתח: PowerShell עובד עם <strong>אובייקטים</strong>, לא עם טקסט.</p>
+    <p>פוסט זה מוקדש לכמה כלים חשובים של PowerShell: נלמד כיצד להעביר אובייקטים דרך <strong>צינור (pipeline)</strong>, לנתח אותם באמצעות <strong><code>Get-Member</code></strong>, לשמור תוצאות ב<strong>משתנים</strong> ולאוטומט את כל זה ב<strong>קבצי סקריפט (<code>.ps1</code>)</strong> עם <strong>ייצוא</strong> תוצאות לפורמטים נוחים.</p>
+
+    <h3>1. מהו צינור (<code>|</code>)?</h3>
+    <p>צינור ב-PowerShell הוא מנגנון להעברת אובייקטי .NET מלאים (ולא רק טקסט) מפקודה אחת לאחרת, כאשר כל cmdlet הבא מקבל אובייקטים מובנים עם כל התכונות והמתודות שלהם.</p>
+    <p>הסימן <code>|</code> (קו אנכי) הוא אופרטור הצינור. תפקידו לקחת את התוצאה (הפלט) של הפקודה משמאל לו, ולהעביר אותה כקלט לפקודה מימין לו.</p>
+    <p><code>פקודה 1 (יוצרת אובייקטים)</code> → <code>|</code> → <code>פקודה 2 (מקבלת ומעבדת אובייקטים)</code> → <code>|</code> → <code>פקודה 3 (מקבלת אובייקטים מעובדים)</code> → | ...</p>
+
+    <h4>צינור UNIX קלאסי: זרם טקסט</h4>
+    <p>ב-<code>bash</code>, הצינור מעביר <strong>זרם בתים</strong>, אשר בדרך כלל מתפרש כטקסט.</p>
+    <pre><code class="language-bash"># מצא את כל תהליכי 'nginx' וספור את כמותם
+ps -ef | grep 'nginx' | wc -l
+</code></pre>
+    <p>כאן <code>ps</code> מוציא טקסט, <code>grep</code> מסנן את הטקסט הזה, ו-<code>wc</code> סופר שורות. כל כלי עזר אינו יודע דבר על "תהליכים", הוא עובד רק עם שורות.</p>
+
+    <h4>צינור PowerShell: זרם אובייקטים</h4>
+    <p><strong>דוגמה:</strong> בואו נקבל את כל התהליכים, נמיין אותם לפי שימוש במעבד ונבחר את 5 ה"זללנים" ביותר.</p>
+    <pre><code class="language-powershell">Get-Process | Sort-Object -Property CPU -Descending | Select-Object -First 5
+</code></pre>
+    <p><img src="assets/02/1.png" alt=""></p>
+    <p>כאן <code>Get-Process</code> יוצר <strong>אובייקטי</strong> תהליכים. <code>Sort-Object</code> מקבל את ה<strong>אובייקטים</strong> הללו וממיין אותם לפי המאפיין <code>CPU</code>. <code>Select-Object</code> מקבל את ה<strong>אובייקטים</strong> הממוינים ובוחר את 5 הראשונים.</p>
+    <p>בטח שמתם לב במילים בפקודה שמתחילות במקף (-): <code>-Property</code>, <code>-Descending</code>, <code>-First</code>. אלו פרמטרים.</p>
+    <p>פרמטרים הם הגדרות, מתגים והוראות עבור ה-cmdlet. הם מאפשרים לשלוט <strong>כיצד</strong> הפקודה תבצע את עבודתה.</p>
+    <p>ללא פרמטרים, הפקודה פועלת במצב ברירת מחדל, ועם פרמטרים אתם נותנים לה הנחיות ספציפיות.</p>
+    <p>סוגי פרמטרים עיקריים:</p>
+    <ul>
+        <li>פרמטר עם ערך: דורש מידע נוסף.
+            <ul>
+                <li><code>-Property CPU</code>: אנו אומרים ל-<code>Sort-Object</code> לפי איזה מאפיין למיין. <code>CPU</code> הוא ערך הפרמטר.</li>
+                <li><code>-First 5</code>: אנו אומרים ל-<code>Select-Object</code> כמה אובייקטים לבחור. <code>5</code> הוא ערך הפרמטר.</li>
+            </ul>
+        </li>
+        <li>פרמטר-מתג (דגל): אינו דורש ערך. עצם נוכחותו בפקודה מפעילה או מכבה התנהגות מסוימת.
+            <ul>
+                <li><code>-Descending</code>: דגל זה אומר ל-<code>Sort-Object</code> לשנות את סדר המיון לסדר הפוך (מהגדול לקטן). הוא אינו זקוק לערך נוסף – הוא עצמו הוראה.</li>
+            </ul>
+        </li>
+    </ul>
+    <pre><code class="language-powershell">Get-Process -Name 'svchost' | Measure-Object
+</code></pre>
+    <p><img src="assets/02/2.png" alt=""></p>
+    <p>פקודה זו עונה על שאלה פשוטה מאוד:</p>
+    <p><strong>"כמה תהליכים בדיוק בשם <code>svchost.exe</code> פועלים כעת במערכת שלי?"</strong></p>
+
+    <h4>ניתוח שלבים</h4>
+    <h5><strong>שלב 1: <code>Get-Process -Name 'svchost'</code></strong></h5>
+    <p>חלק זה של הפקודה פונה למערכת ההפעלה ומבקש למצוא <strong>ללא יוצא מן הכלל</strong> את כל התהליכים הפועלים, אשר שם קובץ ההפעלה שלהם הוא <code>svchost.exe</code>.</p>
+    <p>בניגוד לתהליכים מסוג <code>notepad</code> (שבדרך כלל יש אחד או שניים), תהליכי <code>svchost</code> תמיד <strong>רבים</strong> במערכת. הפקודה תחזיר <strong>מערך (אוסף) של אובייקטים</strong>, כאשר כל אובייקט הוא תהליך <code>svchost</code> נפרד ומלא עם ID ייחודי משלו, שימוש בזיכרון וכו'.</p>
+    <p>PowerShell מצא במערכת, לדוגמה, 90 תהליכי <code>svchost</code> וכעת מחזיק בידיו אוסף של 90 אובייקטים.</p>
+
+    <h5><strong>שלב 2: <code>|</code> (אופרטור צינור)</strong></h5>
+    <p>סימן זה לוקח את אוסף 90 אובייקטי ה-<code>svchost</code>, שהתקבלו בשלב הראשון, ומתחיל להעביר אותם <strong>אחד אחד</strong> כקלט לפקודה הבאה.</p>
+
+    <h5><strong>שלב 3: <code>Measure-Object</code></strong></h5>
+    <p>מכיוון שקראנו ל-<code>Measure-Object</code> ללא פרמטרים (כגון <code>-Property</code>, <code>-Sum</code> וכו'), הוא מבצע את פעולתו <strong>כברירת מחדל</strong> – פשוט סופר את מספר ה"פריטים" שהועברו אליו.</p>
+    <p>אחד, שניים, שלושה... לאחר שכל האובייקטים נספרו, <code>Measure-Object</code> יוצר <strong>אובייקט תוצאה משלו</strong>, ובו קיים מאפיין <code>Count</code>, השווה למספר הסופי.</p>
+    <p><strong><code>Count: 90</code></strong> – זוהי התשובה לשאלתנו. 90 תהליכי <code>svchost</code> פועלים.</p>
+    <p>שדות אחרים ריקים, מכיוון שלא ביקשנו מ-<code>Measure-Object</code> לבצע חישובים מורכבים יותר.</p>
+
+    <h4>דוגמה עם <code>svchost</code> ופרמטרים</h4>
+    <p>בואו נשנה את המשימה שלנו. כעת איננו רוצים רק לספור את תהליכי ה-<code>svchost</code>, אלא לדעת <strong>כמה זיכרון RAM בסך הכל (במגה-בייט) הם צורכים יחד</strong>.</p>
+    <p>לשם כך נצטרך פרמטרים:</p>
+    <ul>
+        <li><code>-Property WorkingSet64</code>: הוראה זו אומרת ל-<code>Measure-Object</code>: "מכל אובייקט <code>svchost</code> שיגיע אליך, קח את הערך המספרי מהמאפיין <code>WorkingSet64</code> (זהו שימוש בזיכרון בבתים)".</li>
+        <li><code>-Sum</code>: הוראה-דגל זו אומרת: "סכם את כל הערכים האלה שלקחת מהמאפיין <code>WorkingSet64</code>".</li>
+    </ul>
+    <p>הפקודה החדשה שלנו תיראה כך:</p>
+    <pre><code class="language-powershell">Get-Process -Name 'svchost' | Measure-Object -Property WorkingSet64 -Sum
+</code></pre>
+    <p><img src="assets/02/3.png" alt=""></p>
+    <ol>
+        <li><code>Get-Process</code> ימצא את מספר אובייקטי ה-<code>svchost</code>.</li>
+        <li>הצינור <code>|</code> יעביר אותם ל-<code>Measure-Object</code>.</li>
+        <li>אבל כעת <code>Measure-Object</code> עובד בצורה חדשה:
+            <ul>
+                <li>הוא לוקח את אובייקט ה-<code>svchost</code> הראשון, בודק את המאפיין שלו <code>.WorkingSet64</code> (לדוגמה, <code>25000000</code> בתים) וזוכר את המספר הזה.</li>
+                <li>הוא לוקח את האובייקט השני, בודק את המאפיין שלו <code>.WorkingSet64</code> (לדוגמה, <code>15000000</code> בתים) ומוסיף אותו לקודם.</li>
+                <li>...וכן הלאה עבור כל האובייקטים.</li>
+            </ul>
+        </li>
+        <li>בסופו של דבר, <code>Measure-Object</code> ייצור אובייקט תוצאה, אך הפעם הוא יהיה שונה.
+            <ul>
+                <li><strong><code>Count: 92</code></strong>: מספר האובייקטים.</li>
+                <li><strong><code>Sum: 1661890560</code></strong>: זהו הסכום הכולל של כל ערכי <code>WorkingSet64</code> בבתים.</li>
+                <li><strong><code>Property: WorkingSet64</code></strong>: שדה זה מלא כעת גם הוא, והוא מודיע לנו איזה מאפיין בדיוק שימש לחישובים.</li>
+            </ul>
+        </li>
+    </ol>
+
+    <h3>2. משתנים (רגילים ו-<code>$_</code> מיוחד)</h3>
+    <p>משתנה הוא מקום אחסון בעל שם בזיכרון, המכיל ערך כלשהו.</p>
+    <p>ערך זה יכול להיות כל דבר: טקסט, מספר, תאריך, או, וזה החשוב ביותר עבור PowerShell, אובייקט שלם או אפילו אוסף של אובייקטים. שם המשתנה ב-PowerShell תמיד מתחיל בסימן דולר (<code>$</code>).</p>
+    <p>דוגמאות: <code>$name</code>, <code>$counter</code>, <code>$processList</code>.</p>
+    <p>המשתנה המיוחד <code>$_</code>?</p>
+    <p><code>$_</code> הוא קיצור ל"אובייקט הנוכחי" או "הדבר הזה".</p>
+    <p>תארו לעצמכם צינור במפעל. לאורכו נעים חלקים שונים (אובייקטים).</p>
+    <p><code>$_</code> הוא החלק שנמצא כרגע ממש מולכם (או מול הרובוט המעבד).</p>
+    <p>מקור (<code>Get-Process</code>) – שופך על הצינור קופסה שלמה של חלקים (כל התהליכים).</p>
+    <p>צינור (<code>|</code>) – גורם לחלקים אלה לנוע על המסוע אחד אחד.</p>
+    <p>מעבד (<code>Where-Object</code> או <code>ForEach-Object</code>) – זהו רובוט שמסתכל על כל חלק.</p>
+    <p>המשתנה <code>$_</code> – זהו החלק שנמצא כרגע ב"ידיים" של הרובוט.</p>
+    <p>כאשר הרובוט יסיים עם חלק אחד, הצינור יגיש לו את הבא, ו-<code>$_</code> יצביע כעת עליו.</p>
+    <p>בואו נחשב כמה זיכרון בסך הכל משתמשים תהליכי <code>svchost</code>, ונציג את התוצאה על המסך.</p>
+    <pre><code class="language-powershell"># 1. מבצעים את הפקודה ושומרים את אובייקט התוצאה המורכב שלה במשתנה $svchostMemory
+$svchostMemory = Get-Process -Name svchost | Measure-Object -Property WorkingSet64 -Sum
+
+# 2. כעת אנו יכולים לעבוד עם האובייקט השמור. מוציאים ממנו את המאפיין Sum
+$memoryInMB = $svchostMemory.Sum / 1MB
+
+# 3. מציגים את התוצאה על המסך, באמצעות המשתנה החדש
+Write-Host "כל תהליכי svchost משתמשים ב-$memoryInMB מגה-בייט זיכרון."
+</code></pre>
+    <p><img src="assets/02/4.png" alt=""></p>
+    <ul>
+        <li><code>Write-Host</code> – זהו cmdlet מיוחד, שתפקידו היחיד הוא <strong>להציג טקסט ישירות למשתמש בקונסולה</strong>.</li>
+        <li>מחרוזת במרכאות כפולות: <code>"..."</code> - מחרוזת טקסט שאנו מעבירים ל-cmdlet <code>Write-Host</code> כארגומנט. מדוע מרכאות כפולות ולא בודדות?
+            <p>ב-PowerShell יש שני סוגי מרכאות:</p>
+            <ul>
+                <li><strong>בודדות (<code>'...'</code>):</strong> יוצרות <strong>מחרוזת מילולית</strong>. כל מה שבתוכן נתפס כטקסט רגיל, ללא יוצא מן הכלל.</li>
+                <li><strong>כפולות (<code>"..."</code>):</strong> יוצרות <strong>מחרוזת ניתנת להרחבה (או החלפה)</strong>. PowerShell "סורק" מחרוזת כזו עבור משתנים (המתחילים ב-<code>$</code>) ומחליף אותם בערכיהם.</li>
+            </ul>
+        </li>
+        <li><code>$memoryInMB</code>. זהו משתנה שאליו <strong>בשלב הקודם</strong> של הסקריפט שלנו הכנסנו את תוצאת החישובים. כאשר <code>Write-Host</code> מקבל מחרוזת במרכאות כפולות, מתרחש תהליך הנקרא <strong>"הרחבת מחרוזת" (String Expansion)</strong>:
+            <ol>
+                <li>PowerShell רואה את הטקסט <code>"כל תהליכי svchost משתמשים ב-"</code>.</li>
+                <li>לאחר מכן הוא נתקל במבנה <code>$memoryInMB</code>. הוא מבין שזה לא סתם טקסט, אלא משתנה.</li>
+                <li>הוא מציץ בזיכרון, מוצא את הערך השמור ב-<code>$memoryInMB</code> (לדוגמה, <code>1585.52</code>).</li>
+                <li>הוא <strong>מציב את הערך הזה</strong> ישירות לתוך המחרוזת.</li>
+                <li>לאחר מכן הוא מוסיף את שאר הטקסט: <code>" מגה-בייט זיכרון."</code>.</li>
+                <li>בסופו של דבר, ל-<code>Write-Host</code> מועברת מחרוזת מוכנה ומורכבת: <code>"כל תהליכי svchost משתמשים ב-1585.52 מגה-בייט זיכרון."</code>.</li>
+            </ol>
+        </li>
+    </ul>
+    <p>הפעל את פנקס הרשימות:</p>
+    <ol>
+        <li>מוצאים את תהליך פנקס הרשימות ושומרים אותו במשתנה <code>$notepadProcess</code></li>
+    </ol>
+    <pre><code class="language-powershell">$notepadProcess = Get-Process -Name notepad
+</code></pre>
+    <ol start="2">
+        <li>פונים למאפיין 'Id' של אובייקט זה באמצעות נקודה ומציגים אותו</li>
+    </ol>
+    <pre><code class="language-powershell">Write-Host "מזהה תהליך 'פנקס רשימות' הוא: $($notepadProcess.Id)"
+</code></pre>
+    <p><img src="assets/02/5.png" alt=""></p>
+    <p class="important-note"><strong>❗ חשוב:</strong><br><code>Write-Host</code> "שובר" את הצינור. טקסט המוצג על ידו אינו יכול להיות מועבר הלאה בצינור לעיבוד. הוא מיועד רק לתצוגה.</p>
+
+    <h3>3. Get-Member (מפקח אובייקטים)</h3>
+    <p>אנו יודעים שאובייקטים "זורמים" בצינור. אבל איך נדע ממה הם מורכבים? אילו מאפיינים יש להם ואילו פעולות (מתודות) ניתן לבצע עליהם?</p>
+    <p>ה-cmdlet <strong><code>Get-Member</code></strong> (כינוי: <code>gm</code>) הוא הכלי העיקרי לחקירה.</p>
+    <p>לפני שתעבוד עם אובייקט, העבר אותו דרך <code>Get-Member</code> כדי לראות את כל יכולותיו.</p>
+    <p>בואו ננתח את האובייקטים ש-<code>Get-Process</code> יוצר:</p>
+    <pre><code class="language-powershell">Get-Process | Get-Member
+</code></pre>
+    <p><img src="assets/02/6.png" alt=""></p>
+    <p><em>נפרק כל חלק בפלט של Get-Member.</em></p>
+    <p><code>TypeName: System.Diagnostics.Process</code> - זהו ה"שם המלא" הרשמי של סוג האובייקט מספריית .NET. זהו ה"דרכון" שלו.</p>
+    <p>שורה זו אומרת לכם שכל האובייקטים ש-<code>Get-Process</code> מחזיר הם אובייקטים מסוג <code>System.Diagnostics.Process</code>.</p>
+    <p>זה מבטיח שלכולם יהיה אותו סט של מאפיינים ומתודות.</p>
+    <p>אתם יכולים <a href="https://www.google.com/search?q=System.Diagnostics.Process+site%3Amicrosoft.com">לחפש בגוגל</a> "System.Diagnostics.Process" כדי למצוא את התיעוד הרשמי של מיקרוסופט עם מידע מפורט עוד יותר.</p>
+    <ul>
+        <li>עמודה 1: <code>Name</code></li>
+    </ul>
+    <p>זהו פשוט <strong>שם</strong> קריא לאדם של מאפיין, מתודה או "חבר" אחר של האובייקט. זהו השם שתשתמשו בו בקוד שלכם כדי לגשת לנתונים או לבצע פעולות.</p>
+    <ul>
+        <li>עמודה 2: <code>MemberType</code> (סוג אובייקט)</li>
+    </ul>
+    <p>זוהי העמודה החשובה ביותר להבנה. היא מסווגת <strong>מהו</strong> כל אובייקט. זוהי ה"תפקיד" שלו, שאומר לכם <strong>כיצד</strong> להשתמש בו.</p>
+    <ul>
+        <li><strong><code>Property</code> (מאפיין):</strong> <strong>מאפיין</strong> או <strong>חלק נתונים</strong>, השמור בתוך האובייקט. ניתן "לקרוא" את ערכו.
+            <ul>
+                <li><em>דוגמאות בצילום המסך:</em> <code>BasePriority</code>, <code>HandleCount</code>, <code>ExitCode</code>. אלו פשוט נתונים שניתן לצפות בהם.</li>
+            </ul>
+        </li>
+        <li><strong><code>Method</code> (מתודה):</strong> <strong>פעולה</strong>, שניתן לבצע על אובייקט. מתודות תמיד נקראות עם סוגריים עגולים <code>()</code>.
+            <ul>
+                <li><em>דוגמאות בצילום המסך:</em> <code>Kill</code>, <code>Refresh</code>, <code>WaitForExit</code>. הייתם כותבים <code>$process.Kill()</code> או <code>$process.Refresh()</code>.</li>
+            </ul>
+        </li>
+        <li><strong><code>AliasProperty</code> (כינוי מאפיין):</strong> <strong>כינוי ידידותי</strong> למאפיין אחר, ארוך יותר. PowerShell מוסיף אותם לנוחות וקיצור.
+            <ul>
+                <li><em>דוגמאות בצילום המסך:</em> <code>WS</code> – זהו כינוי קצר ל-<code>WorkingSet64</code>. <code>Name</code> – ל-<code>ProcessName</code>. <code>VM</code> – ל-<code>VirtualMemorySize64</code>.</li>
+            </ul>
+        </li>
+        <li><strong><code>Event</code> (אירוע):</strong> <strong>הודעה</strong> על כך שמשהו קרה, שאליה ניתן "להירשם".
+            <ul>
+                <li><em>דוגמה בצילום המסך:</em> <code>Exited</code>. הסקריפט שלכם יכול "להאזין" לאירוע זה כדי לבצע פעולה כלשהי מיד לאחר שהתהליך מסתיים.</li>
+            </ul>
+        </li>
+        <li><strong><code>CodeProperty</code> ו-<code>NoteProperty</code>:</strong> סוגים מיוחדים של מאפיינים, המוספים לעיתים קרובות על ידי PowerShell עצמו לנוחות. <code>CodeProperty</code> מחשב את ערכו "בזמן אמת", ואילו <code>NoteProperty</code> הוא מאפיין-הערה פשוט, שנוסף לאובייקט.</li>
+    </ul>
+    <ul>
+        <li>עמודה 3: <code>Definition</code> (הגדרה)</li>
+    </ul>
+    <p>זוהי <strong>ההגדרה הטכנית</strong> או "החתימה" של החבר. היא נותנת לכם פרטים מדויקים לשימוש בו. תוכנה תלוי ב-<code>MemberType</code>:</p>
+    <ul>
+        <li><strong>עבור <code>AliasProperty</code>:</strong> מראה <strong>למה שווה הכינוי</strong>. זה שימושי להפליא!
+            <ul>
+                <li><em>דוגמה בצילום המסך:</em> <code>WS = WorkingSet64</code>. אתם רואים מיד ש-<code>WS</code> הוא פשוט קיצור ל-<code>WorkingSet64</code>.</li>
+            </ul>
+        </li>
+        <li><strong>עבור <code>Property</code>:</strong> מראה <strong>את סוג הנתונים</strong> השמור במאפיין (לדוגמה, <code>int</code> למספר שלם, <code>string</code> לטקסט, <code>datetime</code> לתאריך ושעה), ומה ניתן לעשות איתו (<code>{get;}</code> – רק לקרוא, <code>{get;set;}</code> – לקרוא ולשנות).
+            <ul>
+                <li><em>דוגמה בצילום המסך:</em> <code>int BasePriority {get;}</code>. זהו מאפיין שלם שניתן רק לקרוא.</li>
+            </ul>
+        </li>
+        <li><strong>עבור <code>Method</code>:</strong> מראה מה המתודה מחזירה (לדוגמה, <code>void</code> – כלום, <code>bool</code> – אמת/שקר) ואילו <strong>פרמטרים</strong> (נתוני קלט) היא מקבלת בסוגריים.
+            <ul>
+                <li><em>דוגמה בצילום המסך:</em> <code>void Kill()</code>. זה אומר שהמתודה <code>Kill</code> לא מחזירה כלום וניתן לקרוא לה ללא פרמטרים. קיימת גם גרסה שנייה <code>void Kill(bool entireProcessTree)</code>, שמקבלת ערך בוליאני (אמת/שקר).</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h4>בטבלה</h4>
+    <table>
+        <thead>
+            <tr>
+                <th>עמודה</th>
+                <th>מה זה?</th>
+                <th>דוגמה מצילום המסך</th>
+                <th>למה זה משמש?</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Name</strong></td>
+                <td>השם שבו אתם משתמשים בקוד.</td>
+                <td><code>Kill</code>, <code>WS</code>, <code>Name</code></td>
+                <td>לפנות למאפיין או למתודה (<code>$process.WS</code>, <code>$process.Kill()</code>).</td>
+            </tr>
+            <tr>
+                <td><strong>MemberType</strong></td>
+                <td>סוג החבר (נתונים, פעולה וכו').</td>
+                <td><code>Method</code>, <code>Property</code>, <code>AliasProperty</code></td>
+                <td><strong>כיצד</strong> להשתמש בו (לקרוא ערך או לקרוא עם <code>()</code>).</td>
+            </tr>
+            <tr>
+                <td><strong>Definition</strong></td>
+                <td>פרטים טכניים.</td>
+                <td><code>WS = WorkingSet64</code>, <code>void Kill()</code></td>
+                <td>מה מסתתר מאחורי הכינוי ואילו פרמטרים נדרשים למתודה.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>דוגמה: עבודה עם חלונות תהליכים</h4>
+    <h5>1. בע問題:</h5>
+    <p>"פתחתי חלונות פנקס רשימות רבים. איך אוכל לכווץ את כולם באופן תוכנתי, למעט הראשי, ולאחר מכן לסגור רק את זה שבכותרתו מופיעה המילה 'Untitled'?"</p>
+    <h5>2. חקירה עם <code>Get-Member</code>:</h5>
+    <p>עלינו למצוא מאפיינים הקשורים לחלון ולכותרתו.</p>
+    <pre><code class="language-powershell">Get-Process -Name notepad | Get-Member
+</code></pre>
+    <p><img src="assets/02/7.png" alt=""></p>
+    <p><strong>ניתוח תוצאת <code>Get-Member</code>:</strong></p>
+    <ul>
+        <li>בגלילה בין המאפיינים, אנו מוצאים את <code>MainWindowTitle</code>. סוג <code>string</code>. מצוין, זו כותרת החלון הראשי!</li>
+        <li>במתודות אנו רואים <code>CloseMainWindow()</code>. זו דרך "עדינה" יותר לסגור חלון מאשר <code>Kill()</code>.</li>
+        <li>כמו כן, במתודות יש <code>WaitForInputIdle()</code>. נשמע מעניין, אולי זה יעזור לחכות עד שהתהליך יהיה מוכן לאינטראקציה.</li>
+    </ul>
+    <p><img src="assets/02/7.png" alt=""></p>
+    <p><code>Get-Member</code> הראה לנו את המאפיין <code>MainWindowTitle</code>, שהוא המפתח לפתרון הבעיה ומאפשר אינטראקציה עם תהליכים על בסיס מצב החלונות שלהם, ולא רק לפי שם.</p>
+    <h5>3. פתרון:</h5>
+    <p>כעת אנו יכולים לבנות לוגיקה המבוססת על כותרת החלון.</p>
+    <pre><code class="language-powershell"># 1. מוצאים את כל תהליכי פנקס הרשימות
+$notepads = Get-Process -Name notepad
+
+# 2. עוברים על כל אחד ובודקים את הכותרת
+foreach ($pad in $notepads) {
+    # עבור כל תהליך ($pad) בודקים את המאפיין MainWindowTitle שלו
+    if ($pad.MainWindowTitle -like '*Untitled*') {
+        Write-Host "נמצא פנקס רשימות לא שמור (ID: $($pad.Id)). סוגרים את החלון שלו..."
+        # $pad.CloseMainWindow() # הסירו את ההערה כדי לסגור באמת
+        Write-Host "החלון '$($pad.MainWindowTitle)' היה נסגר." -ForegroundColor Yellow
+    } else {
+        Write-Host "מדלגים על פנקס רשימות עם כותרת: $($pad.MainWindowTitle)"
+    }
+}
+</code></pre>
+    <p><img src="assets/02/8.png" alt=""></p>
+    <p><img src="assets/02/9.png" alt=""></p>
+
+    <hr>
+
+    <h4>דוגמה: מציאת תהליך אב</h4>
+    <h5>1. בעיה:</h5>
+    <p>"לפעמים אני רואה במערכת הרבה תהליכי <code>chrome.exe</code> צאצאים. איך אוכל לדעת איזה מהם הוא התהליך הראשי, ה'אב', שהפעיל את כולם?"</p>
+    <h5>2. חקירה עם <code>Get-Member</code>:</h5>
+    <p>עלינו למצוא משהו שמקשר תהליך אחד לאחר.</p>
+    <pre><code class="language-powershell">Get-Process -Name chrome | Select-Object -First 1 | Get-Member
+</code></pre>
+    <p><img src="assets/02/10.png" alt=""></p>
+    <p><strong>ניתוח תוצאת <code>Get-Member</code>:</strong></p>
+    <ul>
+        <li>בבדיקה מדוקדקת של הרשימה, אנו מוצאים מאפיין מסוג <code>CodeProperty</code> בשם <code>Parent</code>.</li>
+        <li>ההגדרה שלו (<code>Definition</code>) – <code>System.Diagnostics.Process Parent{get=GetParentProcess;}</code>.</li>
+    </ul>
+    <p>זהו מאפיין מחושב, אשר כאשר פונים אליו, מחזיר <strong>אובייקט של תהליך האב</strong>.</p>
+    <h5>3. פתרון:</h5>
+    <p>כעת אנו יכולים לכתוב סקריפט, אשר עבור כל תהליך <code>chrome</code> יציג מידע על האב שלו.</p>
+    <pre><code class="language-powershell"># 1. מקבלים את כל תהליכי chrome
+$chromeProcesses = Get-Process -Name chrome
+
+# 2. עבור כל אחד מהם מציגים מידע עליו ועל האב שלו
+$chromeProcesses | Select-Object -First 5 | ForEach-Object {
+    # מקבלים את תהליך האב
+    $parent = $_.Parent
+    
+    # יוצרים פלט יפה
+    Write-Host "תהליך:" -ForegroundColor Green
+    Write-Host "  - שם: $($_.ProcessName), מזהה: $($_.Id)"
+    Write-Host "האב שלו:" -ForegroundColor Yellow
+    Write-Host "  - שם: $($parent.ProcessName), מזהה: $($parent.Id)"
+    Write-Host "-----------------------------"
+}
+</code></pre>
+    <p><img src="assets/02/11.png" alt=""></p>
+    <p><img src="assets/02/12.png" alt=""></p>
+    <p>אנו רואים מיד שתהליכים עם מזהים 4756, 7936, 8268 ו-9752 הופעלו על ידי תהליך עם מזהה 14908. ניתן גם להבחין במקרה מעניין עם תהליך מזהה: 7252, שתהליך האב שלו לא הוגדר (ייתכן שהאב כבר הספיק להסתיים עד למועד הבדיקה). שינוי הסקריפט עם בדיקת <code>if ($parent)</code> מטפל במקרה זה בעדינות, מבלי לגרום לשגיאה.</p>
+    <p><code>Get-Member</code> עזר לנו לגלות את המאפיין "הנסתר" <code>Parent</code>, המספק יכולות עוצמתיות לניתוח היררכיית תהליכים.</p>
+
+    <h4>4. קובץ *.ps1 (יצירת סקריפטים)</h4>
+    <p>כאשר שרשרת הפקודות שלכם הופכת לשימושית, תרצו לשמור אותה לשימוש חוזר. לשם כך נועדו <strong>סקריפטים</strong> – קבצי טקסט עם סיומת <strong><code>.ps1</code></strong>.</p>
+    <h5>הרשאה להפעלת סקריפטים</h5>
+    <p>כברירת מחדל, הפעלת סקריפטים מקומיים אסורה ב-Windows. כדי לתקן זאת <strong>עבור המשתמש הנוכחי</strong>, הפעילו פעם אחת ב-PowerShell <strong>כמנהל מערכת</strong>:</p>
+    <pre><code class="language-powershell">Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+</code></pre>
+    <p>זוהי הגדרה בטוחה המאפשרת להפעיל סקריפטים משלכם וסקריפטים חתומים על ידי מפרסם מהימן.</p>
+    <h5>דוגמה לסקריפט <code>system_monitor.ps1</code></h5>
+    <p>צרו קובץ בשם זה והדביקו בו את הקוד שלהלן. סקריפט זה אוסף מידע על המערכת ומייצר דוחות.</p>
+    <pre><code class="language-powershell"># system_monitor.ps1
+#requires -Version 5.1
+
+&lt;#
+.SYNOPSIS
+    סקריפט ליצירת דוח על מצב המערכת.
+.DESCRIPTION
+    אוסף מידע על תהליכים, שירותים ושטח דיסק ומייצר דוחות.
+.PARAMETER OutputPath
+    נתיב לשמירת הדוחות. ברירת מחדל 'C:\Temp'.
+.EXAMPLE
+    .\system_monitor.ps1 -OutputPath "C:\Reports"
+#&gt;
+param(
+    [Parameter(Mandatory=$false)]
+    [string]$OutputPath = "C:\Temp"
+)
+
+# --- בלוק 1: הכנה ---
+Write-Host "מתכונן ליצירת דוח..." -ForegroundColor Cyan
+if (!(Test-Path $OutputPath)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
+
+# --- בלוק 2: איסוף נתונים ---
+Write-Host "אוסף מידע..." -ForegroundColor Green
+$processes = Get-Process | Sort-Object CPU -Descending
+$services = Get-Service | Group-Object Status | Select-Object Name, Count
+
+# --- בלוק 3: קריאה לפונקציה לייצוא (ראה סעיף הבא) ---
+Export-Results -Processes $processes -Services $services -OutputPath $OutputPath
+
+Write-Host "הדוחות נשמרו בהצלחה בתיקייה $OutputPath" -ForegroundColor Magenta
+</code></pre>
+    <p><em>הערה: הפונקציה <code>Export-Results</code> תוגדר בסעיף הבא כדוגמה לפרקטיקה טובה.</em></p>
+
+    <h4>5. ייצוא תוצאות</h4>
+    <p>נתונים נקיים זה טוב, אבל לעיתים קרובות צריך להציג אותם בצורה נוחה לבני אדם או לתוכנות אחרות. PowerShell מציע מגוון רחב של cmdlets לייצוא.</p>
+    <table>
+        <thead>
+            <tr>
+                <th>שיטה</th>
+                <th>פקודה</th>
+                <th>תיאור</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>טקסט פשוט</strong></td>
+                <td><code>... \| Out-File C:\Temp\data.txt</code></td>
+                <td>מפנה ייצוג טקסטואלי לקובץ.</td>
+            </tr>
+            <tr>
+                <td><strong>CSV (עבור Excel)</strong></td>
+                <td><code>... \| Export-Csv C:\Temp\data.csv -NoTypeInfo</code></td>
+                <td>מייצא אובייקטים ל-CSV. <code>-NoTypeInfo</code> מסיר את השורה הראשונה השירותית.</td>
+            </tr>
+            <tr>
+                <td><strong>דוח HTML</strong></td>
+                <td><code>... \| ConvertTo-Html -Title "דוח"</code></td>
+                <td>יוצר קוד HTML מאובייקטים.</td>
+            </tr>
+            <tr>
+                <td><strong>JSON (עבור API, אינטרנט)</strong></td>
+                <td><code>... \| ConvertTo-Json</code></td>
+                <td>ממיר אובייקטים לפורמט JSON.</td>
+            </tr>
+            <tr>
+                <td><strong>XML (פורמט מקורי של PowerShell)</strong></td>
+                <td><code>... \| Export-Clixml C:\Temp\data.xml</code></td>
+                <td>שומר אובייקטים עם כל סוגי הנתונים. ניתן לשחזר אותם באופן מושלם באמצעות <code>Import-Clixml</code>.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h5>תוספת לסקריפט: פונקציית ייצוא</h5>
+    <p>בואו נוסיף לסקריפט <code>system_monitor.ps1</code> שלנו פונקציה שתטפל בייצוא. מקמו את הקוד הזה <strong>לפני</strong> הקריאה ל-<code>Export-Results</code>.</p>
+    <pre><code class="language-powershell">function Export-Results {
+    param(
+        $Processes,
+        $Services,
+        $OutputPath
+    )
+
+    $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm"
+
+    # ייצוא ל-CSV
+    $Processes | Select-Object -First 20 | Export-Csv (Join-Path $OutputPath "processes_$timestamp.csv") -NoTypeInformation
+    $Services | Export-Csv (Join-Path $OutputPath "services_$timestamp.csv") -NoTypeInformation
+
+    # יצירת דוח HTML יפה
+    $htmlReportPath = Join-Path $OutputPath "report_$timestamp.html"
+    $processesHtml = $Processes | Select-Object -First 10 Name, Id, CPU | ConvertTo-Html -Fragment -PreContent "&lt;h2&gt;10 התהליכים המובילים לפי מעבד&lt;/h2&gt;"
+    $servicesHtml = $Services | ConvertTo-Html -Fragment -PreContent "&lt;h2&gt;סטטיסטיקת שירותים&lt;/h2&gt;"
+
+    ConvertTo-Html -Head "&lt;title&gt;דוח מערכת&lt;/title&gt;" -Body "&lt;h1&gt;דוח מערכת מ-$(Get-Date)&lt;/h1&gt; $($processesHtml) $($servicesHtml)" | Out-File $htmlReportPath
+}
+</code></pre>
+    <p>כעת הסקריפט שלנו לא רק אוסף נתונים, אלא גם שומר אותם בצורה מסודרת בשני פורמטים: CSV לניתוח ו-HTML לצפייה מהירה.</p>
+
+    <h4>מסקנה</h4>
+    <ol>
+        <li><strong>צינור (<code>|</code>)</strong> – הכלי העיקרי לשילוב פקודות ועיבוד אובייקטים.</li>
+        <li><strong><code>Get-Member</code></strong> – ניתוח אובייקטים, המראה ממה הם מורכבים.</li>
+        <li><strong>משתנים (<code>$var</code>, <code>$_</code>)</strong> מאפשרים לשמור נתונים ולגשת לאובייקט הנוכחי בצינור.</li>
+        <li><strong>קבצי <code>.ps1</code></strong> הופכים פקודות לכלי אוטומציה הניתנים לשימוש חוזר.</li>
+        <li><strong>cmdlets ייצוא</strong> (<code>Export-Csv</code>, <code>ConvertTo-Html</code>) מייצאים נתונים בפורמט המתאים.</li>
+    </ol>
+    <p><strong>בחלק הבא נשתמש בידע זה כדי לנווט ולנהל את מערכת הקבצים, תוך חקירת אובייקטי <code>System.IO.DirectoryInfo</code> ו-<code>System.IO.FileInfo</code>.</strong></p>
+</body>
+</html>

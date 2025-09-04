@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>פילוסופיית PowerShell.</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 0 auto;
+            max-width: 800px;
+            padding: 20px;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            color: #333;
+        }
+        pre {
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: monospace;
+            background-color: #f4f4f4;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: right;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        blockquote {
+            border-right: 5px solid #ccc;
+            margin: 1.5em 10px;
+            padding: 0.5em 10px;
+            color: #666;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>פילוסופיית PowerShell.</h1>
+    <h3><strong>חלק 3: ניווט וניהול מערכת קבצים. אופרטורים לוגיים. מבוא לפונקציות.</strong></h3>
+    <p>ב<a href="https://github.com/hypo69/1001-python-ru/blob/master/articles/%D0%A4%D0%B8%D0%BB%D0%BE%D1%81%D0%BE%D1%84%D0%B8%D1%8F%20PowerShell/01.md">חלק הקודם</a> חקרנו צינורות (pipelines) ואובייקטים מופשטים של תהליכים.
+כעת, בואו ניישם את הידע שלנו על צינורות ואובייקטים לאחת המשימות הנפוצות של משתמש או מנהל מערכת – עבודה עם מערכת הקבצים.
+ב-PowerShell, עבודה זו בנויה על אותם עקרונות: פקודות מחזירות אובייקטים שניתן להעביר בצינור לעיבוד נוסף.</p>
+    <hr>
+    <h3><strong>1. קונספט כונני PowerShell (PSDrives)</strong></h3>
+    <p>לפני שנתחיל לעבוד עם קבצים, חשוב להבין את הקונספט של <strong>כונני PowerShell (PSDrives)</strong>. בניגוד ל-<code>cmd.exe</code>, שבו כוננים הם רק אותיות <code>C:</code>, <code>D:</code> וכן הלאה, ב-PowerShell "כונן" הוא הפשטה לגישה לכל אחסון נתונים היררכי.</p>
+    <pre><code class="language-powershell">Get-PSDrive
+</code></pre>
+    <p>התוצאה תציג לא רק כוננים פיזיים, אלא גם כונני פסאודו:</p>
+    <table>
+    <thead>
+    <tr>
+    <th>שם</th>
+    <th>ספק</th>
+    <th>שורש</th>
+    <th>תיאור</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td>Alias</td>
+    <td>Alias</td>
+    <td>Alias:\</td>
+    <td>כינויי פקודות</td>
+    </tr>
+    <tr>
+    <td>C</td>
+    <td>FileSystem</td>
+    <td>C:\</td>
+    <td>כונן מקומי C</td>
+    </tr>
+    <tr>
+    <td>Cert</td>
+    <td>Certificate</td>
+    <td>Cert:\</td>
+    <td>מאגר אישורים</td>
+    </tr>
+    <tr>
+    <td>Env</td>
+    <td>Environment</td>
+    <td>Env:\</td>
+    <td>משתני סביבה</td>
+    </tr>
+    <tr>
+    <td>Function</td>
+    <td>Function</td>
+    <td>Function:\</td>
+    <td>פונקציות טעונות</td>
+    </tr>
+    <tr>
+    <td>HKCU</td>
+    <td>Registry</td>
+    <td>HKEY_CURRENT_USER</td>
+    <td>ענף רישום</td>
+    </tr>
+    <tr>
+    <td>HKLM</td>
+    <td>Registry</td>
+    <td>HKEY_LOCAL_MACHINE</td>
+    <td>ענף רישום</td>
+    </tr>
+    <tr>
+    <td>Variable</td>
+    <td>Variable</td>
+    <td>Variable:\</td>
+    <td>משתני סשן</td>
+    </tr>
+    <tr>
+    <td>WSMan</td>
+    <td>WSMan</td>
+    <td>WSMan:\</td>
+    <td>תצורת WinRM</td>
+    </tr>
+    </tbody>
+    </table>
+    <p>איחוד זה אומר שאתה יכול "להיכנס" לרישום (<code>Set-Location HKLM:</code>) ולקבל רשימה של המפתחות שלו באותה פקודה <code>Get-ChildItem</code>, שבה אתה מקבל רשימה של קבצים בכונן C:. זהו קונספט חזק להפליא.</p>
+    <h4><strong>דוגמאות לעבודה עם ספקים שונים</strong></h4>
+    <ul>
+    <li>
+    <p><strong>מאגר אישורים (Cert:)</strong><br>
+    מאפשר לעבוד עם אישורים דיגיטליים כאילו היו קבצים בתיקיות.</p>
+    <p><strong>משימה:</strong> מצא את כל אישורי ה-SSL במחשב המקומי שתוקפם יפוג ב-30 הימים הקרובים.</p>
+    <pre><code class="language-powershell"># עוברים למאגר האישורים של המחשב המקומי
+Set-Location Cert:\LocalMachine\My
+
+# מוצאים אישורים שתאריך התפוגה שלהם קטן מהיום + 30 יום
+Get-ChildItem | Where-Object { $_.NotAfter -lt (Get-Date).AddDays(30) } | Select-Object Subject, NotAfter, Thumbprint
+</code></pre>
+    </li>
+    <li>
+    <p><strong>משתני סביבה (Env:)</strong><br>
+    מספק גישה למשתני סביבה של Windows (<code>%PATH%</code>, <code>%windir%</code> וכו') כאל קבצים.</p>
+    <p><strong>משימה:</strong> קבל את הנתיב לתיקיית המערכת של Windows והוסף אליו את הנתיב ל-<code>System32</code>.</p>
+    <pre><code class="language-powershell"># מקבלים את הערך של המשתנה windir
+$windowsPath = (Get-Item Env:windir).Value
+# או פשוט יותר: $windowsPath = $env:windir
+
+# מרכיבים בבטחה את הנתיב המלא
+$system32Path = Join-Path -Path $windowsPath -ChildPath "System32"
+Write-Host $system32Path
+# תוצאה: C:\WINDOWS\System32
+</code></pre>
+    </li>
+    <li>
+    <p><strong>רישום Windows (HKCU: ו-HKLM:)</strong><br>
+    דמיין שהרישום הוא פשוט עוד מערכת קבצים. ענפים הם תיקיות, ופרמטרים הם מאפיינים של תיקיות אלה.</p>
+    <p><strong>משימה:</strong> גלה את השם המלא של גרסת Windows המותקנת מהרישום.</p>
+    <pre><code class="language-powershell"># עוברים לענף הרישום הרצוי
+Set-Location "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+
+# מקבלים את המאפיין (פרמטר רישום) בשם "ProductName"
+Get-ItemProperty -Path . -Name "ProductName"
+# תוצאה: ProductName : Windows 11 Pro
+</code></pre>
+    </li>
+    <li>
+    <p><strong>פונקציות טעונות (Function:)</strong><br>
+    מציג את כל הפונקציות הזמינות בסשן PowerShell הנוכחי, כאילו היו קבצים.</p>
+    <p><strong>משימה:</strong> מצא את כל הפונקציות הטעונות שבשמן מופיעה המילה "Help", וצפה בקוד של אחת מהן.</p>
+    <pre><code class="language-powershell"># מחפשים פונקציות לפי מסכה
+Get-ChildItem Function: | Where-Object { $_.Name -like "*Help*" }
+
+# מקבלים את הקוד המלא (הגדרה) של הפונקציה Get-Help
+(Get-Item Function:Get-Help).Definition
+</code></pre>
+    </li>
+    <li>
+    <p><strong>משתני סשן (Variable:)</strong><br>
+    מאפשר לנהל את כל המשתנים (<code>$myVar</code>, <code>$PROFILE</code>, <code>$Error</code> וכו') המוגדרים בסשן הנוכחי.</p>
+    <p><strong>משימה:</strong> מצא את כל המשתנים הקשורים לגרסת PowerShell (<code>$PSVersionTable</code>, <code>$PSHOME</code> וכו').</p>
+    <pre><code class="language-powershell"># מוצאים את כל המשתנים שמתחילים ב-"PS"
+Get-ChildItem Variable:PS*
+
+# מקבלים את הערך של משתנה ספציפי
+Get-Variable -Name "PSVersionTable"
+</code></pre>
+    </li>
+    </ul>
+    <hr>
+    <h3>2. <strong>ניווט וניתוח</strong></h3>
+    <h4><strong>יסודות הניווט</strong></h4>
+    <pre><code class="language-powershell"># לדעת היכן אנו נמצאים (מחזיר אובייקט PathInfo)
+Get-Location          # כינויים: gl, pwd
+
+# מעבר לשורש כונן C:
+Set-Location C:\      # כינויים: sl, cd
+
+# מעבר לתיקיית הבית של המשתמש הנוכחי
+Set-Location ~
+
+# הצגת תוכן התיקייה הנוכחית (מחזיר אוסף אובייקטים)
+Get-ChildItem         # כינויים: gci, ls, dir
+</code></pre>
+    <pre><code class="language-powershell"># **חיפוש רקורסיבי**
+# מצא את קובץ hosts במערכת, תוך התעלמות משגיאות "גישה נדחתה"
+Get-ChildItem C:\ -Filter "hosts" -Recurse -ErrorAction SilentlyContinue
+</code></pre>
+    <p><strong>מפתח <code>-Recurse</code> (רקורסיבי):</strong> גורם לפקודה לעבוד לא רק עם הפריט שצוין, אלא גם עם כל תוכנו.</p>
+    <p><strong>מפתח <code>-ErrorAction SilentlyContinue</code>:</strong> הוראה להתעלם משגיאות ולהמשיך לעבוד בשקט.</p>
+    <h5><strong>ניתוח שטח דיסק</strong></h5>
+    <p>דוגמה קלאסית לעוצמת הצינור: מצא, מיין, פרמט ובחר.</p>
+    <pre><code class="language-powershell">Get-ChildItem C:\Users -File -Recurse -ErrorAction SilentlyContinue |
+        Sort-Object Length -Descending |
+        Select-Object FullName, @{Name="Size(MB)"; Expression={[math]::Round($_.Length/1MB,2)}} |
+        Select-Object -First 20
+</code></pre>
+    <h6><strong>טיפ כיצד להזין פקודות ארוכות.</strong></h6>
+    <blockquote>
+    <p>PowerShell מאפשר לפצל אותן למספר שורות לנוחות הקריאה.</p>
+    <ul>
+    <li><strong>לאחר אופרטור הצינור (<code>|</code>):</strong> זו הדרך הנפוצה והנוחה ביותר. פשוט לחץ <code>Enter</code> לאחר הסימן <code>|</code>. PowerShell יבין שהפקודה לא הושלמה וימתין להמשך בשורה הבאה.</li>
+    <li><strong>בכל מקום אחר:</strong> השתמש בסימן הגרש ההפוך (backtick) <code>`</code> בסוף השורה, ולאחר מכן לחץ <code>Enter</code>. סימן זה אומר ל-PowerShell: "הפקודה תימשך בשורה הבאה".</li>
+    <li><strong>בעורכים (ISE, VS Code):</strong> צירוף המקשים <code>Shift+Enter</code> בדרך כלל מכניס אוטומטית מעבר שורה, מבלי להפעיל את הפקודה.</li>
+    </ul>
+    </blockquote>
+    <h4><strong>סינון תוכן ואופרטורים לוגיים</strong></h4>
+    <pre><code class="language-powershell"># מצא את כל קבצי ה-.exe. הפרמטר -Filter עובד מהר מאוד.
+Get-ChildItem C:\Windows | Where-Object { $_.Extension -eq ".exe" }
+</code></pre>
+    <p><code>Get-ChildItem</code> מחזיר אוסף של אובייקטים. אנו יכולים להעביר אותו בצינור ל-<code>Where-Object</code> לסינון נוסף.</p>
+    <pre><code class="language-powershell"># הצג רק קבצים
+Get-ChildItem C:\Windows | Where-Object { $_.PSIsContainer -eq $false }
+</code></pre>
+    <p>פקודה זו מציגה לנו אחד מהמושגים הבסיסיים בסקריפטים של PowerShell: <strong>אופרטורי השוואה</strong>.</p>
+    <h4><strong>אופרטורי השוואה ולוגיקה</strong></h4>
+    <p>אלו הם מפתחות מיוחדים להשוואת ערכים. הם תמיד מתחילים במקף (<code>-</code>) ומהווים את הבסיס לסינון נתונים ב-<code>Where-Object</code> ובניית לוגיקה ב-<code>if</code>.</p>
+    <table>
+    <thead>
+    <tr>
+    <th>אופרטור</th>
+    <th>תיאור</th>
+    <th>דוגמה בצינור</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td><code>-eq</code></td>
+    <td>שווה (EQual)</td>
+    <td><code>$_.Name -eq "svchost.exe"</code></td>
+    </tr>
+    <tr>
+    <td><code>-ne</code></td>
+    <td>לא שווה (Not Equal)</td>
+    <td><code>$_.Status -ne "Running"</code></td>
+    </tr>
+    <tr>
+    <td><code>-gt</code></td>
+    <td>גדול מ- (Greater Than)</td>
+    <td><code>$_.Length -gt 1MB</code></td>
+    </tr>
+    <tr>
+    <td><code>-ge</code></td>
+    <td>גדול או שווה ל- (Greater or Equal)</td>
+    <td><code>$_.Handles -ge 500</code></td>
+    </tr>
+    <tr>
+    <td><code>-lt</code></td>
+    <td>קטן מ- (Less Than)</td>
+    <td><code>$_.LastWriteTime -lt (Get-Date).AddDays(-30)</code></td>
+    </tr>
+    <tr>
+    <td><code>-le</code></td>
+    <td>קטן או שווה ל- (Less or Equal)</td>
+    <td><code>$_.Count -le 1</code></td>
+    </tr>
+    <tr>
+    <td><code>-like</code></td>
+    <td>דומה ל- (עם תווים כלליים <code>*</code>, <code>?</code>)</td>
+    <td><code>$_.Name -like "win*"</code></td>
+    </tr>
+    <tr>
+    <td><code>-notlike</code></td>
+    <td>לא דומה ל-</td>
+    <td><code>$_.Name -notlike "*.tmp"</code></td>
+    </tr>
+    <tr>
+    <td><code>-in</code></td>
+    <td>הערך כלול באוסף</td>
+    <td><code>$_.Extension -in ".log", ".txt"</code></td>
+    </tr>
+    <tr>
+    <td><code>-and</code></td>
+    <td>לוגי וגם (שני התנאים נכונים)</td>
+    <td></td>
+    </tr>
+    <tr>
+    <td><code>-or</code></td>
+    <td>לוגי או (לפחות אחד מהתנאים נכון)</td>
+    <td></td>
+    </tr>
+    <tr>
+    <td><code>-not</code></td>
+    <td>לוגי לא (הופך את התנאי)</td>
+    <td></td>
+    </tr>
+    </tbody>
+    </table>
+    <p>נושא אופרטורי הלוגיקה הוא נרחב מאוד ואקדיש לו חלק נפרד (או אפילו שניים). בינתיים, חמושים באופרטורים אלה,
+    אנו יכולים <strong>לסנן, למיין ולבחור את הקבצים והתיקיות הרצויים לנו</strong>, תוך שימוש בכל עוצמת הצינור האובייקטי.</p>
+    <h4><strong>דוגמאות שימוש במערכת הקבצים</strong></h4>
+    <p><strong>מצא קובץ לפי שם מדויק (תלוי רישיות):</strong></p>
+    <pre><code class="language-powershell">Get-ChildItem C:\Windows\System32 -Recurse | Where-Object { $_.Name -eq "kernel32.dll" }
+</code></pre>
+    <p><strong>מצא את כל הקבצים שמתחילים ב-"host", אך אינם תיקיות:</strong></p>
+    <pre><code class="language-powershell">Get-ChildItem C:\Windows\System32\drivers\etc | Where-Object { ($_.Name -like "host*") -and (-not $_.PSIsContainer) }
+</code></pre>
+    <p><strong>מצא את כל קבצי היומן (.log) שגודלם עולה על 50 מגה-בייט:</strong></p>
+    <pre><code class="language-powershell">Get-ChildItem C:\Windows\Logs -Filter "*.log" -Recurse | Where-Object { $_.Length -gt 50MB }
+</code></pre>
+    <p><strong>מצא את כל קבצי הזמניים (.tmp) וקבצי הגיבוי (.bak) לניקוי:</strong><br>
+    אופרטור <code>-in</code> כאן אלגנטי בהרבה מכמה תנאים עם <code>-or</code>.</p>
+    <pre><code class="language-powershell">$extensionsToDelete = ".tmp", ".bak", ".old"
+Get-ChildItem C:\Temp -Recurse | Where-Object { $_.Extension -in $extensionsToDelete }
+</code></pre>
+    <p><strong>מצא את כל קבצי Word (.docx) שנוצרו בשבוע האחרון:</strong></p>
+    <pre><code class="language-powershell">$oneWeekAgo = (Get-Date).AddDays(-7)
+Get-ChildItem C:\Users\MyUser\Documents -Filter "*.docx" -Recurse | Where-Object { $_.CreationTime -ge $oneWeekAgo }
+</code></pre>
+    <p><strong>מצא קבצים ריקים (בגודל 0 בתים) שאינם תיקיות:</strong></p>
+    <pre><code class="language-powershell">Get-ChildItem C:\Downloads -Recurse | Where-Object { ($_.Length -eq 0) -and (-not $_.PSIsContainer) }
+</code></pre>
+    <p><strong>מצא את כל קבצי ההפעלה (.exe) ששונו השנה, אך לא בחודש זה:</strong><br>
+    דוגמה מורכבת זו מדגימה את עוצמת השילוב של אופרטורים.</p>
+    <pre><code class="language-powershell">Get-ChildItem "C:\Program Files" -Filter "*.exe" -Recurse | Where-Object {
+    ($_.LastWriteTime.Year -eq (Get-Date).Year) -and ($_.LastWriteTime.Month -ne (Get-Date).Month)
+}
+</code></pre>
+    <p><em>(הערה: סוגריים <code>()</code> סביב כל תנאי משמשים לקיבוץ ולשיפור הקריאות, במיוחד במקרים מורכבים).</em></p>
+    <p>היזהר עם רקורסיה:<br>
+    הרבה מאוד קבצים/תיקיות — <code>-Recurse</code> יכול להיכנס רקורסיבית לעשרות אלפי פריטים.<br>
+    קישורים סימבוליים / קישורים מחזוריים — עלולים לגרום לרקורסיה אינסופית.<br>
+    קבצים ללא הרשאות גישה — עלולים לחסום את הביצוע.</p>
+    <h3>4. <strong>יצירה, ניהול ומחיקה בטוחה</strong></h3>
+    <h4><strong>יצירה, העתקה והעברה</strong></h4>
+    <pre><code class="language-powershell">New-Item -Path "C:\Temp\MyFolder" -ItemType Directory
+Add-Content -Path "C:\Temp\MyFolder\MyFile.txt" -Value "שורה ראשונה"
+Copy-Item -Path "C:\Temp\MyFolder" -Destination "C:\Temp\MyFolder_Copy" -Recurse
+</code></pre>
+    <h4><strong>מחיקה בטוחה</strong></h4>
+    <p><code>Remove-Item</code> – פקודה שעלולה להיות מסוכנת, ולכן ב-PowerShell קיימים מנגנוני הגנה מובנים.</p>
+    <blockquote>
+    <p><strong>מפתח <code>-WhatIf</code> (מה אם?):</strong> החבר הטוב ביותר שלך. הוא <strong>לא מבצע</strong> את הפקודה, אלא רק מציג בקונסולה הודעה על <strong>מה היה קורה</strong>.</p>
+    </blockquote>
+    <pre><code class="language-powershell"># בדיקה בטוחה לפני מחיקה
+Remove-Item C:\Temp\MyFolder -Recurse -Force -WhatIf
+# תוצאה: What if: Performing the operation "Remove Directory" on target "C:\Temp\MyFolder".
+
+# רק לאחר שווידאת שהכל נכון, הסר את -WhatIf ובצע את הפקודה
+Remove-Item C:\Temp\MyFolder -Recurse -Force
+</code></pre>
+    <hr>
+    <h3><strong>מבוא לפונקציות</strong></h3>
+    <p>כאשר שורת קוד אחת הופכת למערך מורכב של פקודות שברצונך להשתמש בהן שוב ושוב, הגיע הזמן ליצור <strong>פונקציות</strong>.</p>
+    <h4><strong>כיצד להשתמש ולשמור פונקציות</strong></h4>
+    <p>קיימות שלוש דרכים עיקריות להפוך את הפונקציות שלך לזמינות:</p>
+    <p><strong>שיטה 1: זמנית (לצורך בדיקות)</strong><br>
+    אתה יכול להקליד בקונסולה או פשוט להעתיק ולהדביק את כל קוד הפונקציה לקונסולת PowerShell. הפונקציה תהיה זמינה עד לסגירת חלון זה.</p>
+    <p><strong>שיטה 2: קבועה, אך ידנית (באמצעות קובץ <code>.ps1</code>)</strong><br>
+    זו הדרך הנפוצה ביותר לארגון ושיתוף כלים. אתה שומר את הפונקציה בקובץ <code>.ps1</code> וטוען אותה לסשן כאשר אתה זקוק לה.</p>
+    <blockquote>
+    <p><strong>Dot Sourcing (<code>. .\script.ps1</code>):</strong> פקודה מיוחדת זו מפעילה את הסקריפט בהקשר <em>הנוכחי</em>, מה שהופך את כל הפונקציות והמשתנים שלו לזמינים בקונסולה שלך.</p>
+    </blockquote>
+    <p><strong>שיטה 3: אוטומטית (באמצעות פרופיל PowerShell)</strong><br>
+    זו הדרך החזקה ביותר עבור הכלים האישיים שלך, הנפוצים בשימוש.</p>
+    <blockquote>
+    <p><strong>מהו פרופיל PowerShell?</strong> זהו סקריפט <code>.ps1</code> מיוחד ש-PowerShell מפעיל אוטומטית בכל פעם שהוא מופעל. כל מה שתשים בקובץ זה – כינויים, משתנים, וכמובן, פונקציות – יהיה זמין בכל סשן שלך כברירת מחדל.</p>
+    </blockquote>
+    <h5><strong>דוגמה 1: מציאת קבצים כפולים</strong></h5>
+    <p>בואו נעבור על כל השלבים בדוגמה של הפונקציה <code>Find-DuplicateFiles</code>.</p>
+    <p><strong>שלב 1: הגדרת קוד הפונקציה</strong></p>
+    <pre><code class="language-powershell">$functionCode = @'
+    function Find-DuplicateFiles {
+        param(
+            [Parameter(Mandatory=$true)]
+            [string]$Path
+        )
+
+        Get-ChildItem $Path -File -Recurse -ErrorAction SilentlyContinue |
+            Group-Object Name, Length |
+            Where-Object { $_.Count -gt 1 } |
+            ForEach-Object {
+                # זו השורה המתוקנת:
+                # בתוך אופרטור $() משתנים אינם מוצפנים.
+                Write-Host "נמצאו כפילויות: $($_.Name)" -ForegroundColor Yellow
+                $_.Group | Select-Object FullName, Length, LastWriteTime
+            }
+    }
+'@
+    </code></pre>
+    <p><strong>שלב 2 (אפשרות א'): שמירה בקובץ נפרד לטעינה ידנית</strong></p>
+    <pre><code class="language-powershell"># שמירה
+Set-Content -Path ".\Find-DuplicateFiles.ps1" -Value $functionCode
+# טעינה
+. .\Find-DuplicateFiles.ps1
+</code></pre>
+    <blockquote>
+    <p>Dot Sourcing (<code>. .\Find-DuplicateFiles.ps1</code>): פקודה מיוחדת זו מפעילה את הסקריפט בהקשר הנוכחי, מה שהופך את כל הפונקציות והמשתנים שלו לזמינים בקונסולה שלך.</p>
+    </blockquote>
+    <pre><code class="language-powershell"># קריאה
+Find-DuplicateFiles -Path "C:\Users\$env:USERNAME\Downloads"
+</code></pre>
+    <p><strong>שלב 2 (אפשרות ב'): הוספה לפרופיל לטעינה אוטומטית</strong><br>
+    נגרום לפונקציה זו להיות זמינה תמיד.</p>
+    <blockquote>
+    <p><strong>מהו פרופיל PowerShell?</strong> זהו סקריפט <code>.ps1</code> מיוחד ש-PowerShell מפעיל אוטומטית בכל פעם שהוא מופעל. כל מה שתשים בקובץ זה – כינויים, משתנים, וכמובן, פונקציות – יהיה זמין בכל סשן שלך כברירת מחדל.</p>
+    </blockquote>
+    <ol>
+    <li><strong>מצא את הנתיב לקובץ הפרופיל.</strong> PowerShell שומר אותו במשתנה <code>$PROFILE</code>.
+    <pre><code class="language-powershell">$PROFILE
+</code></pre>
+    </li>
+    <li><strong>צור את קובץ הפרופיל, אם אינו קיים.</strong>
+    <pre><code class="language-powershell">if (-not (Test-Path $PROFILE)) {
+    New-Item -Path $PROFILE -Type File -Force
+}
+</code></pre>
+    </li>
+    <li><strong>הוסף את קוד הפונקציה שלנו לסוף קובץ הפרופיל.</strong>
+    <pre><code class="language-powershell">Add-Content -Path $PROFILE -Value $functionCode
+</code></pre>
+    </li>
+    <li><strong>הפעל מחדש את PowerShell</strong> (או בצע `. $PROFILE`), וכעת הפקודה <code>Find-DuplicateFiles</code> שלך תהיה זמינה תמיד, כמו <code>Get-ChildItem</code>.</li>
+    </ol>
+    <h5><strong>דוגמה 2: יצירת ארכיון ZIP עם גיבוי</strong></h5>
+    <p><strong>קוד עבור הקובץ <code>Backup-FolderToZip.ps1</code>:</strong></p>
+    <pre><code class="language-powershell">function Backup-FolderToZip {
+    param([string]$SourcePath, [string]$DestinationPath)
+    if (-not (Test-Path $SourcePath)) { Write-Error "תיקיית המקור לא נמצאה."; return }
+    $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm"
+    $archiveFileName = "Backup_{0}_{1}.zip" -f (Split-Path $SourcePath -Leaf), $timestamp
+    $fullArchivePath = Join-Path $DestinationPath $archiveFileName
+    if (-not (Test-Path $DestinationPath)) { New-Item -Path $DestinationPath -ItemType Directory -Force | Out-Null }
+    Compress-Archive -Path "$SourcePath\*" -DestinationPath $fullArchivePath -Force
+    Write-Host "גיבוי הושלם: $fullArchivePath" -ForegroundColor Green
+}
+</code></pre>
+    <p>פירוט מעמיק של פונקציות אעשה בחלקים הבאים.</p>
+    <hr>
+    <h3><strong>מדריך לפקודות PowerShell לעבודה עם מערכת הקבצים</strong></h3>
+    <h4><strong>1. פקודות בסיסיות</strong></h4>
+    <p>רשימה זו כוללת 12 פקודות חיוניות ביותר, המכסות 90% מהמשימות היומיומיות.</p>
+    <table>
+    <thead>
+    <tr>
+    <th>פקודה</th>
+    <th>ייעוד עיקרי</th>
+    <th>דוגמת שימוש</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td><code>Get-ChildItem</code></td>
+    <td>קבלת רשימת קבצים ותיקיות.</td>
+    <td><code>Get-ChildItem C:\Windows</code></td>
+    </tr>
+    <tr>
+    <td><code>Set-Location</code></td>
+    <td>מעבר לתיקייה אחרת.</td>
+    <td><code>Set-Location C:\Temp</code></td>
+    </tr>
+    <tr>
+    <td><code>Get-Location</code></td>
+    <td>הצגת התיקייה הנוכחית.</td>
+    <td><code>Get-Location</code></td>
+    </tr>
+    <tr>
+    <td><code>New-Item</code></td>
+    <td>יצירת קובץ או תיקייה חדשים.</td>
+    <td><code>New-Item "report.docx" -Type File</code></td>
+    </tr>
+    <tr>
+    <td><code>Remove-Item</code></td>
+    <td>מחיקת קובץ או תיקייה.</td>
+    <td><code>Remove-Item "old_log.txt"</code></td>
+    </tr>
+    <tr>
+    <td><code>Copy-Item</code></td>
+    <td>העתקת קובץ או תיקייה.</td>
+    <td><code>Copy-Item "file.txt" -Dest "D:\"</code></td>
+    </tr>
+    <tr>
+    <td><code>Move-Item</code></td>
+    <td>העברת קובץ או תיקייה.</td>
+    <td><code>Move-Item "report.docx" -Dest "C:\Archive"</code></td>
+    </tr>
+    <tr>
+    <td><code>Rename-Item</code></td>
+    <td>שינוי שם קובץ או תיקייה.</td>
+    <td><code>Rename-Item "old.txt" -NewName "new.txt"</code></td>
+    </tr>
+    <tr>
+    <td><code>Get-Content</code></td>
+    <td>קריאת תוכן קובץ.</td>
+    <td><code>Get-Content "config.ini"</code></td>
+    </tr>
+    <tr>
+    <td><code>Set-Content</code></td>
+    <td>כתיבה/שכתוב תוכן קובץ.</td>
+    <td><code>"data" | Set-Content "file.txt"</code></td>
+    </tr>
+    <tr>
+    <td><code>Add-Content</code></td>
+    <td>הוספת תוכן לסוף קובץ.</td>
+    <td><code>Get-Date | Add-Content "log.txt"</code></td>
+    </tr>
+    <tr>
+    <td><code>Test-Path</code></td>
+    <td>בדיקה אם קובץ או תיקייה קיימים.</td>
+    <td><code>Test-Path "C:\Temp"</code></td>
+    </tr>
+    </tbody>
+    </table>
+    <p>צריך <strong>לקרוא את תוכן</strong> קובץ טקסט? השתמש ב-<code>Get-Content</code>.<br>
+    צריך <strong>לשכתב לחלוטין קובץ</strong> עם תוכן חדש? השתמש ב-<code>Set-Content</code>.<br>
+    צריך <strong>להוסיף שורה לקובץ יומן</strong>, מבלי למחוק נתונים ישנים? השתמש ב-<code>Add-Content</code>.<br>
+    צריך <strong>לבדוק אם קובץ קיים</strong> לפני הכתיבה? השתמש ב-<code>Test-Path</code>.</p>
+    <h4><strong>2. פקודות מיוחדות למשימות מתקדמות</strong></h4>
+    <p>כאשר פקודות הבסיס אינן מספיקות, PowerShell מציע כלים מיוחדים יותר. הם אינם משכפלים את פקודות הבסיס, אלא מרחיבים את יכולותיך.</p>
+    <ul>
+    <li>
+    <p><strong>עבודה עם נתיבים (Path)</strong></p>
+    <ul>
+    <li><strong><code>Join-Path</code></strong>: מאחד בבטחה חלקי נתיב, מוסיף אוטומטית <code>\</code>.
+    </li>
+    <li><strong><code>Split-Path</code></strong>: מפרק נתיב לחלקים (תיקייה, שם קובץ, סיומת).</li>
+    <li><strong><code>Resolve-Path</code></strong>: ממיר נתיב יחסי (לדוגמה, <code>.</code> או <code>..\files</code>) לנתיב מלא, מוחלט.</li>
+    </ul>
+    </li>
+    <li>
+    <p><strong>עבודה עם מאפיינים ותוכן (Item Properties and Content)</strong></p>
+    <ul>
+    <li><strong><code>Get-ItemProperty</code></strong>: מקבל מאפיינים של קובץ ספציפי (לדוגמה, <code>IsReadOnly</code>, <code>CreationTime</code>).</li>
+    <li><strong><code>Set-ItemProperty</code></strong>: משנה מאפיינים של קובץ או תיקייה.</li>
+    <li><strong><code>Clear-Content</code></strong>: מוחק את כל התוכן מקובץ, אך משאיר את הקובץ עצמו ריק.</li>
+    </ul>
+    </li>
+    <li>
+    <p><strong>ניווט מתקדם (Location Stack)</strong></p>
+    <ul>
+    <li><strong><code>Push-Location</code></strong>: "זוכר" את התיקייה הנוכחית ועובר לחדשה.</li>
+    <li><strong><code>Pop-Location</code></strong>: חוזר לתיקייה ש"נזכרה" על ידי <code>Push-Location</code>.</li>
+    </ul>
+    </li>
+    <li>
+    <p><strong>ניהול הרשאות גישה (ACL)</strong></p>
+    <ul>
+    <li><strong><code>Get-Acl</code></strong>: מקבל רשימת הרשאות גישה (ACL) לקובץ או תיקייה.</li>
+    <li><strong><code>Set-Acl</code></strong>: מגדיר הרשאות גישה לקובץ או תיקייה (פעולה מורכבת).</li>
+    </ul>
+    </li>
+    </ul>
+    <p>צריך <strong>לשנות תכונה של קובץ</strong>, למשל, להפוך אותו ל"קריאה בלבד"? השתמש ב-<code>Set-ItemProperty</code>.<br>
+    צריך <strong>לנקות לחלוטין קובץ יומן</strong>, מבלי למחוק אותו? השתמש ב-<code>Clear-Content</code>.<br>
+    צריך <strong>לעבור זמנית לתיקייה אחרת</strong> בסקריפט, ואז לחזור בוודאות? השתמש ב-<code>Push-Location</code> וב-<code>Pop-Location</code>.<br>
+    צריך <strong>לדעת מי מורשה</strong> לגשת לתיקייה? השתמש ב-<code>Get-Acl</code>.</p>
+    <p>בחלק הבא נלמד כיצד לעבוד עם מאגרי נתונים אחרים, כגון רישום Windows,<br>
+    באותן גישות, נתעמק במושג הפונקציות, נבחן אופרטורים לוגיים ונלמד כיצד לקיים אינטראקציה אינטראקטיבית עם המעטפת.</p>
+    <p>פילוסופיית PowerShell ב-github:<br>
+    <a href="https://github.com/hypo69/1001-python-ru/blob/master/articles/%D0%A4%D0%B8%D0%BB%D0%BE%D1%81%D0%BE%D1%84%D0%B8%D1%8F%20PowerShell/01.md">היסטוריה ופקודה ראשונה</a></p>
+    <p>חלק 2: <a href="https://github.com/hypo69/1001-python-ru/blob/master/articles/%D0%A4%D0%B8%D0%BB%D0%BE%D1%81%D0%BE%D1%84%D0%B8%D1%8F%20PowerShell/02.md">צינור (Pipeline), משתנים, Get-Member, קובץ .ps1 וייצוא תוצאות.</a><br>
+    דוגמאות לחלק השני:<br>
+    <a href="https://github.com/hypo69/1001-python-ru/blob/master/articles/%D0%A4%D0%B8%D0%BB%D0%BE%D1%81%D0%BE%D1%84%D0%B8%D1%8F%20PowerShell/code/02/system_monitor.ps1">system_monitor.ps1</a></p>
+    <p>חלק 3: <a href="https://github.com/hypo69/1001-python-ru/blob/master/articles/%D0%A4%D0%B8%D0%BB%D0%BE%D1%81%D0%BE%D1%84%D0%B8%D1%8F%20PowerShell/03.md">ניווט וניהול מערכת קבצים.</a></p>
+    <p>דוגמאות לחלק השלישי:<br>
+    <a href="https://github.com/hypo69/1001-python-ru/blob/master/articles/%D0%A4%D0%B8%D0%BB%D0%BE%D1%81%D0%BE%D1%84%D0%B8%D1%8F%20PowerShell/code/03/Find-DuplicateFiles.ps1">Find-DuplicateFiles.ps1</a><br>
+    <a href="https://github.com/hypo69/1001-python-ru/blob/master/articles/%D0%A4%D0%B8%D0%BB%D0%BE%D1%81%D0%BE%D1%84%D0%B8%D1%8F%20PowerShell/code/03/Backup-FolderToZip">Backup-FolderToZip</a></p>
+</body>
+</html>

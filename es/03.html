@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filosofía de PowerShell. Parte 3: Navegación y gestión del sistema de archivos. Operadores lógicos. Introducción a las funciones.</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 0 auto;
+            max-width: 800px;
+            padding: 20px;
+            color: #333;
+        }
+        h1, h3 {
+            color: #0056b3;
+        }
+        pre {
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            border-left: 3px solid #0056b3;
+            color: #666;
+            page-break-inside: avoid;
+            font-family: monospace;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 1.6em;
+            max-width: 100%;
+            overflow: auto;
+            padding: 1em 1.5em;
+            display: block;
+            word-wrap: break-word;
+        }
+        code {
+            font-family: monospace;
+            background-color: #f0f0f0;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.6em;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        hr {
+            border: 0;
+            height: 1px;
+            background: #ccc;
+            margin: 1em 0;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Filosofía de PowerShell.</h1>
+    <h3><strong>Parte 3: Navegación y gestión del sistema de archivos. Operadores lógicos. Introducción a las funciones.</strong></h3>
+    <p>En la <a href="https://github.com/hypo69/1001-python-ru/blob/master/articles/%D0%A4%D0%B8%D0%BB%D0%BE%D1%81%D0%BE%D1%84%D0%B8%D1%8F%20PowerShell/01.md">parte anterior</a> exploramos las tuberías (pipelines) y los objetos de proceso abstractos.
+Ahora, apliquemos nuestro conocimiento de las tuberías y los objetos a una de las tareas más frecuentes para un usuario o administrador: trabajar con el sistema de archivos.
+En PowerShell, este trabajo se basa en los mismos principios: los comandos devuelven objetos que pueden pasarse a través de la tubería para su posterior procesamiento.</p>
+    <hr>
+    <h3><strong>1. Concepto de PowerShell Drives (PSDrives)</strong></h3>
+    <p>Antes de empezar a trabajar con archivos, es importante entender el concepto de <strong>unidades de PowerShell (PSDrives)</strong>. A diferencia de <code>cmd.exe</code>, donde las unidades son solo las letras <code>C:</code>, <code>D:</code>, y así sucesivamente, en PowerShell una "unidad" es una abstracción para acceder a cualquier almacenamiento de datos jerárquico.</p>
+    <pre><code class="language-powershell">Get-PSDrive
+</code></pre>
+    <p>El resultado mostrará no solo las unidades físicas, sino también las pseudo-unidades:</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Proveedor</th>
+                <th>Raíz</th>
+                <th>Descripción</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Alias</td>
+                <td>Alias</td>
+                <td>Alias:\</td>
+                <td>Alias de comandos</td>
+            </tr>
+            <tr>
+                <td>C</td>
+                <td>FileSystem</td>
+                <td>C:\</td>
+                <td>Disco local C</td>
+            </tr>
+            <tr>
+                <td>Cert</td>
+                <td>Certificate</td>
+                <td>Cert:\</td>
+                <td>Almacén de certificados</td>
+            </tr>
+            <tr>
+                <td>Env</td>
+                <td>Environment</td>
+                <td>Env:\</td>
+                <td>Variables de entorno</td>
+            </tr>
+            <tr>
+                <td>Function</td>
+                <td>Function</td>
+                <td>Function:\</td>
+                <td>Funciones cargadas</td>
+            </tr>
+            <tr>
+                <td>HKCU</td>
+                <td>Registry</td>
+                <td>HKEY_CURRENT_USER</td>
+                <td>Rama del registro</td>
+            </tr>
+            <tr>
+                <td>HKLM</td>
+                <td>Registry</td>
+                <td>HKEY_LOCAL_MACHINE</td>
+                <td>Rama del registro</td>
+            </tr>
+            <tr>
+                <td>Variable</td>
+                <td>Variable</td>
+                <td>Variable:\</td>
+                <td>Variables de sesión</td>
+            </tr>
+            <tr>
+                <td>WSMan</td>
+                <td>WSMan</td>
+                <td>WSMan:\</td>
+                <td>Configuración de WinRM</td>
+            </tr>
+        </tbody>
+    </table>
+    <p>Esta unificación significa que puedes "entrar" en el registro (<code>Set-Location HKLM:</code>) y obtener una lista de sus claves con el mismo comando <code>Get-ChildItem</code> que usas para obtener una lista de archivos en la unidad C:. Esta es una concepto increíblemente potente.</p>
+    <h4><strong>Ejemplos de trabajo con diferentes proveedores</strong></h4>
+    <ul>
+        <li><strong>Almacén de certificados (Cert:)</strong>
+            Permite trabajar con certificados digitales como si fueran archivos en carpetas.
+            <p><strong>Tarea:</strong> Encontrar todos los certificados SSL en la máquina local que caducan en los próximos 30 días.</p>
+            <pre><code class="language-powershell"># Nos movemos al almacén de certificados del equipo local
+Set-Location Cert:\LocalMachine\My
+
+# Encontramos certificados donde la fecha de caducidad es menor que hoy + 30 días
+Get-ChildItem | Where-Object { $_.NotAfter -lt (Get-Date).AddDays(30) } | Select-Object Subject, NotAfter, Thumbprint
+</code></pre>
+        </li>
+        <li><strong>Variables de entorno (Env:)</strong>
+            Proporciona acceso a las variables de entorno de Windows (<code>%PATH%</code>, <code>%windir%</code>, etc.) como si fueran archivos.
+            <p><strong>Tarea:</strong> Obtener la ruta a la carpeta del sistema de Windows y añadirle la ruta a <code>System32</code>.</p>
+            <pre><code class="language-powershell"># Obtenemos el valor de la variable windir
+$windowsPath = (Get-Item Env:windir).Value
+# O más simple: $windowsPath = $env:windir
+
+# Construimos de forma segura la ruta completa
+$system32Path = Join-Path -Path $windowsPath -ChildPath "System32"
+Write-Host $system32Path
+# Resultado: C:\WINDOWS\System32
+</code></pre>
+        </li>
+        <li><strong>Registro de Windows (HKCU: y HKLM:)</strong>
+            Imagina que el registro es simplemente otro sistema de archivos. Las ramas son carpetas y los parámetros son propiedades de esas carpetas.
+            <p><strong>Tarea:</strong> Averiguar el nombre completo de la versión instalada de Windows desde el registro.</p>
+            <pre><code class="language-powershell"># Nos movemos a la rama del registro deseada
+Set-Location "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+
+# Obtenemos la propiedad (parámetro del registro) con el nombre "ProductName"
+Get-ItemProperty -Path . -Name "ProductName"
+# Resultado: ProductName : Windows 11 Pro
+</code></pre>
+        </li>
+        <li><strong>Funciones cargadas (Function:)</strong>
+            Muestra todas las funciones disponibles en la sesión actual de PowerShell, como si fueran archivos.
+            <p><strong>Tarea:</strong> Encontrar todas las funciones cargadas que contengan la palabra "Help" en su nombre y ver el código de una de ellas.</p>
+            <pre><code class="language-powershell"># Buscamos funciones por máscara
+Get-ChildItem Function: | Where-Object { $_.Name -like "*Help*" }
+
+# Obtenemos el código completo (definición) de la función Get-Help
+(Get-Item Function:Get-Help).Definition
+</code></pre>
+        </li>
+        <li><strong>Variables de sesión (Variable:)</strong>
+            Permite gestionar todas las variables (<code>$myVar</code>, <code>$PROFILE</code>, <code>$Error</code>, etc.) definidas en la sesión actual.
+            <p><strong>Tarea:</strong> Encontrar todas las variables relacionadas con la versión de PowerShell (<code>$PSVersionTable</code>, <code>$PSHOME</code>, etc.).</p>
+            <pre><code class="language-powershell"># Encontramos todas las variables que comienzan con "PS"
+Get-ChildItem Variable:PS*
+
+# Obtenemos el valor de una variable específica
+Get-Variable -Name "PSVersionTable"
+</code></pre>
+        </li>
+    </ul>
+    <hr>
+    <h3>2. <strong>Navegación y análisis</strong></h3>
+    <h4><strong>Conceptos básicos de navegación</strong></h4>
+    <pre><code class="language-powershell"># Saber dónde estamos (devuelve un objeto PathInfo)
+Get-Location          # Alias: gl, pwd
+
+# Moverse a la raíz de la unidad C:
+Set-Location C:\      # Alias: sl, cd
+
+# Moverse a la carpeta de inicio del usuario actual
+Set-Location ~
+
+# Mostrar el contenido de la carpeta actual (devuelve una colección de objetos)
+Get-ChildItem         # Alias: gci, ls, dir
+</code></pre>
+    <pre><code class="language-powershell"># **Búsqueda recursiva**
+# Encontrar el archivo hosts en el sistema, ignorando los errores de "Acceso denegado"
+Get-ChildItem C:\ -Filter "hosts" -Recurse -ErrorAction SilentlyContinue
+</code></pre>
+    <p><strong>Clave <code>-Recurse</code> (Recursivo):</strong> Hace que el cmdlet trabaje no solo con el elemento especificado, sino también con todo su contenido.</p>
+    <p><strong>Clave <code>-ErrorAction SilentlyContinue</code>:</strong> Instrucción para ignorar errores y continuar el trabajo en silencio.</p>
+    <h5><strong>Análisis del espacio en disco</strong></h5>
+    <p>Un ejemplo clásico del poder de la tubería: encontrar, ordenar, formatear y seleccionar.</p>
+    <pre><code class="language-powershell">Get-ChildItem C:\Users -File -Recurse -ErrorAction SilentlyContinue |
+    Sort-Object Length -Descending |
+    Select-Object FullName, @{Name="Size(MB)"; Expression={[math]::Round($_.Length/1MB,2)}} |
+    Select-Object -First 20
+</code></pre>
+    <h6><strong>Consejo para introducir comandos largos.</strong></h6>
+    <blockquote>
+        <p>PowerShell permite dividirlos en varias líneas para facilitar la lectura.</p>
+        <ul>
+            <li><strong>Después del operador de tubería (<code>|</code>):</strong> Esta es la forma más común y conveniente. Simplemente presiona <code>Enter</code> después del símbolo <code>|</code>. PowerShell verá que el comando no está completo y esperará la continuación en la siguiente línea.</li>
+            <li><strong>En cualquier otro lugar:</strong> Usa el carácter de acento grave (backtick) <code>`</code> al final de la línea, y luego presiona <code>Enter</code>. Este carácter le dice a PowerShell: "El comando continuará en la siguiente línea".</li>
+            <li><strong>En editores (ISE, VS Code):</strong> La combinación de teclas <code>Shift+Enter</code> suele insertar automáticamente un salto de línea sin ejecutar el comando.</li>
+        </ul>
+    </blockquote>
+    <h4><strong>Filtrado de contenido y operadores lógicos</strong></h4>
+    <pre><code class="language-powershell"># Encontrar todos los archivos .exe. El parámetro -Filter funciona muy rápido.
+Get-ChildItem C:\Windows | Where-Object { $_.Extension -eq ".exe" }
+</code></pre>
+    <p><code>Get-ChildItem</code> devuelve una colección de objetos. Podemos pasarla a través de la tubería a <code>Where-Object</code> para un filtrado adicional.</p>
+    <pre><code class="language-powershell"># Mostrar solo archivos
+Get-ChildItem C:\Windows | Where-Object { $_.PSIsContainer -eq $false }
+</code></pre>
+    <p>Este comando nos introduce a uno de los conceptos fundamentales en los scripts de PowerShell: los <strong>operadores de comparación</strong>.</p>
+    <h4><strong>Operadores de comparación y lógicos</strong></h4>
+    <p>Son claves especiales para comparar valores. Siempre comienzan con un guion (<code>-</code>) y son la base para filtrar datos en <code>Where-Object</code> y construir lógica en <code>if</code>.</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Operador</th>
+                <th>Descripción</th>
+                <th>Ejemplo en la tubería</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>-eq</code></td>
+                <td>Igual (EQual)</td>
+                <td><code>$_.Name -eq "svchost.exe"</code></td>
+            </tr>
+            <tr>
+                <td><code>-ne</code></td>
+                <td>No igual (Not Equal)</td>
+                <td><code>$_.Status -ne "Running"</code></td>
+            </tr>
+            <tr>
+                <td><code>-gt</code></td>
+                <td>Mayor que (Greater Than)</td>
+                <td><code>$_.Length -gt 1MB</code></td>
+            </tr>
+            <tr>
+                <td><code>-ge</code></td>
+                <td>Mayor o igual (Greater or Equal)</td>
+                <td><code>$_.Handles -ge 500</code></td>
+            </tr>
+            <tr>
+                <td><code>-lt</code></td>
+                <td>Menor que (Less Than)</td>
+                <td><code>$_.LastWriteTime -lt (Get-Date).AddDays(-30)</code></td>
+            </tr>
+            <tr>
+                <td><code>-le</code></td>
+                <td>Menor o igual (Less or Equal)</td>
+                <td><code>$_.Count -le 1</code></td>
+            </tr>
+            <tr>
+                <td><code>-like</code></td>
+                <td>Similar a (con comodines <code>*</code>, <code>?</code>)</td>
+                <td><code>$_.Name -like "win*"</code></td>
+            </tr>
+            <tr>
+                <td><code>-notlike</code></td>
+                <td>No similar a</td>
+                <td><code>$_.Name -notlike "*.tmp"</code></td>
+            </tr>
+            <tr>
+                <td><code>-in</code></td>
+                <td>El valor está contenido en la colección</td>
+                <td><code>$_.Extension -in ".log", ".txt"</code></td>
+            </tr>
+            <tr>
+                <td><code>-and</code></td>
+                <td>Y lógico (ambas condiciones son verdaderas)</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td><code>-or</code></td>
+                <td>O lógico (al menos una condición es verdadera)</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td><code>-not</code></td>
+                <td>NO lógico (invierte la condición)</td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+    <p>El tema de los operadores lógicos es muy extenso y le dedicaré una parte separada (o incluso dos). Por ahora, armados con estos operadores,
+podemos <strong>filtrar, ordenar y seleccionar los archivos y carpetas que necesitamos</strong>, utilizando todo el poder de la tubería de objetos.</p>
+    <h4><strong>Ejemplos de uso en el sistema de archivos</strong></h4>
+    <p><strong>Encontrar un archivo por nombre exacto (sensible a mayúsculas y minúsculas):</strong></p>
+    <pre><code class="language-powershell">Get-ChildItem C:\Windows\System32 -Recurse | Where-Object { $_.Name -eq "kernel32.dll" }
+</code></pre>
+    <p><strong>Encontrar todos los archivos que comienzan con "host", pero que no son carpetas:</strong></p>
+    <pre><code class="language-powershell">Get-ChildItem C:\Windows\System32\drivers\etc | Where-Object { ($_.Name -like "host*") -and (-not $_.PSIsContainer) }
+</code></pre>
+    <p><strong>Encontrar todos los archivos de registro (.log) cuyo tamaño supera los 50 megabytes:</strong></p>
+    <pre><code class="language-powershell">Get-ChildItem C:\Windows\Logs -Filter "*.log" -Recurse | Where-Object { $_.Length -gt 50MB }
+</code></pre>
+    <p><strong>Encontrar todos los archivos temporales (.tmp) y archivos de copia de seguridad (.bak) para limpieza:
+El operador <code>-in</code> es mucho más elegante aquí que varias condiciones con <code>-or</code>.</strong></p>
+    <pre><code class="language-powershell">$extensionsToDelete = ".tmp", ".bak", ".old"
+Get-ChildItem C:\Temp -Recurse | Where-Object { $_.Extension -in $extensionsToDelete }
+</code></pre>
+    <p><strong>Encontrar todos los archivos de Word (.docx) creados en la última semana:</strong></p>
+    <pre><code class="language-powershell">$oneWeekAgo = (Get-Date).AddDays(-7)
+Get-ChildItem C:\Users\MyUser\Documents -Filter "*.docx" -Recurse | Where-Object { $_.CreationTime -ge $oneWeekAgo }
+</code></pre>
+    <p><strong>Encontrar archivos vacíos (tamaño 0 bytes) que no son carpetas:</strong></p>
+    <pre><code class="language-powershell">Get-ChildItem C:\Downloads -Recurse | Where-Object { ($_.Length -eq 0) -and (-not $_.PSIsContainer) }
+</code></pre>
+    <p><strong>Encontrar todos los archivos ejecutables (.exe) que fueron modificados este año, pero NO este mes:
+Este ejemplo complejo demuestra el poder de combinar operadores.</strong></p>
+    <pre><code class="language-powershell">Get-ChildItem "C:\Program Files" -Filter "*.exe" -Recurse | Where-Object {
+    ($_.LastWriteTime.Year -eq (Get-Date).Year) -and ($_.LastWriteTime.Month -ne (Get-Date).Month)
+}
+</code></pre>
+    <p><em>(Nota: los paréntesis <code>()</code> alrededor de cada condición se utilizan para agrupar y mejorar la legibilidad, especialmente en casos complejos).</em></p>
+    <p>Ten cuidado con la recursión:
+Muchos archivos/carpetas — <code>-Recurse</code> puede entrar recursivamente en decenas de miles de elementos.
+Enlaces simbólicos / enlaces cíclicos — pueden causar recursión infinita.
+Archivos sin permisos de acceso — pueden bloquear la ejecución.</p>
+    <h3>4. <strong>Creación, gestión y eliminación segura</strong></h3>
+    <h4><strong>Creación, copia y movimiento</strong></h4>
+    <pre><code class="language-powershell">New-Item -Path "C:\Temp\MyFolder" -ItemType Directory
+Add-Content -Path "C:\Temp\MyFolder\MyFile.txt" -Value "Primera línea"
+Copy-Item -Path "C:\Temp\MyFolder" -Destination "C:\Temp\MyFolder_Copy" -Recurse
+</code></pre>
+    <h4><strong>Eliminación segura</strong></h4>
+    <p><code>Remove-Item</code> es un cmdlet potencialmente peligroso, por lo que PowerShell tiene mecanismos de protección incorporados.</p>
+    <blockquote>
+        <p><strong>Clave <code>-WhatIf</code> (¿Qué pasaría si?):</strong> Tu mejor amigo. <strong>No ejecuta</strong> el comando, sino que solo muestra en la consola un mensaje sobre <strong>lo que sucedería</strong>.</p>
+    </blockquote>
+    <pre><code class="language-powershell"># VERIFICACIÓN segura antes de eliminar
+Remove-Item C:\Temp\MyFolder -Recurse -Force -WhatIf
+# Resultado: What if: Performing the operation "Remove Directory" on target "C:\Temp\MyFolder".
+
+# Solo después de asegurarte de que todo es correcto, quita -WhatIf y EJECUTA el comando
+Remove-Item C:\Temp\MyFolder -Recurse -Force
+</code></pre>
+    <hr>
+    <h3><strong>Introducción a las funciones</strong></h3>
+    <p>Cuando una línea de código se convierte en un conjunto complejo de comandos que deseas usar una y otra vez, es el momento de crear <strong>funciones</strong>.</p>
+    <h4><strong>Cómo usar y guardar funciones</strong></h4>
+    <p>Existen tres formas principales de hacer que tus funciones estén disponibles:</p>
+    <p><strong>Método 1: Temporal (para pruebas)</strong>
+Puedes escribir en la consola o simplemente copiar y pegar todo el código de la función en la consola de PowerShell. La función estará disponible hasta que cierres esta ventana.</p>
+    <p><strong>Método 2: Permanente, pero manual (a través de un archivo <code>.ps1</code>)</strong>
+Esta es la forma más común de organizar y compartir herramientas. Guardas la función en un archivo <code>.ps1</code> y la cargas en la sesión cuando la necesitas.</p>
+    <blockquote>
+        <p><strong>Dot Sourcing (<code>. .\script.ps1</code>):</strong> Este comando especial ejecuta el script en el contexto <em>actual</em>, haciendo que todas sus funciones y variables estén disponibles en tu consola.</p>
+    </blockquote>
+    <p><strong>Método 3: Automático (a través del perfil de PowerShell)</strong>
+Esta es la forma más potente para tus herramientas personales y de uso frecuente.</p>
+    <blockquote>
+        <p><strong>¿Qué es el perfil de PowerShell?</strong> Es un script especial <code>.ps1</code> que PowerShell ejecuta automáticamente cada vez que se inicia. Todo lo que coloques en este archivo —alias, variables y, por supuesto, funciones— estará disponible en cada una de tus sesiones por defecto.</p>
+    </blockquote>
+    <h5><strong>Ejemplo 1: Búsqueda de archivos duplicados</strong></h5>
+    <p>Recorramos todos los pasos con el ejemplo de la función <code>Find-DuplicateFiles</code>.</p>
+    <p><strong>Paso 1: Definimos el código de la función</strong></p>
+    <pre><code class="language-powershell">$functionCode = @'
+function Find-DuplicateFiles {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$Path
+    )
+
+    Get-ChildItem $Path -File -Recurse -ErrorAction SilentlyContinue |
+        Group-Object Name, Length |
+        Where-Object { $_.Count -gt 1 } |
+        ForEach-Object {
+            # ESTA ES LA LÍNEA CORREGIDA:
+            # Dentro del operador $() las variables no se escapan.
+            Write-Host "Duplicados encontrados: $($_.Name)" -ForegroundColor Yellow
+            $_.Group | Select-Object FullName, Length, LastWriteTime
+        }
+}
+'@
+</code></pre>
+    <p><strong>Paso 2 (Opción A): Guardar en un archivo separado para carga manual</strong></p>
+    <pre><code class="language-powershell"># Guardamos
+Set-Content -Path ".\Find-DuplicateFiles.ps1" -Value $functionCode
+# Cargamos
+. .\Find-DuplicateFiles.ps1
+</code></pre>
+    <blockquote>
+        <p>Dot Sourcing (. .\Find-DuplicateFiles.ps1): Este comando especial ejecuta el script en el contexto actual, haciendo que todas sus funciones y variables estén disponibles en tu consola.</p>
+    </blockquote>
+    <pre><code class="language-powershell"># Llamamos
+Find-DuplicateFiles -Path "C:\Users\$env:USERNAME\Downloads"
+</code></pre>
+    <p><strong>Paso 2 (Opción B): Añadir al perfil para carga automática</strong>
+Hagamos que esta función esté siempre disponible.</p>
+    <blockquote>
+        <p>¿Qué es el perfil de PowerShell? Es un script especial .ps1 que PowerShell ejecuta automáticamente cada vez que se inicia. Todo lo que coloques en este archivo —alias, variables y funciones— estará disponible en cada una de tus sesiones por defecto.</p>
+    </blockquote>
+    <ol>
+        <li><strong>Encontramos la ruta al archivo de perfil.</strong> PowerShell lo almacena en la variable <code>$PROFILE</code>.
+            <pre><code class="language-powershell">$PROFILE
+</code></pre>
+        </li>
+        <li><strong>Creamos el archivo de perfil si no existe.</strong>
+            <pre><code class="language-powershell">if (-not (Test-Path $PROFILE)) {
+    New-Item -Path $PROFILE -Type File -Force
+}
+</code></pre>
+        </li>
+        <li><strong>Añadimos el código de nuestra función al final del archivo de perfil.</strong>
+            <pre><code class="language-powershell">Add-Content -Path $PROFILE -Value $functionCode
+</code></pre>
+        </li>
+        <li><strong>Reinicia PowerShell</strong> (o ejecuta <code>. $PROFILE</code>), y ahora tu comando <code>Find-DuplicateFiles</code> estará siempre disponible, al igual que <code>Get-ChildItem</code>.</li>
+    </ol>
+    <h5><strong>Ejemplo 2: Creación de un archivo ZIP con copia de seguridad</strong></h5>
+    <p><strong>Código para el archivo <code>Backup-FolderToZip.ps1</code>:</strong></p>
+    <pre><code class="language-powershell">function Backup-FolderToZip {
+    param([string]$SourcePath, [string]$DestinationPath)
+    if (-not (Test-Path $SourcePath)) { Write-Error "La carpeta de origen no se encontró."; return }
+    $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm"
+    $archiveFileName = "Backup_{0}_{1}.zip" -f (Split-Path $SourcePath -Leaf), $timestamp
+    $fullArchivePath = Join-Path $DestinationPath $archiveFileName
+    if (-not (Test-Path $DestinationPath)) { New-Item -Path $DestinationPath -ItemType Directory -Force | Out-Null }
+    Compress-Archive -Path "$SourcePath\*" -DestinationPath $fullArchivePath -Force
+    Write-Host "Copia de seguridad completada: $fullArchivePath" -ForegroundColor Green
+}
+</code></pre>
+    <p>Un análisis detallado de las funciones lo haré en las siguientes partes.</p>
+    <hr>
+    <h3><strong>Referencia de cmdlets para trabajar con el sistema de archivos</strong></h3>
+    <h4><strong>1. Cmdlets básicos</strong></h4>
+    <p>Esta lista incluye los 12 cmdlets más necesarios, que cubren el 90% de las tareas diarias.</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Cmdlet</th>
+                <th>Propósito principal</th>
+                <th>Ejemplo de uso</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>Get-ChildItem</code></td>
+                <td>Obtener una lista de archivos y carpetas.</td>
+                <td><code>Get-ChildItem C:\Windows</code></td>
+            </tr>
+            <tr>
+                <td><code>Set-Location</code></td>
+                <td>Moverse a otro directorio.</td>
+                <td><code>Set-Location C:\Temp</code></td>
+            </tr>
+            <tr>
+                <td><code>Get-Location</code></td>
+                <td>Mostrar el directorio actual.</td>
+                <td><code>Get-Location</code></td>
+            </tr>
+            <tr>
+                <td><code>New-Item</code></td>
+                <td>Crear un nuevo archivo o carpeta.</td>
+                <td><code>New-Item "report.docx" -Type File</code></td>
+            </tr>
+            <tr>
+                <td><code>Remove-Item</code></td>
+                <td>Eliminar un archivo o carpeta.</td>
+                <td><code>Remove-Item "old_log.txt"</code></td>
+            </tr>
+            <tr>
+                <td><code>Copy-Item</code></td>
+                <td>Copiar un archivo o carpeta.</td>
+                <td><code>Copy-Item "file.txt" -Dest "D:\"</code></td>
+            </tr>
+            <tr>
+                <td><code>Move-Item</code></td>
+                <td>Mover un archivo o carpeta.</td>
+                <td><code>Move-Item "report.docx" -Dest "C:\Archive"</code></td>
+            </tr>
+            <tr>
+                <td><code>Rename-Item</code></td>
+                <td>Renombrar un archivo o carpeta.</td>
+                <td><code>Rename-Item "old.txt" -NewName "new.txt"</code></td>
+            </tr>
+            <tr>
+                <td><code>Get-Content</code></td>
+                <td>Leer el contenido de un archivo.</td>
+                <td><code>Get-Content "config.ini"</code></td>
+            </tr>
+            <tr>
+                <td><code>Set-Content</code></td>
+                <td>Escribir/sobrescribir el contenido de un archivo.</td>
+                <td><code>"data" | Set-Content "file.txt"</code></td>
+            </tr>
+            <tr>
+                <td><code>Add-Content</code></td>
+                <td>Añadir contenido al final de un archivo.</td>
+                <td><code>Get-Date | Add-Content "log.txt"</code></td>
+            </tr>
+            <tr>
+                <td><code>Test-Path</code></td>
+                <td>Comprobar si existe un archivo o carpeta.</td>
+                <td><code>Test-Path "C:\Temp"</code></td>
+            </tr>
+        </tbody>
+    </table>
+    <p>¿Necesitas <strong>leer el contenido</strong> de un archivo de texto? Usa <code>Get-Content</code>.
+¿Necesitas <strong>sobrescribir completamente un archivo</strong> con nuevo contenido? Usa <code>Set-Content</code>.
+¿Necesitas <strong>añadir una línea a un archivo de registro</strong>, sin borrar los datos antiguos? Usa <code>Add-Content</code>.
+¿Necesitas <strong>comprobar si un archivo existe</strong> antes de escribir? Usa <code>Test-Path</code>.</p>
+    <h4><strong>2. Cmdlets especializados para tareas avanzadas</strong></h4>
+    <p>Cuando los cmdlets básicos no son suficientes, PowerShell ofrece herramientas más especializadas. No duplican los básicos, sino que amplían tus capacidades.</p>
+    <ul>
+        <li><strong>Trabajo con rutas (Path)</strong>
+            <ul>
+                <li><strong><code>Join-Path</code></strong>: Une de forma segura partes de una ruta, insertando automáticamente <code>\</code>.</li>
+                <li><strong><code>Split-Path</code></strong>: Divide una ruta en partes (carpeta, nombre de archivo, extensión).</li>
+                <li><strong><code>Resolve-Path</code></strong>: Convierte una ruta relativa (por ejemplo, <code>.</code> o <code>..\files</code>) en una ruta completa y absoluta.</li>
+            </ul>
+        </li>
+        <li><strong>Trabajo con propiedades y contenido (Item Properties and Content)</strong>
+            <ul>
+                <li><strong><code>Get-ItemProperty</code></strong>: Obtiene las propiedades de un archivo específico (por ejemplo, <code>IsReadOnly</code>, <code>CreationTime</code>).</li>
+                <li><strong><code>Set-ItemProperty</code></strong>: Modifica las propiedades de un archivo o carpeta.</li>
+                <li><strong><code>Clear-Content</code></strong>: Elimina todo el contenido de un archivo, pero deja el archivo vacío.</li>
+            </ul>
+        </li>
+        <li><strong>Navegación avanzada (Location Stack)</strong>
+            <ul>
+                <li><strong><code>Push-Location</code></strong>: "Recuerda" el directorio actual y se mueve a uno nuevo.</li>
+                <li><strong><code>Pop-Location</code></strong>: Vuelve al directorio que <code>Push-Location</code> "recordó".</li>
+            </ul>
+        </li>
+        <li><strong>Gestión de permisos de acceso (ACL)</strong>
+            <ul>
+                <li><strong><code>Get-Acl</code></strong>: Obtiene la lista de permisos de acceso (ACL) para un archivo o carpeta.</li>
+                <li><strong><code>Set-Acl</code></strong>: Establece los permisos de acceso para un archivo o carpeta (operación compleja).</li>
+            </ul>
+        </li>
+    </ul>
+    <p>¿Necesitas <strong>cambiar un atributo de archivo</strong>, por ejemplo, hacerlo "solo lectura"? Usa <code>Set-ItemProperty</code>.
+¿Necesitas <strong>limpiar completamente un archivo de registro</strong>, sin eliminarlo? Usa <code>Clear-Content</code>.
+¿Necesitas <strong>moverte temporalmente a otra carpeta</strong> en un script y luego volver garantizadamente? Usa <code>Push-Location</code> y <code>Pop-Location</code>.
+¿Necesitas <strong>saber quién tiene permisos</strong> para acceder a una carpeta? Usa <code>Get-Acl</code>.</p>
+    <p>En la siguiente parte, aprenderemos cómo trabajar con otros almacenes de datos, como el registro de Windows,
+utilizando los mismos enfoques, profundizaremos en el concepto de funciones, examinaremos los operadores lógicos y aprenderemos a interactuar con el shell de forma interactiva.</p>
+    <p>Filosofía de PowerShell en github:
+<a href="https://github.com/hypo69/1001-python-ru/blob/master/articles/%D0%A4%D0%B8%D0%BB%D0%BE%D1%81%D0%BE%D1%84%D0%B8%D1%8F%20PowerShell/01.md">Historia y primer cmdlet</a></p>
+    <p>Parte 2: <a href="https://github.com/hypo69/1001-python-ru/blob/master/articles/%D0%A4%D0%B8%D0%BB%D0%BE%D1%81%D0%BE%D1%84%D0%B8%D1%8F%20PowerShell/02.md">Tubería (Pipeline), variables, Get-Member, archivo .ps1 y exportación de resultados.</a>
+Ejemplos para la segunda parte:
+<a href="https://github.com/hypo69/1001-python-ru/blob/master/articles/%D0%A4%D0%B8%D0%BB%D0%BE%D1%81%D0%BE%D1%84%D0%B8%D1%8F%20PowerShell/code/02/system_monitor.ps1">system_monitor.ps1</a></p>
+    <p>Parte 3: <a href="https://github.com/hypo69/1001-python-ru/blob/master/articles/%D0%A4%D0%B8%D0%BB%D0%BE%D1%81%D0%BE%D1%84%D0%B8%D1%8F%20PowerShell/03.md">Navegación y gestión del sistema de archivos.</a></p>
+    <p>Ejemplos para la tercera parte:
+<a href="https://github.com/hypo69/1001-python-ru/blob/master/articles/%D0%A4%D0%B8%D0%BB%D0%BE%D1%81%D0%BE%D1%84%D0%B8%D1%8F%20PowerShell/code/03/Find-DuplicateFiles.ps1">Find-DuplicateFiles.ps1</a>
+<a href="">Backup-FolderToZip</a></p>
+</body>
+</html>
