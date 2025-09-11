@@ -1,0 +1,353 @@
+# Guida Completa a ExifTool e PowerShell
+
+Ogni volta che scatti una fotografia, la tua fotocamera registra nel file non solo l'immagine stessa, ma anche informazioni di servizio: modello della fotocamera e dell'obiettivo, data e ora dello scatto, tempo di esposizione, diaframma, ISO, coordinate GPS. Questi dati sono chiamati **EXIF (Exchangeable Image File Format)**.
+
+Sebbene PowerShell abbia strumenti integrati per leggere alcuni metadati, sono limitati. Per accedere a **tutte** le informazioni, è necessario uno strumento specializzato. In questo articolo userò **ExifTool**.
+
+**ExifTool** è un'utilità gratuita, multipiattaforma e open source, scritta da Phil Harvey. È lo standard d'oro per la lettura, la scrittura e la modifica dei metadati in una vasta gamma di formati di file (immagini, audio, video, PDF e altro). ExifTool conosce migliaia di tag di centinaia di produttori di dispositivi, il che lo rende lo strumento più completo della sua categoria.
+
+### Download e configurazione corretta
+
+Prima di scrivere codice, è necessario preparare l'utilità stessa.
+
+1.  Vai al **sito ufficiale di ExifTool: [https://exiftool.org/](https://exiftool.org/)**. Sulla pagina principale, trova e scarica **"Windows Executable"**.
+
+2.  **Rinominazione (Passo fondamentale!):** Il file scaricato si chiamerà `exiftool(-k).exe`. Non è un caso.
+
+Rinominalo in **`exiftool.exe`** per **disabilitare la modalità "pausa"**, che è pensata per gli utenti che avviano il programma con un doppio clic del mouse.
+>
+
+3.  **Archiviazione:** Hai due opzioni principali su dove archiviare `exiftool.exe`.
+    *   **Opzione 1 (Semplice): Nella stessa cartella del tuo script.** Questo è il percorso più semplice. Il tuo script PowerShell sarà sempre in grado di trovare l'utilità, poiché si trova accanto. Ideale per script portatili che sposti da un computer all'altro.
+    *   **Opzione 2 (Consigliata per uso frequente): In una cartella della variabile di sistema `PATH`.** La variabile `PATH` è un elenco di directory in cui Windows e PowerShell cercano automaticamente i file eseguibili.
+    Puoi creare una cartella (ad esempio, `C:\Tools`), inserirvi `exiftool.exe` e aggiungere `C:\Tools` alla variabile di sistema `PATH`.
+    Successivamente, potrai richiamare `exiftool.exe` da qualsiasi cartella in qualsiasi console.
+
+
+Script per l'aggiunta a $PATH:
+Aggiunta di una directory a PATH per l'UTENTE ATTUALE
+Aggiunta di una directory a PATH di SISTEMA per TUTTI GLI UTENTI
+
+---
+
+## PowerShell e programmi esterni
+
+Per utilizzare efficacemente ExifTool, è necessario sapere come PowerShell avvia i file `.exe` esterni.
+Il modo corretto e più affidabile per avviare programmi esterni è l'**operatore di chiamata `&` (e commerciale)**.
+PowerShell genererà un errore se il percorso del programma contiene spazi. Ad esempio, `C:\My Tools\exiftool.exe`.
+`&` (e commerciale)** dice a PowerShell: "Il testo che mi segue tra virgolette è il percorso di un file eseguibile. Avvialo, e tutto ciò che segue sono i suoi argomenti".
+
+```powershell
+# Sintassi corretta
+& "C:\Path With Spaces\program.exe" "argomento 1" "argomento 2"
+```
+
+Usa sempre `&`, quando lavori con percorsi di programmi in variabili o percorsi che potrebbero contenere spazi.
+
+---
+
+## Trucchi pratici: ExifTool + PowerShell
+
+Ora uniamo le nostre conoscenze.
+
+### Esempio n. 1: Estrazione di base e visualizzazione interattiva
+
+Il modo più semplice per ottenere tutti i dati da una foto ed esaminarli è richiederli in formato JSON e passarli a `Out-ConsoleGridView`.
+
+```powershell
+$photoPath = "D:\Photos\IMG_1234.JPG"
+
+# 1. Avvia exiftool con l'opzione -json per un output strutturato
+# 2. Converti il testo JSON in un oggetto PowerShell
+#    Chiama exiftool.exe direttamente, senza variabile e operatore di chiamata &.
+$exifObject = exiftool.exe -json $photoPath | ConvertFrom-Json
+
+# 3. Trasforma l'oggetto "ampio" in una comoda tabella "Parametro-Valore"
+$reportData = $exifObject.psobject.Properties | Select-Object Name, Value
+
+# 4. Visualizza il risultato in una finestra interattiva per l'analisi
+$reportData | Out-ConsoleGridView -Title "Metadati del file: $($photoPath | Split-Path -Leaf)"
+```
+
+Questo codice aprirà una finestra interattiva in cui potrai ordinare i dati per nome del parametro o valore, nonché filtrarli semplicemente iniziando a digitare il testo. Questo è incredibilmente comodo per trovare rapidamente le informazioni necessarie.
+
+### Esempio n. 2: Creazione di un report pulito e invio a diversi "dispositivi"
+
+`Out-ConsoleGridView` è solo l'inizio. Puoi indirizzare i dati elaborati ovunque, usando altri cmdlet `Out-*`.
+
+Supponiamo di avere i dati nella variabile `$reportData` dall'esempio precedente.
+
+#### **A) Invio a un file CSV per Excel**
+```powershell
+$reportData | Export-Csv -Path "C:\Reports\photo_exif.csv" -NoTypeInformation -Encoding UTF8
+```
+Il comando `Export-Csv` crea un file perfettamente strutturato che può essere aperto in Excel o Fogli Google.
+
+#### **B) Invio a un file di testo**
+```powershell
+# Per una formattazione gradevole, usa prima Format-Table
+$reportData | Format-Table -AutoSize | Out-File -FilePath "C:\Reports\photo_exif.txt"
+```
+Il comando `Out-File` salverà nel file una copia testuale esatta di ciò che vedi nella console.
+
+#### **C) Invio agli appunti**
+Vuoi incollare rapidamente i dati in un'e-mail o in una chat? Usa `Out-Clipboard`.
+```powershell
+$reportData | Format-Table -AutoSize | Out-String | Out-Clipboard
+```
+
+Ora puoi premere `Ctrl+V` in qualsiasi editor di testo e incollare una tabella formattata con cura.
+
+### Esempio n. 3: Ottenere dati specifici da utilizzare in uno script
+
+Spesso non hai bisogno dell'intero report, ma solo di uno o due valori. Poiché `$exifObject` è un normale oggetto PowerShell, puoi facilmente accedere alle sue proprietà.
+
+```powershell
+
+$photoPath = "D:\Photos\IMG_1234.JPG"
+
+# Chiama exiftool.exe direttamente per nome.
+# PowerShell lo troverà automaticamente in una delle cartelle elencate in PATH.
+$exifObject = exiftool.exe -json $photoPath | ConvertFrom-Json
+
+# 1. Crea un oggetto PowerShell con nomi di proprietà comprensibili.
+#    Questo è simile alla creazione di un record strutturato.
+$reportObject = [PSCustomObject]@{
+    "Fotocamera"           = $exifObject.Model
+    "Data dello scatto"      = $exifObject.DateTimeOriginal
+    "Sensibilità" = $exifObject.ISO
+    "Nome file"        = $exifObject.FileName # Aggiungi il nome del file per il contesto
+}
+
+# 2. Visualizza questo oggetto in una finestra interattiva.
+#    Out-GridView creerà automaticamente le colonne dai nomi delle proprietà.
+$reportObject | Out-ConsoleGridView -Title "Metadati del file: $($photoPath | Split-Path -Leaf)"
+```
+
+Questo approccio è la base per qualsiasi automazione seria, come la ridenominazione di file in base alla data di scatto, l'ordinamento di foto per modello di fotocamera o l'aggiunta di filigrane con informazioni sull'esposizione.
+
+### Esempio n. 4: Estrazione batch di metadati da una cartella
+
+A volte è necessario analizzare non una singola foto, ma un'intera cartella di immagini.
+
+```powershell
+# Specifica solo la cartella con le foto.
+$photoFolder = "D:\Photos"
+
+# Chiama exiftool.exe direttamente. La variabile per il percorso e l'operatore & non sono necessari.
+$allExif = exiftool.exe -json "$photoFolder\*.jpg" | ConvertFrom-Json
+
+# Trasforma in un formato comodo
+$report = foreach ($photo in $allExif) {
+    [PSCustomObject]@{
+        # --- Dati di base su file e fotocamera ---
+        FileName       = $photo.FileName
+        DateTime       = $photo.DateTimeOriginal
+        CameraMake     = $photo.Make                 # Produttore (ad esempio, "Canon", "SONY")
+        CameraModel    = $photo.Model                 # Modello della fotocamera (ad esempio, "EOS R5")
+        LensModel      = $photo.LensID                # Nome completo del modello dell'obiettivo
+        
+        # --- Parametri di scatto (esposizione) ---
+        ISO            = $photo.ISO
+        ShutterSpeed   = $photo.ShutterSpeed
+        Aperture       = $photo.Aperture
+        FocalLength    = $photo.FocalLength           # Lunghezza focale (ad esempio, "50.0 mm")
+        ExposureMode   = $photo.ExposureProgram       # Modalità di scatto (ad esempio, "Manuale", "Priorità di apertura")
+        Flash          = $photo.Flash                 # Informazioni sull'attivazione del flash
+        
+        # --- GPS e dati immagine ---
+        GPSPosition    = $photo.GPSPosition           # Coordinate GPS come singola stringa (se presenti)
+        Dimensions     = "$($photo.ImageWidth)x$($photo.ImageHeight)" # Dimensioni dell'immagine in pixel
+    }
+}
+
+# Visualizza i dati in una tabella interattiva nella CONSOLE
+$report | Out-ConsoleGridView -Title "Report riepilogativo per la cartella: $photoFolder"
+```
+
+💡 Ottieni una tabella ordinata per l'intera cartella in una volta sola.
+
+---
+
+### Esempio n. 5: Ricerca ricorsiva nelle sottocartelle
+
+ExifTool può cercare file in tutte le sottocartelle utilizzando l'opzione `-r`.
+
+```powershell
+& $exifToolPath -r -json "D:\Photos" | ConvertFrom-Json |
+    Select-Object FileName, Model, DateTimeOriginal |
+    Export-Csv "C:\Reports\all_photos_recursive.csv" -NoTypeInformation -Encoding UTF8
+```
+
+---
+
+### Esempio n. 6: Ridenominazione dei file in base alla data di scatto
+
+Questo è uno degli scenari di automazione più popolari: i file vengono rinominati in base alla data/ora di scatto.
+
+```powershell
+$exifToolPath = "C:\Tools\exiftool.exe"
+$photoFolder = "D:\Photos"
+
+# Rinomina nel formato AAAA-MM-GG_HH-MM-SS.jpg
+& $exifToolPath -r -d "%Y-%m-%d_%H-%M-%S.%%e" "-FileName&lt;DateTimeOriginal" $photoFolder
+```
+
+💡 *ExifTool inserirà automaticamente l'estensione del file originale tramite `%%e`.*
+
+---
+
+### Esempio n. 7: Estrazione solo delle coordinate GPS
+
+Utile se vuoi costruire una mappa dalle tue foto.
+
+```powershell
+# 1. Specifica il percorso della cartella delle tue foto
+$photoFolder = "E:\DCIM\Camera"
+
+# 2. Elenca i tag di cui abbiamo bisogno: nome file e tre tag GPS.
+#    Questo rende la query molto più veloce rispetto all'estrazione di tutti i tag.
+$tagsToExtract = @(
+    "-SourceFile", # SourceFile è migliore di FileName, poiché di solito contiene il percorso completo
+    "-GPSLatitude",
+    "-GPSLongitude",
+    "-GPSAltitude"
+)
+
+# 3. Chiama exiftool.exe direttamente (poiché è in PATH).
+#    L'opzione -r cerca i file in tutte le sottocartelle.
+#    Il risultato viene immediatamente convertito da JSON.
+$allExifData = exiftool.exe -r -json $tagsToExtract $photoFolder | ConvertFrom-Json
+
+# 4. Filtra i risultati: lascia SOLO gli oggetti che hanno latitudine e longitudine.
+$filesWithGps = $allExifData | Where-Object { $_.GPSLatitude -and $_.GPSLongitude }
+
+# 5. Controlla se sono stati trovati file con dati GPS
+if ($filesWithGps) {
+    # 6. Crea un bel report dai dati filtrati.
+    #    Usa Select-Object per rinominare le colonne e formattare.
+    $report = $filesWithGps | Select-Object @{Name="Nome file"; Expression={Split-Path $_.SourceFile -Leaf}},
+                                             @{Name="Latitudine"; Expression={$_.GPSLatitude}},
+                                             @{Name="Longitudine"; Expression={$_.GPSLongitude}},
+                                             @{Name="Altitudine"; Expression={if ($_.GPSAltitude) { "$($_.GPSAltitude) m" } else { "N/A" }}}
+    
+    # 7. Visualizza il report finale in una tabella interattiva della console.
+    $report | Out-ConsoleGridView -Title "File con dati GPS nella cartella: $photoFolder"
+
+} else {
+    # Se non viene trovato nulla, informa gentilmente.
+    Write-Host "Nessun file con dati GPS trovato nella cartella '$photoFolder'." -ForegroundColor Yellow
+}
+```
+
+---
+
+### Esempio n. 8: Eliminazione di massa di tutti i dati GPS (per la privacy)
+
+```powershell
+# Elimina tutti i tag GPS da JPG e PNG
+& $exifToolPath -r -overwrite_original -gps:all= "D:\Photos"
+```
+
+💡 *Questa operazione è irreversibile, quindi esegui un backup prima di procedere.*
+
+---
+
+### Esempio n. 9: Conversione dell'ora di scatto in ora locale
+
+A volte le foto vengono scattate in un fuso orario diverso. ExifTool può spostare la data.
+
+```powershell
+# Sposta l'ora di +3 ore
+& $exifToolPath "-AllDates+=3:0:0" "D:\Photos\IMG_*.JPG"
+```
+
+---
+
+### Esempio n. 10: Ottenere un elenco di tutti i modelli di fotocamere unici in una cartella
+
+```powershell
+$models = & $exifToolPath -r -Model -s3 "D:\Photos" | Sort-Object -Unique
+$models | ForEach-Object { Write-Host "Modello: $_" }
+```
+
+---
+
+### Esempio n. 11: Visualizzazione solo dei tag necessari in formato tabellare
+
+```powershell
+& $exifToolPath -T -Model -DateTimeOriginal -ISO -Aperture -ShutterSpeed "D:\Photos\IMG_1234.JPG"
+```
+
+`-T` visualizza l'output in formato tabellare, separato da tabulazioni — comodo per l'elaborazione successiva.
+
+---
+
+### Esempio n. 12: Verifica della presenza di GPS in un grande array di file
+
+```powershell
+$files = & $exifToolPath -r -if "$gpslatitude" -p '$FileName' "D:\Photos"
+Write-Host "File con GPS:"
+$files
+```
+
+---
+
+### Esempio n. 13: Copia di metadati da un file all'altro
+
+```powershell
+# 1. Seleziona il file di riferimento
+$sourceFile = Get-ChildItem "D:\Photos" -Filter "*.jpg" | Out-ConsoleGridView -Title "Seleziona il file di RIFERIMENTO"
+
+# 2. Se il file di riferimento è stato selezionato, seleziona i file di destinazione
+if ($sourceFile) {
+    $targetFiles = Get-ChildItem "D:\Photos\New" -Filter "*.jpg" | Out-ConsoleGridView -Title "Seleziona i file di DESTINAZIONE per la copia dei metadati" -OutputMode Multiple
+    
+    # 3. Se i file di destinazione sono stati selezionati, esegui la copia
+    if ($targetFiles) {
+        & exiftool.exe -TagsFromFile $sourceFile.FullName ($targetFiles.FullName)
+        Write-Host "Metadati copiati da $($sourceFile.Name) a $($targetFiles.Count) file."
+    }
+}
+```
+
+---
+
+### Esempio n. 14: Salvataggio dei metadati originali in un JSON separato prima della modifica
+
+```powershell
+$backupPath = "C:\Reports\metadata_backup.json"
+& $exifToolPath -r -json "D:\Photos" | Out-File -Encoding UTF8 $backupPath
+```
+
+---
+
+### Esempio n. 15: Utilizzo di PowerShell per l'ordinamento automatico delle foto per data
+
+```powershell
+$photos = Get-ChildItem "D:\Photos" -Filter *.jpg -Recurse
+foreach ($photo in $photos) {
+    $meta = & $exifToolPath -json $photo.FullName | ConvertFrom-Json
+    $date = Get-Date $meta.DateTimeOriginal -ErrorAction SilentlyContinue
+    if ($date) {
+        $targetFolder = "D:\Sorted\{0:yyyy}\{0:MM}" -f $date
+        if (-not (Test-Path $targetFolder)) { New-Item -Path $targetFolder -ItemType Directory }
+        Move-Item $photo.FullName -Destination $targetFolder
+    }
+}
+```
+
+---
+
+
+### Esempio 16: Ricerca di tutti i modelli di fotocamere unici in una collezione
+
+Anche se questo può essere fatto in una riga, l'output in `GridView` consente di copiare immediatamente il nome del modello desiderato.
+
+```powershell
+# L'opzione -s3 visualizza solo i valori, -Model - il nome del tag
+$uniqueModels = & exiftool.exe -r -Model -s3 "D:\Photos" | Sort-Object -Unique
+
+# Visualizza in GridView per una facile visualizzazione e copia
+$uniqueModels | Out-ConsoleGridView -Title "Modelli di fotocamere unici nella collezione"
+```

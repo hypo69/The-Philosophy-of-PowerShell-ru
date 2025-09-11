@@ -1,0 +1,57 @@
+<h1>Керування живленням мережевого адаптера Wake-on-LAN за допомогою PowerShell.</h1>
+<p>Детальний посібник з налаштування Wake-on-LAN за допомогою PowerShell, в якому розглядаються основні команди та способи вирішення типових проблем, що виникають через відмінності в драйверах мережевих адаптерів.</p>
+<h4>Крок 1: Ідентифікація пристрою.</h4>
+<p>Перш ніж налаштовувати Wake-on-LAN (WOL) для мережевого адаптера, потрібно точно визначити, з яким пристроєм ми працюємо. Для цього використовуємо команду PowerShell, яка шукає пристрої за частиною імені (наприклад, "Realtek" або "Intel").</p>
+<pre class="line-numbers"><code class="language-powershell">Get-PnpDevice | Where-Object { $_.FriendlyName -like "*Realtek*" } | Select-Object FriendlyName, Status, Class, InstanceId
+</code></pre>
+<p>!(../assets/manage-wol/1.png)</p>
+<p>Ця команда говорить системі:</p>
+<blockquote>
+<p>"Покажи мені всі пристрої, в назві яких є слово «Realtek», і виведи по ним таблицю з чотирма колонками: повне ім'я, статус, клас і системний ID."</p>
+</blockquote>
+<ol>
+<li><strong><code>Get-PnpDevice</code></strong>: Бере повний список усіх Plug-and-Play пристроїв.</li>
+<li><strong><code>|</code> (Конвеєр)</strong>: Передає список далі.</li>
+<li><strong><code>Where-Object { ... }</code></strong>: Фільтрує список, залишаючи пристрої, чиє ім'я (<code>FriendlyName</code>) містить "Realtek".</li>
+<li><strong><code>|</code> (Конвеєр)</strong>: Передає відфільтрований список.</li>
+<li><strong><code>Select-Object ...</code></strong>: Форматує вивід, показуючи лише потрібні властивості.</li>
+</ol>
+<p><em>Знаходимо потрібний пристрій і беремо перший зі списку</em></p>
+<pre class="line-numbers"><code class="language-powershell">$device = Get-PnpDevice | Where-Object { $_.FriendlyName -like "*Realtek*" } | Select-Object -First 1
+
+*Записуємо його властивості в змінні*
+
+$DeviceName = $device.FriendlyName
+$InstanceId = $device.InstanceId
+$pmKey = "HKLM:\SYSTEM\CurrentControlSet\Enum\$InstanceId\Device Parameters"
+</code></pre>
+<h4>Крок 2: Глобальний дозвіл на пробудження</h4>
+<p>Команда <code>powercfg</code> дає пристрою "офіційний" дозвіл від Windows на пробудження системи.</p>
+<pre class="line-numbers"><code class="language-powershell">powercfg -deviceenablewake $DeviceName
+</code></pre>
+<p>Ця команда еквівалентна встановленню прапорця "Дозволити цьому пристрою виводити комп'ютер зі сплячого режиму".</p>
+<p>Її зворотна дія — відключення:</p>
+<pre class="line-numbers"><code class="language-powershell">powercfg -devicedisablewake $DeviceName
+</code></pre>
+<h4>Крок 3: Налаштування драйвера.</h4>
+<p>Налаштування WOL знаходяться в параметрах самого драйвера, які зберігаються в реєстрі.<br />Щоб встановити прапорець <strong>"Тільки дозволяти магічному пакету виводити комп'ютер зі сплячого режиму"</strong>,<br />використовуємо команду <code>Set-ItemProperty</code>.</p>
+<pre class="line-numbers"><code class="language-powershell"># Встановлюємо властивість
+Set-ItemProperty -Path $pmKey -Name "*WakeOnMagicPacket" -Value 1
+</code></pre>
+<p>Зворотна дія — відключення WOL (<code>Value 0</code>):</p>
+<pre class="line-numbers"><code class="language-powershell">Set-ItemProperty -Path $pmKey -Name "*WakeOnMagicPacket" -Value 0
+</code></pre>
+<blockquote>
+<p><strong>Проблема</strong> Ім'я цього параметра може відрізнятися у різних виробників. Наприклад, для <strong>Intel</strong> це <code>*WakeOnMagicPacket</code>, а для <strong>Realtek</strong> — <code>WakeOnMagicPacket</code> (без <code>*</code>). Якщо налаштування не застосовується, перевірте правильне ім'я командою <code>Get-ItemProperty -Path $pmKey</code> і використовуйте його.</p>
+</blockquote>
+<h3>Крок 4: Завершальне налаштування через CIM</h3>
+<p>Для повної впевненості в тому, що налаштування керування живленням застосовані коректно, використовуємо сучасний стандарт <strong>CIM</strong> (Common Information Model).</p>
+<pre class="line-numbers"><code class="language-powershell"># Знаходимо CIM-об'єкт, пов'язаний з нашим пристроєм
+$adapterCim = Get-CimInstance -Namespace root\wmi -ClassName MSPower_DeviceEnable | Where-Object { $_.InstanceName -like "*$($instanceId.Split('\')[-1])*" }
+
+# Застосовуємо до нього зміни
+if ($adapterCim) {
+    Set-CimInstance -CimInstance $adapterCim -Property @{ Enable = $true }
+}
+</code></pre>
+<p><img src="../assets/manage-wol/1.png" alt="1" /></p>

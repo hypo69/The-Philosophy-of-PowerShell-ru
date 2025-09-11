@@ -1,0 +1,290 @@
+<h3><strong>Практичні приклади використання Out-ConsoleGridView</strong></h3>
+<p>У попередній главі ми познайомилися з <code>Out-ConsoleGridView</code> — потужним інструментом для інтерактивної роботи з даними прямо в терміналі. Якщо ви не знаєте, про що йдеться, рекомендую спочатку почитати<br />Ця стаття повністю присвячена йому. Я не буду повторювати теорію, а відразу перейду до практики і покажу 10 сценаріїв, в яких цей командлет може заощадити системному адміністратору або просунутому користувачеві масу часу.</p>
+<p><code>Out-ConsoleGridView</code> — це не просто "переглядач". Це **інтерактивний фільтр об'єктів** у середині вашого конвеєра.</p>
+<p><strong>Попередні вимоги:</strong></p>
+<ul>
+<li>PowerShell 7.2 або новішої версії.</li>
+<li>Встановлений модуль <code>Microsoft.PowerShell.ConsoleGuiTools</code>. Якщо ви його ще не встановили:</li>
+</ul>
+<pre class="line-numbers"><code class="language-powershell">Install-Module Microsoft.PowerShell.ConsoleGuiTools -Scope CurrentUser
+</code></pre>
+<hr />
+<h3>10 практичних прикладів</h3>
+<h4>Приклад 1: Інтерактивна зупинка процесів</h4>
+<p>Класичне завдання: знайти та завершити кілька "завислих" або непотрібних процесів.</p>
+<pre class="line-numbers"><code class="language-powershell"># Вибираємо процеси в інтерактивному режимі
+$procsToStop = Get-Process | Sort-Object -Property CPU -Descending | Out-ConsoleGridView -OutputMode Multiple
+
+# Якщо щось було вибрано, передаємо об'єкти на зупинку
+if ($procsToStop) {
+    $procsToStop | Stop-Process -WhatIf
+}
+</code></pre>
+<p><a href="https://github.com/user-attachments/assets/9d17f7d3-6efb-4069-a5f4-829e7e63b63f">1</a></p>
+<video width="600" controls>
+  <source src="https://github.com/user-attachments/assets/9d17f7d3-6efb-4069-a5f4-829e7e63b63f" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<ol>
+<li><code>Get-Process</code> отримує всі запущені процеси.</li>
+<li><code>Sort-Object</code> упорядковує їх за завантаженням CPU, щоб найбільш "ненажерливі" були вгорі.</li>
+<li><code>Out-ConsoleGridView</code> відображає таблицю. Ви можете ввести <code>chrome</code> або <code>notepad</code>, щоб миттєво відфільтрувати список, і вибрати потрібні процеси клавішею <code>Space</code>.</li>
+<li>Після натискання <code>Enter</code> вибрані **об'єкти** процесів потрапляють у змінну <code>$procsToStop</code> і передаються в <code>Stop-Process</code>.</li>
+</ol>
+<h4>Приклад 2: Керування службами Windows</h4>
+<p>Потрібно швидко перезапустити кілька служб, пов'язаних з однією програмою (наприклад, SQL Server).</p>
+<pre class="line-numbers"><code class="language-powershell">$services = Get-Service | Out-ConsoleGridView -OutputMode Multiple -Title "Виберіть служби для перезапуску"
+
+if ($services) {
+    $services | Restart-Service -WhatIf
+}
+</code></pre>
+<p><a href="https://github.com/user-attachments/assets/37986608-21d6-4013-b421-16072d1cf128">1</a></p>
+<video width="600" controls>
+  <source src="https://github.com/user-attachments/assets/37986608-21d6-4013-b421-16072d1cf128" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<ol>
+<li>Ви отримуєте список усіх служб.</li>
+<li>Всередині <code>Out-ConsoleGridView</code> ви вводите у фільтр <code>sql</code> і відразу бачите всі служби, що стосуються SQL Server.</li>
+<li>Вибираєте потрібні та натискаєте <code>Enter</code>. Об'єкти вибраних служб передаються на перезапуск.</li>
+</ol>
+<h4>Приклад 3: Очищення папки "Завантаження" від великих файлів</h4>
+<p>З часом папка "Завантаження" забивається непотрібними файлами. Знайдемо та видалимо найбільші з них.</p>
+<pre class="line-numbers"><code class="language-powershell">
+# --- КРОК 1: Налаштування шляху до директорії 'Downloads'
+$DownloadsPath = "E:\Users\user\Downloads" # &lt;--- ЗМІНІТЬ ЦЕЙ РЯДОК НА ВАШ ШЛЯХ
+===========================================================================
+
+# Перевірка: якщо шлях не вказано або папка не існує - виходимо.
+if ([string]::IsNullOrEmpty($DownloadsPath) -or (-not (Test-Path -Path $DownloadsPath))) {
+    Write-Error "Папка 'Завантаження' не знайдена за вказаним шляхом: '$DownloadsPath'. Будь ласка, перевірте шлях у блоці НАЛАШТУВАННЯ на початку скрипта."
+    return
+}
+
+# --- КРОК 2: Інформування користувача та збір даних ---
+Write-Host "Починаю сканування папки '$DownloadsPath'. Це може зайняти деякий час..." -ForegroundColor Cyan
+
+$files = Get-ChildItem -Path $DownloadsPath -File -Recurse -ErrorAction SilentlyContinue | 
+    Sort-Object -Property Length -Descending
+
+# --- КРОК 3: Перевірка наявності файлів та виклик інтерактивного вікна ---
+if ($files) {
+    Write-Host "Сканування завершено. Знайдено $($files.Count) файлів. Відкриття вікна вибору..." -ForegroundColor Green
+    
+    $filesToShow = $files | Select-Object FullName, @{Name="SizeMB"; Expression={[math]::Round($_.Length / 1MB, 2)}}, LastWriteTime
+    
+    $filesToDelete = $filesToShow | Out-ConsoleGridView -OutputMode Multiple -Title "Виберіть файли для видалення з '$DownloadsPath'"
+
+    # --- КРОК 4: Обробка вибору користувача ---
+    if ($filesToDelete) {
+        Write-Host "Наступні файли будуть видалені:" -ForegroundColor Yellow
+        $filesToDelete | Format-Table -AutoSize
+        
+        $filesToDelete.FullName | Remove-Item -WhatIf -Verbose
+    } else {
+        Write-Host "Операція скасована. Не вибрано жодного файлу." -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "У папці '$DownloadsPath' не знайдено файлів." -ForegroundColor Yellow
+}
+</code></pre>
+<p><a href="https://github.com/hypo69/The-Philosophy-of-PowerShell-ru/blob/master/code/scripts/Clear-DownloadsFolder.ps1">Clear-DownloadsFolder.ps1</a></p>
+<p><a href="https://github.com/user-attachments/assets/e7402188-5ffe-4e11-92ca-6f7eb4da709a">Вміст Downloads</a></p>
+<video width="600" controls>
+  <source src="https://github.com/user-attachments/assets/e7402188-5ffe-4e11-92ca-6f7eb4da709a" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<ol>
+<li>Ми отримуємо всі файли, сортуємо їх за розміром і за допомогою <code>Select-Object</code> створюємо зручну колонку <code>SizeMB</code>.</li>
+<li>У <code>Out-ConsoleGridView</code> ви бачите відсортований список, де легко вибрати старі та великі <code>.iso</code> або <code>.zip</code> файли.</li>
+<li>Після вибору їх повні шляхи передаються в <code>Remove-Item</code>.</li>
+</ol>
+<h4>Приклад 4: Додавання користувачів до групи Active Directory</h4>
+<p>Незамінна річ для адміністраторів AD.</p>
+<pre class="line-numbers"><code class="language-powershell"># Отримуємо користувачів з відділу Marketing
+$users = Get-ADUser -Filter 'Department -eq "Marketing"' -Properties DisplayName
+
+# Інтерактивно вибираємо, кого додати
+$usersToAdd = $users | Select-Object Name, DisplayName | Out-ConsoleGridView -OutputMode Multiple
+
+if ($usersToAdd) {
+    Add-ADGroupMember -Identity "Marketing-Global-Group" -Members $usersToAdd -WhatIf
+}
+</code></pre>
+<p>Замість того, щоб вручну вводити імена користувачів, ви отримуєте зручний список, де можете швидко знайти та вибрати потрібних співробітників за прізвищем або логіном.</p>
+<hr />
+<h4>Приклад 5: Дізнатися, які програми використовують інтернет прямо зараз</h4>
+<p>Одне з частих завдань: "Яка програма гальмує інтернет?" або "Хто і куди відправляє дані?". За допомогою <code>Out-ConsoleGridView</code> можна отримати наочну та інтерактивну відповідь.</p>
+<p><strong>Всередині таблиці:</strong></p>
+<ul>
+<li><strong>Введіть <code>chrome</code> або <code>msedge</code></strong> у поле фільтра, щоб побачити всі активні підключення вашого браузера.</li>
+<li><strong>Введіть IP-адресу</strong> (наприклад, <code>151.101.1.69</code> з колонки <code>RemoteAddress</code>), щоб побачити, які ще процеси підключені до цього ж сервера.</li>
+</ul>
+<pre class="line-numbers"><code class="language-powershell"># Отримуємо всі активні TCP-підключення
+$connections = Get-NetTCPConnection -State Established |
+    Select-Object RemoteAddress, RemotePort, OwningProcess, @{Name="ProcessName"; Expression={(Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).ProcessName}}
+
+# Виводимо в інтерактивну таблицю для аналізу
+$connections | Out-ConsoleGridView -Title "Активні інтернет-підключення"
+</code></pre>
+<ol>
+<li><code>Get-NetTCPConnection -State Established</code> збирає всі встановлені мережеві підключення.</li>
+<li>За допомогою <code>Select-Object</code> ми формуємо зручний звіт: додаємо ім'я процесу (<code>ProcessName</code>) до його ID (<code>OwningProcess</code>), щоб було зрозуміло, яка програма встановила з'єднання.</li>
+<li><code>Out-ConsoleGridView</code> показує вам живу картину мережевої активності.</li>
+</ol>
+<p><a href="https://github.com/user-attachments/assets/1ba78f04-bad8-4717-853b-27317cac72ec">Net</a></p>
+<video width="600" controls>
+  <source src="https://github.com/user-attachments/assets/1ba78f04-bad8-4717-853b-27317cac72ec" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<hr />
+<h3>Приклад 6: Аналіз встановлення ПЗ та оновлень</h3>
+<p>Ми будемо шукати події від джерела **"MsiInstaller"**. Він відповідає за встановлення, оновлення та видалення більшості програм (у форматі <code>.msi</code>), а також за багато компонентів оновлень Windows.</p>
+<pre class="line-numbers"><code class="language-powershell"># Шукаємо 100 останніх подій від інсталятора Windows (MsiInstaller)
+# Ці події є на будь-якій системі
+$installEvents = Get-WinEvent -ProviderName 'MsiInstaller' -MaxEvents 100
+
+# Якщо події знайдено, виводимо їх у зручному вигляді
+if ($installEvents) {
+    $installEvents | 
+        # Вибираємо тільки найкорисніше: час, повідомлення та ID події
+        # ID 11707 - успішне встановлення, ID 11708 - невдале встановлення
+        Select-Object TimeCreated, Id, Message |
+        Out-ConsoleGridView -Title "Журнал встановлення програм (MsiInstaller)"
+} else {
+    Write-Warning "Не знайдено подій від 'MsiInstaller'. Це дуже незвично."
+}
+</code></pre>
+<p><strong>Всередині таблиці:</strong></p>
+<ul>
+<li>Ви можете відфільтрувати список за назвою програми (наприклад, <code>Edge</code> або <code>Office</code>), щоб побачити всю історію її оновлень.</li>
+<li>Ви можете відсортувати за <code>Id</code>, щоб знайти невдалі встановлення (<code>11708</code>).</li>
+</ul>
+<hr />
+<h4>Приклад 7: Інтерактивне видалення програм</h4>
+<pre class="line-numbers"><code class="language-powershell"># Шляхи в реєстрі, де зберігається інформація про встановлені програми
+$registryPaths = @(
+    'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+    'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+)
+
+# Збираємо дані з реєстру, прибираючи системні компоненти, у яких немає імені
+$installedPrograms = Get-ItemProperty $registryPaths |
+    Where-Object { $_.DisplayName -and $_.UninstallString } |
+    Select-Object DisplayName, DisplayVersion, Publisher, InstallDate |
+    Sort-Object DisplayName
+
+# Якщо програми знайдено, виводимо в інтерактивну таблицю
+if ($installedPrograms) {
+    $programsToUninstall = $installedPrograms | Out-ConsoleGridView -OutputMode Multiple -Title "Виберіть програми для видалення"
+    
+    if ($programsToUninstall) {
+        Write-Host "Наступні програми будуть видалені:" -ForegroundColor Yellow
+        $programsToUninstall | Format-Table -AutoSize
+        
+        # Цей блок складніший, оскільки Uninstall-Package тут не спрацює.
+        # Ми запускаємо команду деінсталяції з реєстру.
+        foreach ($program in $programsToUninstall) {
+            # Знаходимо оригінальний об'єкт програми зі строкою деінсталяції
+            $fullProgramInfo = Get-ItemProperty $registryPaths | Where-Object { $_.DisplayName -eq $program.DisplayName }
+            
+            if ($fullProgramInfo.UninstallString) {
+                Write-Host "Запуск деінсталятора для '$($program.DisplayName)'..." -ForegroundColor Yellow
+                # УВАГА: Це запустить стандартний GUI-деінсталятор програми.
+                # WhatIf тут не спрацює, будьте обережні.
+                # cmd.exe /c $fullProgramInfo.UninstallString
+            }
+        }
+        Write-Warning "Щоб реально видалити програми, розкоментуйте рядок 'cmd.exe /c ...' у скрипті."
+    }
+} else {
+    Write-Warning "Не вдалося знайти встановлені програми в реєстрі."
+}
+```
+
+---
+
+
+<p>Ви абсолютно праві. Приклад з Active Directory не підходить для звичайного користувача і вимагає спеціального середовища.</p>
+<p>Давайте замінимо його на набагато універсальніший і зрозуміліший сценарій, який ідеально демонструє міць зв'язування <code>Out-ConsoleGridView</code> і буде корисний будь-якому користувачеві.</p>
+<hr />
+<h4>Приклад 8: Зв'язування (Chaining) <code>Out-ConsoleGridView</code></h4>
+<p>Це найпотужніший прийом. Вихід однієї інтерактивної сесії стає входом для іншої. **Завдання:** Вибрати одну з ваших папок з проєктами, а потім вибрати з неї певні файли для створення ZIP-архіву.</p>
+<pre class="line-numbers"><code class="language-powershell"># --- КРОК 1: Універсально знаходимо папку "Документи" ---
+$SearchPath = [System.Environment]::GetFolderPath('MyDocuments')
+
+# --- КРОК 2: Інтерактивно вибираємо одну папку з вказаного місця ---
+$selectedFolder = Get-ChildItem -Path $SearchPath -Directory |
+    Out-ConsoleGridView -Title "Виберіть папку для архівації"
+
+if ($selectedFolder) {
+    # --- КРОК 3: Якщо папку вибрано, отримуємо її файли та вибираємо, які з них архівувати ---
+    $filesToArchive = Get-ChildItem -Path $selectedFolder.FullName -File |
+        Out-ConsoleGridView -OutputMode Multiple -Title "Виберіть файли для архіву з '$($selectedFolder.Name)'"
+
+    if ($filesToArchive) {
+        # --- КРОК 4: Виконуємо дію з універсальними шляхами ---
+        $archiveName = "Archive-$($selectedFolder.Name)-$(Get-Date -Format 'yyyy-MM-dd').zip"
+        
+        # УНІВЕРСАЛЬНИЙ СПОСІБ ОТРИМАТИ ШЛЯХ ДО РОБОЧОГО СТОЛУ
+        $desktopPath = [System.Environment]::GetFolderPath('Desktop')
+        $destinationPath = Join-Path -Path $desktopPath -ChildPath $archiveName
+        
+        # Створюємо архів
+        Compress-Archive -Path $filesToArchive.FullName -DestinationPath $destinationPath -WhatIf
+        
+        Write-Host "Архів '$archiveName' буде створено на вашому робочому столі за шляхом '$destinationPath'." -ForegroundColor Green
+    }
+}
+</code></pre>
+<ol>
+<li>Перший <code>Out-ConsoleGridView</code> показує вам список папок всередині ваших "Документів". Ви можете швидко знайти потрібну, ввівши частину її імені, і вибрати **одну** папку.</li>
+<li>Якщо папку було вибрано, скрипт негайно відкриває **другий** <code>Out-ConsoleGridView</code>, який показує вже **файли всередині** цієї папки.</li>
+<li>Ви вибираєте **один або кілька** файлів клавішею <code>Space</code> і натискаєте <code>Enter</code>.</li>
+<li>Скрипт бере вибрані файли та створює з них ZIP-архів на вашому робочому столі.</li>
+</ol>
+<p>Це перетворює складне багатоетапне завдання (знайти папку, знайти в ній файли, скопіювати їх шляхи, запустити команду архівації) в інтуїтивно зрозумілий інтерактивний процес з двох кроків.</p>
+<h4>Приклад 9: Керування опціональними компонентами Windows</h4>
+<pre class="line-numbers"><code class="language-powershell"># --- Приклад 9 : Керування опціональними компонентами Windows ---
+
+# Отримуємо тільки включені компоненти
+$features = Get-WindowsOptionalFeature -Online | Where-Object { $_.State -eq 'Enabled' }
+
+$featuresToDisable = $features | Select-Object FeatureName, DisplayName |
+    Out-ConsoleGridView -OutputMode Multiple -Title "Виберіть компоненти для відключення"
+
+if ($featuresToDisable) {
+    # ПОПЕРЕДЖАЄМО КОРИСТУВАЧА ПРО НЕЗВОРОТНІСТЬ
+    Write-Host "УВАГА! Наступні компоненти будуть негайно відключені." -ForegroundColor Red
+    Write-Host "Ця операція не підтримує безпечний режим -WhatIf."
+    $featuresToDisable | Select-Object DisplayName
+
+    # Запитуємо підтвердження вручну
+    $confirmation = Read-Host "Продовжити? (y/n)"
+    
+    if ($confirmation -eq 'y') {
+        foreach($feature in $featuresToDisable){
+            Write-Host "Відключення компонента '$($feature.DisplayName)'..." -ForegroundColor Yellow
+            Disable-WindowsOptionalFeature -Online -FeatureName $feature.FeatureName
+        }
+        Write-Host "Операція завершена. Може знадобитися перезавантаження." -ForegroundColor Green
+    } else {
+        Write-Host "Операція скасована."
+    }
+}
+</code></pre>
+<p>Ви можете легко знайти та відключити непотрібні компоненти, наприклад <code>Telnet-Client</code> або <code>Windows-Sandbox</code>.</p>
+<h4>Приклад 10: Керування віртуальними машинами Hyper-V</h4>
+<p>Швидко зупинити кілька віртуальних машин для обслуговування хоста.</p>
+<pre class="line-numbers"><code class="language-powershell"># Отримуємо тільки запущені ВМ
+$vms = Get-VM | Where-Object { $_.State -eq 'Running' }
+
+$vmsToStop = $vms | Select-Object Name, State, Uptime |
+    Out-ConsoleGridView -OutputMode Multiple -Title "Виберіть ВМ для зупинки"
+
+if ($vmsToStop) {
+    $vmsToStop | Stop-VM -WhatIf
+}
+</code></pre>
+<p>Ви отримуєте список тільки працюючих машин і можете інтерактивно вибрати ті, які потрібно безпечно вимкнути.</p>

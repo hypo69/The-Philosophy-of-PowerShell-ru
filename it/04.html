@@ -1,0 +1,259 @@
+<h1>Filosofia PowerShell.</h1>
+<h2>Parte 4: Lavoro Interattivo: <code>Out-ConsoleGridView</code>, avvisi.</h2>
+<ul>
+<li>Nella <a href="https://github.com/hypo69/The-Philosophy-of-PowerShell-ru/blob/master/01.md">prima parte</a>, abbiamo definito due concetti chiave di PowerShell: pipeline e oggetto.</li>
+<li>Nella <a href="https://github.com/hypo69/The-Philosophy-of-PowerShell-ru/blob/master/02.md">seconda parte</a>, ho spiegato cosa sono gli oggetti e le pipeline.</li>
+<li>Nella <a href="https://github.com/hypo69/The-Philosophy-of-PowerShell-ru/blob/master/03.md">terza</a> parte, ci siamo familiarizzati con il file system e i provider.</li>
+<li>Oggi, esamineremo il lavoro interattivo con i dati nella console, e ci familiarizzeremo anche con gli avvisi e le notifiche.</li>
+</ul>
+<h3>Lavoro Interattivo con i Dati nella Console.</h3>
+<h4><code>Out-ConsoleGridView</code>. GUI nella Console PowerShell.</h4>
+<p><strong>❗ Importante:</strong> Tutti gli strumenti descritti di seguito richiedono **PowerShell 7.2 o versioni successive**.</p>
+<p>Out-ConsoleGridView è una tabella interattiva, direttamente nella console PowerShell, che consente di:</p>
+<ul>
+<li>visualizzare i dati in una tabella;</li>
+<li>filtrare e ordinare le colonne;</li>
+<li>selezionare le righe con il cursore — per passarle più avanti nella pipeline;</li>
+<li>e molto altro.</li>
+</ul>
+<p><code>Out-ConsoleGridView</code> fa parte del modulo <code>Microsoft.PowerShell.ConsoleGuiTools</code>.<br />Per usarlo, è necessario prima installare questo modulo.</p>
+<p>Per installare il modulo, eseguire il seguente comando in PowerShell:</p>
+<pre class="line-numbers"><code class="language-powershell">Install-Module Microsoft.PowerShell.ConsoleGuiTools -Scope CurrentUser
+</code></pre>
+<p><img src="assets/04/1.png" alt="Install-Module Microsoft.PowerShell.ConsoleGuiTools -Scope CurrentUser" /></p>
+<p><em>Install-Module</em> scarica e installa il modulo specificato dal repository nel sistema.<br />Analoghi: <code>pip install</code> in <code>Python</code> o <code>npm install</code> in <code>Node.js</code>.</p>
+<p>📎 Parametri chiave di <em>Install-Module</em></p>
+<table>
+<thead>
+<tr>
+<th>Parametro</th>
+<th>Descrizione</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-Name</code></td>
+<td>Il nome del modulo da installare.</td>
+</tr>
+<tr>
+<td><code>-Scope</code></td>
+<td>Ambito di installazione: <code>AllUsers</code> (predefinito, richiede diritti di amministratore) o <code>CurrentUser</code> (non richiede diritti di amministratore).</td>
+</tr>
+<tr>
+<td><code>-Repository</code></td>
+<td>Specifica il repository, ad esempio <code>PSGallery</code>.</td>
+</tr>
+<tr>
+<td><code>-Force</code></td>
+<td>Installazione forzata senza conferma.</td>
+</tr>
+<tr>
+<td><code>-AllowClobber</code></td>
+<td>Consente di sovrascrivere i comandi esistenti.</td>
+</tr>
+<tr>
+<td><code>-AcceptLicense</code></td>
+<td>Accetta automaticamente la licenza del modulo.</td>
+</tr>
+<tr>
+<td><code>-RequiredVersion</code></td>
+<td>Installa una versione specifica del modulo.</td>
+</tr>
+</tbody>
+</table>
+<p>Dopo l'installazione, è possibile passare qualsiasi output a <code>Out-ConsoleGridView</code> per il lavoro interattivo.</p>
+<pre class="line-numbers"><code class="language-powershell"># Esempio classico: visualizzazione di un elenco di processi in una tabella interattiva
+Get-Process | Out-ConsoleGridView
+</code></pre>
+<p><a href="https://github.com/user-attachments/assets/5828dd51-cfb8-4904-87be-796ccc8395be">1</a></p>
+<video width="600" controls>
+  <source src="https://github.com/user-attachments/assets/5828dd51-cfb8-4904-87be-796ccc8395be" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<p><strong>Interfaccia:</strong></p>
+<ul>
+<li><strong>Filtro:</strong> Basta iniziare a digitare e l'elenco verrà filtrato al volo.</li>
+<li><strong>Navigazione:</strong> Utilizzare i tasti freccia per spostarsi nell'elenco.</li>
+<li><strong>Selezione:</strong> Premere <code>Spazio</code> per selezionare/deselezionare un singolo elemento.</li>
+<li><strong>Selezione multipla:</strong> <code>Ctrl+A</code> per selezionare tutti gli elementi, <code>Ctrl+D</code> per deselezionare tutto.</li>
+<li><strong>Conferma:</strong> Premere <code>Invio</code> per restituire gli oggetti selezionati.</li>
+<li><strong>Annulla:</strong> Premere <code>ESC</code> per chiudere la finestra senza restituire dati.</li>
+</ul>
+<h2>Cosa può fare <code>Out-ConsoleGridView</code>:</h2>
+<ul>
+<li>Visualizzare dati tabulari direttamente nella console come una tabella interattiva con navigazione per righe e colonne.</li>
+<li>Ordinare le colonne premendo i tasti.</li>
+<li>Filtrare i dati usando la ricerca.</li>
+<li>Selezionare una o più righe con restituzione del risultato.</li>
+<li>Lavorare in una console pulita senza finestre GUI.</li>
+<li>Supportare un gran numero di righe con scorrimento.</li>
+<li>Supportare vari tipi di dati (stringhe, numeri, date, ecc.).</li>
+</ul>
+<hr />
+<h2>Esempi di utilizzo di <code>Out-ConsoleGridView</code></h2>
+<h3>Uso di base — visualizzare una tabella con capacità di selezione interattiva. (checkbox)</h3>
+<pre class="line-numbers"><code class="language-powershell">Import-Module Microsoft.PowerShell.ConsoleGuiTools
+
+$data = Get-Process | Select-Object -First 30 -Property Id, ProcessName, CPU, WorkingSet
+
+# Visualizzare una tabella con capacità di filtro, ordinamento e selezione delle righe
+$selected = $data | Out-ConsoleGridView -Title "Select process(es)" -OutputMode Multiple
+
+$selected | Format-Table -AutoSize
+</code></pre>
+<p><a href="https://github.com/user-attachments/assets/3f1a2a62-066f-4dbb-947a-9b26095da356">2</a></p>
+<video>
+  <source src="https://github.com/user-attachments/assets/3f1a2a62-066f-4dbb-947a-9b26095da356" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<p>Viene visualizzato un elenco di processi in una tabella di console interattiva.<br />È possibile filtrare per nome, ordinare le colonne e selezionare i processi.<br />I processi selezionati vengono restituiti alla variabile <code>$selected</code>.</p>
+<hr />
+<h3>Selezione di una singola riga con restituzione obbligatoria del risultato. (radio)</h3>
+<pre class="line-numbers"><code class="language-powershell">$choice = Get-Service | Select-Object -First 20 | Out-ConsoleGridView -Title "Select a service" -OutputMode Single
+
+Write-Host "You selected service: $($choice.Name)"
+</code></pre>
+<p><a href="https://github.com/user-attachments/assets/5ee8fb92-8e18-496a-9db7-2d86b243742e"></a></p>
+<video>
+  <source src="https://github.com/user-attachments/assets/5ee8fb92-8e18-496a-9db7-2d86b243742e" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<p>L'utente seleziona una riga (servizio). <code>-OutputMode Single</code> impedisce la selezione multipla.</p>
+<hr />
+<h3>Filtro e ordinamento di grandi array</h3>
+<pre class="line-numbers"><code class="language-powershell">$data = 1..1000 | ForEach-Object {
+    [PSCustomObject]@{
+        Number = $_
+        Square = $_
+        Cube   = $_ * $_ * $_
+    }
+}
+
+$data | Out-ConsoleGridView -Title "Numbers and powers"  -OutputMode Multiple
+</code></pre>
+<p>Visualizza una tabella di 1000 righe con numeri e le loro potenze.</p>
+<h3><strong>Gestione interattiva dei processi:</strong></h3>
+<p>È possibile selezionare più processi da arrestare. Il parametro <code>-OutputMode Multiple</code> indica che vogliamo restituire tutti gli elementi selezionati.</p>
+<pre class="line-numbers"><code class="language-powershell"># Passa i risultati attraverso la pipeline.
+# Arresta i processi selezionati con il parametro -WhatIf per l'anteprima.
+# A tale scopo, definire la variabile $procsToStop
+$procsToStop = Get-Process | Out-ConsoleGridView -OutputMode Multiple
+    
+# Se qualcosa è stato selezionato, passa gli oggetti più avanti nella pipeline
+if ($procsToStop) {
+    $procsToStop | Stop-Process -WhatIf
+}
+</code></pre>
+<h3><strong>Selezione di file per l'archiviazione:</strong></h3>
+<p>Trova tutti i file <code>.log</code> nella cartella, seleziona quelli necessari e crea un archivio da essi.</p>
+<pre class="line-numbers"><code class="language-powershell">$filesToArchive = Get-ChildItem -Path C:\Logs -Filter "*.log" -Recurse | Out-ConsoleGridView -OutputMode Multiple
+</code></pre>
+<p>❗Fai attenzione alla ricorsione</p>
+<pre class="line-numbers"><code class="language-powershell">if ($filesToArchive) {
+    Compress-Archive -Path $filesToArchive.FullName -DestinationPath C:\Temp\LogArchive.zip
+    
+    # Aggiungi messaggio di successo
+    Write-Host "✅ Archiviazione completata con successo!" -ForegroundColor Green
+}
+</code></pre>
+<h3><strong>Selezione di un singolo elemento per l'analisi dettagliata:</strong></h3>
+<h4>Pattern "Drill-Down" — dall'elenco generale ai dettagli con <code>Out-ConsoleGridView</code></h4>
+<p>Spesso, quando si lavora con oggetti di sistema, si affronta un dilemma:</p>
+<ol>
+<li>Se si richiedono **tutte le proprietà** per **tutti gli oggetti** (<code>Get-NetAdapter | Format-List *</code>), l'output sarà enorme e illeggibile.</li>
+<li>Se si mostra una **tabella breve**, si perderanno dettagli importanti.</li>
+<li>A volte, tentare di ottenere tutti i dati contemporaneamente può portare a un errore se uno degli oggetti contiene valori non corretti.</li>
+</ol>
+<p>La soluzione a questo problema è il pattern **"Drill-Down"** (dettaglio o "approfondimento"). La sua essenza è semplice:</p>
+<ul>
+<li><strong>Passo 1 (Panoramica):</strong> Mostra all'utente un elenco pulito, breve e sicuro di elementi per la **selezione**.</li>
+<li><strong>Passo 2 (Dettaglio):</strong> Dopo che l'utente ha selezionato un elemento specifico, mostra loro **tutte le informazioni disponibili** per quell'elemento particolare.</li>
+</ul>
+<h4>Esempio pratico: Creazione di un esploratore di schede di rete</h4>
+<p>Implementiamo questo pattern usando il comando <code>Get-NetAdapter</code>.</p>
+<p><strong>Compito:</strong> Per prima cosa, mostra un breve elenco di schede di rete. Dopo averne selezionata una, apri una seconda finestra con tutte le sue proprietà.</p>
+<p><strong>Codice pronto:</strong></p>
+<pre class="line-numbers"><code class="language-powershell"># --- Fase 1: Selezione di un adattatore da un breve elenco ---
+$adapterList = Get-NetAdapter | Select-Object Name, InterfaceDescription, Status, LinkSpeed
+$selectedAdapter = $adapterList | Out-ConsoleGridView -Title "FASE 1: Seleziona una scheda di rete"
+
+# --- Fase 2: Visualizzazione di informazioni dettagliate o messaggio di annullamento ---
+if ($null -ne $selectedAdapter) {
+    # Ottieni TUTTE le proprietà per l'adattatore SELEZIONATO
+    $detailedInfoObject = Get-NetAdapter -Name $selectedAdapter.Name | Select-Object *
+
+    # Usa il nostro trucco con .psobject.Properties per trasformare l'oggetto in una comoda tabella "Nome-Valore"
+    $detailedInfoForGrid = $detailedInfoObject.psobject.Properties | Select-Object Name, Value
+    
+    # Apri una SECONDA finestra GridView con informazioni complete
+    $detailedInfoForGrid | Out-ConsoleGridView -Title "FASE 2: Informazioni complete per '$($selectedAdapter.Name)'"
+} else {
+    Write-Host "Operazione annullata. Nessun adattatore è stato selezionato." -ForegroundColor Yellow
+}
+</code></pre>
+<h4>Analisi passo-passo</h4>
+<ol>
+<li><strong>Creazione di un elenco "sicuro":</strong><br /><code>$adapterList = Get-NetAdapter | Select-Object Name, InterfaceDescription, Status, LinkSpeed</code><br />Non passiamo l'output di <code>Get-NetAdapter</code> direttamente. Invece, creiamo nuovi oggetti "puliti" usando <code>Select-Object</code>, includendo solo le proprietà che ci servono per la panoramica. Questo assicura che i dati problematici che hanno causato un errore verranno scartati.</li>
+<li><strong>Prima finestra interattiva:</strong><br /><code>$selectedAdapter = $adapterList | Out-ConsoleGridView ...</code><br />Lo script visualizza la prima finestra e **sospende la sua esecuzione**, in attesa della tua selezione. Una volta selezionata una riga e premuto <code>Invio</code>, l'oggetto corrispondente a quella riga verrà scritto nella variabile <code>$selectedAdapter</code>.</li>
+<li><strong>Controllo della selezione:</strong><br /><code>if ($null -ne $selectedAdapter)</code><br />Questo è un controllo di importanza critica. Se l'utente preme <code>Esc</code> o chiude la finestra, la variabile <code>$selectedAdapter</code> sarà vuota (<code>$null</code>). Questo controllo impedisce l'esecuzione del resto del codice e il verificarsi di errori.</li>
+<li><strong>Ottenere informazioni complete:</strong><br /><code>$detailedInfoObject = Get-NetAdapter -Name $selectedAdapter.Name</code><br />Ecco il punto chiave del pattern. Accediamo di nuovo a <code>Get-NetAdapter</code>, ma questa volta richiediamo **un solo** oggetto per il suo nome, che abbiamo preso dall'elemento selezionato nella prima fase. Ora otteniamo l'oggetto completo con tutte le sue proprietà.</li>
+<li><strong>Trasformazione per la seconda finestra:</strong><br /><code>$detailedInfoForGrid = $detailedInfoObject.psobject.Properties | ...</code><br />Usiamo un potente trucco che già conosci per "srotolare" questo singolo oggetto complesso in un lungo elenco di coppie "Nome proprietà" | "Valore", che è ideale per la visualizzazione in una tabella.</li>
+<li><strong>Seconda finestra interattiva:</strong><br /><code>$detailedInfoForGrid | Out-ConsoleGridView ...</code><br />Appare una seconda finestra sullo schermo, questa volta con informazioni complete sull'adattatore che hai selezionato.</li>
+</ol>
+<hr />
+<h3>Esempio con titolo personalizzato e suggerimenti</h3>
+<p>Visualizzazione del registro eventi di Windows in una tabella interattiva con il titolo "System Events".</p>
+<pre class="line-numbers"><code class="language-powershell">Get-EventLog -LogName System -Newest 50 |
+    Select-Object TimeGenerated, EntryType, Source, Message |
+    Out-ConsoleGridView -Title "System Events"  -OutputMode Multiple
+</code></pre>
+<p>Questo codice recupera i 50 eventi più recenti dal registro di sistema di Windows, seleziona solo quattro proprietà chiave da ogni evento (ora, tipo, origine e messaggio) e li visualizza nella finestra Out-ConsoleGridView.</p>
+<hr />
+<h3>Informazioni di sistema.</h3>
+<p><a href="https://github.com/user-attachments/assets/1e53a339-56f9-4add-8053-86d94dbc8e06">1</a></p>
+<video width="600" controls>
+  <source src="https://github.com/user-attachments/assets/1e53a339-56f9-4add-8053-86d94dbc8e06" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+<p>codice script per ottenere informazioni di sistema:<br /><a href="https://github.com/hypo69/The-Philosophy-of-PowerShell-ru/blob/master/code/04/Get-SystemMonitor.ps1">Get-SystemMonitor.ps1</a></p>
+<h3>Creazione del cmdlet 'Get-SystemMonitor'</h3>
+<h4>Passo 1: Configurazione della variabile <code>PATH</code></h4>
+<ol>
+<li><strong>Crea una cartella permanente per i tuoi strumenti,</strong> se non l'hai ancora fatto. Ad esempio:<br /><code>C:\PowerShell\Scripts</code></li>
+<li><strong>Posiziona il tuo file</strong> <code>Get-SystemMonitor.ps1</code> in questa cartella.</li>
+<li><strong>Aggiungi questa cartella alla variabile di sistema <code>PATH</code></strong>,</li>
+</ol>
+<h4>Passo 2: Configurazione di un alias nel profilo PowerShell</h4>
+<p>Ora che il sistema sa dove trovare il tuo script per il suo nome completo, possiamo creare un alias breve per esso.</p>
+<ol>
+<li><strong>Apri il tuo file di profilo PowerShell</strong>:<br />
+<pre class="line-numbers"><code class="language-powershell">notepad $PROFILE
+</code></pre>
+</li>
+<li><strong>Aggiungi la seguente riga:</strong><br />
+<pre class="line-numbers"><code class="language-powershell"># Alias per il monitor di sistema
+Set-Alias -Name sysmon -Value "Get-SystemMonitor.ps1"
+</code></pre>
+<p><strong>Nota il punto chiave:</strong> Poiché la cartella dello script è già in <code>PATH</code>, non abbiamo più bisogno di specificare il percorso completo al file! Ci riferiamo semplicemente al suo nome. Questo rende il tuo profilo più pulito e affidabile. Se mai sposti la cartella <code>C:\PowerShell\Scripts</code>, dovrai solo aggiornare la variabile <code>PATH</code>, e il tuo file di profilo rimarrà invariato.</p>
+</li>
+</ol>
+<h4>Riavvia PowerShell</h4>
+<p>Chiudi **tutte** le finestre PowerShell aperte e aprine una nuova. Questo è necessario affinché il sistema applichi le modifiche sia alla variabile <code>PATH</code> che al tuo profilo.</p>
+<hr />
+<h3>Risultato: Cosa ottieni</h3>
+<p>Dopo aver eseguito questi passaggi, potrai richiamare il tuo script **in due modi da qualsiasi punto del sistema**:</p>
+<ol>
+<li><strong>Per nome completo (affidabile, per l'uso in altri script):</strong><br />
+<pre class="line-numbers"><code class="language-powershell">Get-SystemMonitor.ps1
+Get-SystemMonitor.ps1 -Resource storage
+</code></pre>
+</li>
+<li><strong>Per alias breve (comodo, per il lavoro interattivo):</strong><br />
+<pre class="line-numbers"><code class="language-powershell">sysmon
+sysmon -Resource memory
+</code></pre>
+</li>
+</ol>
+<p>Hai "registrato" con successo il tuo script nel sistema nel modo più professionale e flessibile.</p>
+<p>Utile? Iscriviti.<br />Ti è piaciuto? Metti un "+"<br />Buona fortuna! 🚀</p>
+<p>Altri articoli su PowerShell:</p>

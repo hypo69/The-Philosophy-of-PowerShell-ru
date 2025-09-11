@@ -1,0 +1,60 @@
+<h1>Zarządzanie zasilaniem karty sieciowej Wake-on-LAN za pomocą PowerShell.</h1>
+<p>Szczegółowy przewodnik po konfiguracji Wake-on-LAN za pomocą PowerShell, który omawia podstawowe polecenia i sposoby rozwiązywania typowych problemów wynikających z różnic w sterownikach kart sieciowych.</p>
+<h4>Krok 1: Identyfikacja urządzenia.</h4>
+<p>Zanim skonfigurujesz Wake-on-LAN (WOL) dla karty sieciowej, musisz dokładnie określić, z którym urządzeniem pracujesz. W tym celu użyjemy polecenia PowerShell, które wyszukuje urządzenia po części nazwy (np. "Realtek" lub "Intel").</p>
+<pre class="line-numbers"><code class="language-powershell">Get-PnpDevice | Where-Object { $_.FriendlyName -like "*Realtek*" } | Select-Object FriendlyName, Status, Class, InstanceId
+</code></pre>
+<p>!(../assets/manage-wol/1.png)</p>
+<p>To polecenie mówi systemowi:</p>
+<blockquote>
+<p>"Pokaż mi wszystkie urządzenia, w których nazwie znajduje się słowo «Realtek», i wyświetl dla nich tabelę z czterema kolumnami: pełna nazwa, status, klasa i ID systemu."</p>
+</blockquote>
+<ol>
+<li><strong><code>Get-PnpDevice</code></strong>: Pobiera pełną listę wszystkich urządzeń Plug-and-Play.</li>
+<li><strong><code>|</code> (Potok)</strong>: Przekazuje listę dalej.</li>
+<li><strong><code>Where-Object { ... }</code></strong>: Filtruje listę, pozostawiając urządzenia, których nazwa (<code>FriendlyName</code>) zawiera "Realtek".</li>
+<li><strong><code>|</code> (Potok)</strong>: Przekazuje przefiltrowaną listę.</li>
+<li><strong><code>Select-Object ...</code></strong>: Formatuje wyjście, pokazując tylko potrzebne właściwości.</li>
+</ol>
+<p><em>Znajdujemy potrzebne urządzenie i bierzemy pierwsze z listy</em></p>
+<pre class="line-numbers"><code class="language-powershell">$device = Get-PnpDevice | Where-Object { $_.FriendlyName -like "*Realtek*" } | Select-Object -First 1
+
+*Zapisujemy jego właściwości do zmiennych*
+
+$DeviceName = $device.FriendlyName
+$InstanceId = $device.InstanceId
+$pmKey = "HKLM:\SYSTEM\CurrentControlSet\Enum\$InstanceId\Device Parameters"
+</code></pre>
+<h4>Krok 2: Globalne zezwolenie na wybudzanie</h4>
+<p>Polecenie <code>powercfg</code> daje urządzeniu "oficjalne" zezwolenie od Windows na wybudzanie systemu.
+```powershell
+powercfg -deviceenablewake $DeviceName
+```
+To polecenie jest równoważne zaznaczeniu pola wyboru "Zezwól temu urządzeniu na wybudzanie komputera z trybu uśpienia".</p>
+<p>Jego odwrotne działanie — wyłączenie:
+```powershell
+powercfg -devicedisablewake $DeviceName
+```
+<h4>Krok 3: Konfiguracja sterownika.</h4>
+<p>Ustawienia WOL znajdują się w parametrach samego sterownika, które są przechowywane w rejestrze.<br />Aby ustawić znacznik <strong>"Zezwalaj tylko pakietowi magicznemu na wybudzanie komputera z trybu uśpienia"</strong>,<br />użyj polecenia <code>Set-ItemProperty</code>.</p>
+<pre class="line-numbers"><code class="language-powershell"># Ustawiamy właściwość
+Set-ItemProperty -Path $pmKey -Name "*WakeOnMagicPacket" -Value 1
+</code></pre>
+<p>Odwrotne działanie — wyłączenie WOL (<code>Value 0</code>):
+```powershell
+Set-ItemProperty -Path $pmKey -Name "*WakeOnMagicPacket" -Value 0
+```
+<blockquote>
+<p><strong>Problem</strong> Nazwa tego parametru może się różnić u różnych producentów. Na przykład dla <strong>Intel</strong> jest to <code>*WakeOnMagicPacket</code>, a dla <strong>Realtek</strong> — <code>WakeOnMagicPacket</code> (bez <code>*</code>). Jeśli ustawienie nie zostanie zastosowane, sprawdź poprawną nazwę za pomocą polecenia <code>Get-ItemProperty -Path $pmKey</code> i użyj jej.</p>
+</blockquote>
+<h3>Krok 4: Końcowa konfiguracja przez CIM</h3>
+<p>Aby mieć pewność, że ustawienia zarządzania energią zostały prawidłowo zastosowane, użyjemy nowoczesnego standardu <strong>CIM</strong> (Common Information Model).</p>
+<pre class="line-numbers"><code class="language-powershell"># Znajdujemy obiekt CIM powiązany z naszym urządzeniem
+$adapterCim = Get-CimInstance -Namespace root\wmi -ClassName MSPower_DeviceEnable | Where-Object { $_.InstanceName -like "*$($instanceId.Split('\')[-1])*" }
+
+# Stosujemy do niego zmiany
+if ($adapterCim) {
+    Set-CimInstance -CimInstance $adapterCim -Property @{ Enable = $true }
+}
+</code></pre>
+<p><img src="../assets/manage-wol/1.png" alt="1" /></p>

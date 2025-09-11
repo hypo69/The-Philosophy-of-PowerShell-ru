@@ -1,0 +1,129 @@
+<h3>Діагностика та відновлення дисків за допомогою PowerShell</h3>
+<p>PowerShell дозволяє автоматизувати перевірки, виконувати віддалену діагностику та створювати гнучкі скрипти для моніторингу. Цей посібник проведе вас від базових перевірок до глибокої діагностики та відновлення дисків.</p>
+<p><strong>Версія:</strong> Посібник актуальний для **Windows 10/11** та **Windows Server 2016+**.</p>
+<h3>Ключові командлети для роботи з дисками</h3>
+<table>
+<thead>
+<tr>
+<th>Командлет</th>
+<th>Призначення</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>Get-PhysicalDisk</code></strong></td>
+<td>Інформація про фізичні диски (модель, стан здоров'я).</td>
+</tr>
+<tr>
+<td><strong><code>Get-Disk</code></strong></td>
+<td>Інформація про диски на рівні пристрою (статус Online/Offline, стиль розділів).</td>
+</tr>
+<tr>
+<td><strong><code>Get-Partition</code></strong></td>
+<td>Інформація про розділи на дисках.</td>
+</tr>
+<tr>
+<td><strong><code>Get-Volume</code></strong></td>
+<td>Інформація про логічні томи (літери дисків, файлова система, вільне місце).</td>
+</tr>
+<tr>
+<td><strong><code>Repair-Volume</code></strong></td>
+<td>Перевірка та відновлення логічних томів (аналог <code>chkdsk</code>).</td>
+</tr>
+<tr>
+<td><strong><code>Get-StoragePool</code></strong></td>
+<td>Використовується для роботи з дисковими просторами (Storage Spaces).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3>Крок 1: Базова перевірка стану системи</h3>
+<p>Почніть із загальної оцінки стану дискової підсистеми.</p>
+<h4>Перегляд усіх підключених дисків</h4>
+<p>Команда <code>Get-Disk</code> надає зведену інформацію про всі диски, які бачить операційна система.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-Disk
+</code></pre>
+<p>Ви побачите таблицю з номерами дисків, їх розмірами, статусом (<code>Online</code> або <code>Offline</code>) та стилем розділів (<code>MBR</code> або <code>GPT</code>).</p>
+<p><strong>Приклад:</strong> Знайти всі диски, які знаходяться в офлайні.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-Disk | Where-Object IsOffline -eq $true
+</code></pre>
+<h4>Перевірка фізичного «здоров'я» дисків</h4>
+<p>Командлет <code>Get-PhysicalDisk</code> звертається до стану самого обладнання.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-PhysicalDisk | Select-Object FriendlyName, MediaType, HealthStatus, OperationalStatus
+</code></pre>
+<p>Зверніть особливу увагу на поле <code>HealthStatus</code>. Воно може приймати значення:</p>
+<ul>
+<li><strong>Healthy:</strong> Диск у порядку.</li>
+<li><strong>Warning:</strong> Є проблеми, потрібна увага (наприклад, перевищення порогів S.M.A.R.T.).</li>
+<li><strong>Unhealthy:</strong> Диск у критичному стані та може відмовити.</li>
+</ul>
+<hr />
+<h3>Крок 2: Аналіз та відновлення логічних томів</h3>
+<p>Після перевірки фізичного стану переходимо до логічної структури — томів та файлової системи.</p>
+<h4>Інформація про логічні томи</h4>
+<p>Команда <code>Get-Volume</code> показує всі змонтовані томи в системі.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-Volume | Format-Table DriveLetter, FileSystem, HealthStatus, SizeRemaining, Size
+</code></pre>
+<p>Ключові поля:</p>
+<ul>
+<li><code>DriveLetter</code> — Літера тому (C, D тощо).</li>
+<li><code>FileSystem</code> — Тип файлової системи (NTFS, ReFS, FAT32).</li>
+<li><code>HealthStatus</code> — Стан тому.</li>
+<li><code>SizeRemaining</code> та <code>Size</code> — Вільний та загальний простір.</li>
+</ul>
+<h4>Перевірка та відновлення тому (аналог <code>chkdsk</code>)</h4>
+<p>Командлет <code>Repair-Volume</code> — це сучасна заміна утиліти <code>chkdsk</code>.</p>
+<p><strong>1. Перевірка тому без виправлень (тільки сканування)</strong></p>
+<p>Цей режим безпечний для виконання на працюючій системі, він тільки шукає помилки.</p>
+<pre class="line-numbers"><code class="language-powershell">Repair-Volume -DriveLetter C -Scan
+</code></pre>
+<p><strong>2. Повне сканування та виправлення помилок</strong></p>
+<p>Цей режим є аналогом <code>chkdsk C: /f</code>. Він блокує том на час роботи, тому для системного диска знадобиться перезавантаження.</p>
+<pre class="line-numbers"><code class="language-powershell">Repair-Volume -DriveLetter C -OfflineScanAndFix
+</code></pre>
+<blockquote>
+<p>❗️ <strong>Важливо:</strong> Якщо ви запускаєте цю команду для системного диска (C:), PowerShell запланує перевірку при наступному завантаженні системи. Щоб запустити її негайно, перезавантажте комп'ютер.</p>
+</blockquote>
+<p><strong>Приклад:</strong> Автоматично перевірити та виправити всі томи, стан яких відрізняється від <code>Healthy</code>.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-Volume | Where-Object {$_.HealthStatus -ne 'Healthy'} | ForEach-Object {
+    Write-Host "Repairing volume $($_.DriveLetter)..."
+    Repair-Volume -DriveLetter $_.DriveLetter -OfflineScanAndFix
+}
+</code></pre>
+<hr />
+<h3>Крок 3: Глибока діагностика та S.M.A.R.T.</h3>
+<p>Якщо базові перевірки не виявили проблем, але підозри залишилися, можна копнути глибше.</p>
+<h4>Аналіз системних журналів</h4>
+<p>Помилки дискової підсистеми часто фіксуються в системному журналі Windows.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-WinEvent -LogName System | Where-Object {$_.Message -like "*disk*"} | Select-Object -First 20
+</code></pre>
+<p>Для більш точного пошуку можна фільтрувати за джерелом події:</p>
+<pre class="line-numbers"><code class="language-powershell">Get-WinEvent -ProviderName 'Microsoft-Windows-DiskDiagnostic' -MaxEvents 10
+</code></pre>
+<h4>Перевірка статусу S.M.A.R.T.</h4>
+<p>S.M.A.R.T. (Self-Monitoring, Analysis and Reporting Technology) — технологія самодіагностики дисків. PowerShell дозволяє отримати ці дані.</p>
+<p><strong>Спосіб 1: Використання WMI (для сумісності)</strong></p>
+<pre class="line-numbers"><code class="language-powershell">Get-WmiObject -Namespace "root\wmi" -Class MSStorageDriver_FailurePredictStatus
+</code></pre>
+<p>Якщо <code>PredictFailure = True</code>, диск передбачає швидкий збій. Це сигнал до негайної заміни.</p>
+<p><strong>Спосіб 2: Сучасний підхід через CIM та Storage-модулі</strong></p>
+<p>Більш сучасний та докладний спосіб — використовувати командлет <code>Get-StorageReliabilityCounter</code>.</p>
+<pre class="line-numbers"><code class="language-powershell">Get-PhysicalDisk | Get-StorageReliabilityCounter | Select-Object PhysicalDisk, Wear, Temperature, ReadErrorsTotal, WriteErrorsTotal
+</code></pre>
+<p>Цей командлет надає цінну інформацію, таку як знос (актуально для SSD), температуру та кількість помилок читання/запису.</p>
+<hr />
+<h3>Практичні сценарії для системного адміністратора</h3>
+<p>Ось кілька готових прикладів для повсякденних завдань.</p>
+<p><strong>1. Отримати короткий звіт про здоров'я всіх фізичних дисків.</strong></p>
+<pre class="line-numbers"><code class="language-powershell">Get-PhysicalDisk | Format-Table DeviceID, FriendlyName, MediaType, HealthStatus, OperationalStatus
+</code></pre>
+<p><strong>2. Створити CSV-звіт про вільне місце на всіх томах.</strong></p>
+<pre class="line-numbers"><code class="language-powershell">Get-Volume | Select-Object DriveLetter, FileSystemLabel, @{N='Size(GB)';E={[math]::Round($_.Size / 1GB, 2)}}, @{N='FreeSpace(GB)';E={[math]::Round($_.SizeRemaining / 1GB, 2)}} | Export-Csv -Path C:\Reports\DiskSpace.csv -NoTypeInformation -Encoding UTF8
+</code></pre>
+<p><strong>3. Знайти всі розділи на конкретному диску (наприклад, диску 0).</strong></p>
+<pre class="line-numbers"><code class="language-powershell">Get-Partition -DiskNumber 0
+</code></pre>
+<p><strong>4. Запустити діагностику системного диска з подальшим перезавантаженням.</strong></p>
+<pre class="line-numbers"><code class="language-powershell">Repair-Volume -DriveLetter C -OfflineScanAndFix
+Restart-Computer -Force
+</code></pre>
