@@ -36,7 +36,7 @@ param(
 )
 
 # --- Шаг 1: Настройка ---
-$env:GEMINI_API_KEY = "ХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХХ"
+$env:GEMINI_API_KEY = "AIzaSyCY8Nk46H8v3Rt4b02oMLU7gDbqT1xU6wU"
 if (-not $env:GEMINI_API_KEY) { Write-Error "..."; return }
 
 $scriptRoot = Get-Location

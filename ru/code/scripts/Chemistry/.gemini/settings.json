@@ -1,5 +1,14 @@
 {
   "auth": {
-    "apiKey": "AIzaSyCY8Nk46H8v3Rt4b02oMLU7gDbqT1xU6wU"
+    "GEMINI_API_KEY": "AIzaSyCY8Nk46H8v3Rt4b02oMLU7gDbqT1xU6wU"
+  },
+  "servers": {
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
+    }
   }
 }
